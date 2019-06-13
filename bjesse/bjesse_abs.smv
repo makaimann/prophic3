@@ -1,0 +1,19 @@
+MODULE main
+IVAR
+  waddr : integer;
+  data : real;
+
+VAR
+  a : array integer of real;
+  radd1 : integer;
+
+TRANS next(radd1) = radd1
+
+INIT a = CONSTARRAY(typeof(a), 0)
+
+TRANS data < 100 -> next(a) = WRITE(a, waddr, data)
+
+TRANS data >= 100 -> next(a) = a
+
+INVARSPEC READ(a, radd1) < 100
+
