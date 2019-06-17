@@ -65,7 +65,7 @@ TRANS !push -> next(fifo) = fifo
 INVAR wptr = rptr -> !pop
 
 INVAR (wptr[{msb}:{msb}] != rptr[{msb}:{msb}] & wptr[{msbm1}:0] = rptr[{msbm1}:0]) -> !push
-
+{counter_invars}
 INVARSPEC ({prophecy_assignment}en & cnt = 0ud{ptrcntwid}_1 & next(cnt) = 0ud{ptrcntwid}_0) -> packet = READ(fifo, {rptrval})
 """
 
@@ -74,7 +74,7 @@ INVARSPEC ({prophecy_assignment}en & cnt = 0ud{ptrcntwid}_1 & next(cnt) = 0ud{pt
 def is_power_2(v):
     return v and not (v & (v - 1))
 
-def compile_file(depth, width, array, prophecy):
+def compile_file(depth, width, array, include_prophecy, include_counter_invars):
     ptrcntwid = depth.bit_length()
 
     if array:
@@ -85,7 +85,7 @@ def compile_file(depth, width, array, prophecy):
     array_declaration = ARRAY_TEXT.format(indices=indices,
                                           width=width)
 
-    if prophecy:
+    if include_prophecy:
         prophecyvar = """
 FROZENVAR
   rptr_prophecy : unsigned word[{}];
@@ -97,6 +97,12 @@ FROZENVAR
         prophecy_assignment = ""
         rptrval = "rptr[{}:0]".format(ptrcntwid-2)
 
+    if include_counter_invars:
+        counter_invars = "\nINVAR (!en -> (wptr - rptr = cnt)) & (en -> (wptr - rptr >= cnt)) & (wptr - rptr <= 0ud{ptrcntwid}_{depth})\n".format(ptrcntwid=ptrcntwid,
+                                 depth=depth)
+    else:
+        counter_invars = ""
+
     return FIFO_TEXT.format(width=width,
                             array=array_declaration,
                             ptrcntwid=ptrcntwid,
@@ -104,7 +110,8 @@ FROZENVAR
                             msbm1=ptrcntwid-2,
                             prophecyvar=prophecyvar,
                             prophecy_assignment=prophecy_assignment,
-                            rptrval=rptrval
+                            rptrval=rptrval,
+                            counter_invars=counter_invars
         )
 
 def main():
@@ -113,6 +120,7 @@ def main():
     parser.add_argument('--width', '-w', type=int, help='The data width of the FIFO', required=True)
     parser.add_argument('--array', action='store_true', help='Use an array encoding')
     parser.add_argument('--prophecy', action='store_true', help='Use a prophecy variable for read pointer')
+    parser.add_argument('--counter_invars', action='store_true', help='Provide counter_invars')
 
     args = parser.parse_args()
 
@@ -127,7 +135,7 @@ def main():
 
     with open("genfifo.smv", 'w') as f:
         f.write(
-            compile_file(depth, width, args.array, args.prophecy)
+            compile_file(depth, width, args.array, args.prophecy, args.counter_invars)
         )
 
 if __name__ == "__main__":
