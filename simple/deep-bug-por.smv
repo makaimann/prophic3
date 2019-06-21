@@ -1,0 +1,65 @@
+MODULE main
+
+VAR
+  mem : array word[6] of word[7];
+  x : unsigned word [7];
+  y : unsigned word [7];
+  inc_x : boolean;
+  inc_y : boolean;
+  en_x : boolean;
+  en_y : boolean;
+
+DEFINE depth := 0ud7_64;
+
+INIT x = 0ud7_0
+
+INIT y = 0ud7_0
+
+INIT mem = CONSTARRAY(typeof(mem), 0ud7_0)
+
+TRANS next(x) = (inc_x ? x + 0ud7_1 : x)
+
+TRANS next(y) = (inc_y ? y + 0ud7_1 : y)
+
+INVAR en_x <-> (x != y)
+
+INVAR !en_x -> !inc_x
+
+INVAR en_y <-> ((y - x) < depth)
+
+INVAR !en_y -> !inc_y
+
+-- These constraints are currently unproven but I can use my framework
+
+-- ################# RIS ####################
+-- do one at a time
+INVAR !(inc_x & inc_y)
+
+-- Important Note: this actually needs to be a no-op, previously I had the memory updating in every step, in which case it
+--                 is actually an overconstraint to remove this instruction
+-- disallow the NOP instruction
+INVAR (inc_x | inc_y)
+
+-- NOTE: have to prove that it's safe to include both
+-- in this case I believe it is, but I don't know what conditions there are in general
+
+-- ################# POR ####################
+-- if you start running inc_y, you don't stop until it's disabled
+-- more specifically, you don't allow actions that you have a partial order relationship with
+TRANS (inc_y & next(en_y)) -> (!next(inc_x))
+
+-- if you start running inc_x, you don't stop until it's disabled
+TRANS (inc_x & next(en_x)) -> (!next(inc_y))
+
+-- por constraint from submission: overconstrains if both directions are used
+-- TRANS (en_y & inc_x) -> (!next(inc_y))
+-- TRANS (en_x & inc_y) -> (!next(inc_x))
+
+TRANS next(mem) = (inc_y ? WRITE(mem, (y + 0ud7_1)[5:0], y + 0ud7_1) : mem);
+
+INVARSPEC READ(mem, x[5:0]) = x
+
+-- Prove it's a no-op -- passes
+-- NOTE: this is a little strange considering the inc_x and inc_y can't be inputs here
+--       so technically they should be in the no-op state variable check
+-- INVARSPEC (!inc_x & !inc_y) -> (next(x) = x & next(y) = y & next(mem) = mem & next(en_x) = en_x & next(en_y) = en_y)
