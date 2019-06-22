@@ -24,5 +24,4 @@ INVAR (x = y) -> !inc_x
 
 TRANS next(mem) = WRITE(mem, y, y);
 
--- need to come up with a good invariant property to check
 INVARSPEC (xproph = x) -> READ(mem, xproph) = xproph

@@ -14,5 +14,6 @@ We hope that an abstraction refinement loop + some prophecy variables can improv
 * deep-bug-proph.smv: same system with a prophecy variable
 * deep-bug-por.smv: same system but with por constraints (didn't prove POR here, need to do separately)
 * deep-bug-por-proph.smv: POR constraints and a prophecy variable
+* array-int-trans.smv: a system which uses an array but the array does not appear in the property. I believe it still requires a quantified invariant over the array
 
 Note: the deep-* benchmarks can be a motivating example for the TACAS submission on symmetry breaking
