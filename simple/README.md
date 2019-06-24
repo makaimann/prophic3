@@ -16,6 +16,15 @@ We hope that an abstraction refinement loop + some prophecy variables can improv
 * deep-bug-por-proph.smv: POR constraints and a prophecy variable
 * array-int-trans.smv: a system which uses an array but the array does not appear in the property. I believe it still requires a quantified invariant over the array
 * array-int-trans-abstract.smv: manual run of abstraction refinement. Interesting feature, convergence requires a ghost variable
+* array-int-trans-abstract-minimal.smv: same as the above file, except unnecessary refinements are removed
+* array-int-trans-abstract-minimal-bug.smv: tests that it can find a bug
 * array-disequality.smv: a system which maintains to memories that differ at exactly one index
 
 Note: the deep-* benchmarks can be a motivating example for the TACAS submission on symmetry breaking
+
+# Thoughts
+* It seems like ghost variables might be necessary in general
+* Even with ghost variables, I'm worried about large temporal delays
+  * example: what if the value read from an array immediately goes into a long pipeline
+    * in array-int-trans.smv, it goes into a register, but what if there was more delay? Would one ghost variable be enough?
+* Do prophecy variables *have* to occur in an array read for us to instantiate array axioms over it? If so, my ghost variable solution does not work...
