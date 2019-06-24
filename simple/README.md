@@ -20,6 +20,7 @@ We hope that an abstraction refinement loop + some prophecy variables can improv
 * array-int-trans-abstract-minimal-bug.smv: tests that it can find a bug
 * array-int-trans-pipeline.smv: similar to array-int-trans.smv but there's an uninterruptible *two*-stage pipeline after the array read, instead of just a single register
 * array-int-trans-pipeline-abstract.smv: manual abstraction refinement, ends up using two ghost variables
+* array-int-trans-pipeline-ghost-inadequate.smv: shows that just keeping the ghost variable indices is not precise enough
 * array-disequality.smv: a system which maintains to memories that differ at exactly one index
 
 Note: the deep-* benchmarks can be a motivating example for the TACAS submission on symmetry breaking
