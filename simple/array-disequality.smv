@@ -1,0 +1,25 @@
+MODULE main
+
+VAR
+  mem1 : array integer of integer;
+  mem2 : array integer of integer;
+  x : integer;
+  y : integer;
+
+INIT x = 0
+
+INIT y = 1
+
+INIT mem1 = CONSTARRAY(typeof(mem1), 0)
+
+INIT mem2 = WRITE(CONSTARRAY(typeof(mem2), 0), 1, 2)
+
+TRANS next(x) = x + 1
+
+TRANS next(y) = y + 1
+
+TRANS next(mem1) = WRITE(mem1, x, x)
+
+TRANS next(mem2) = WRITE(mem2, y, y)
+
+INVARSPEC mem1 != mem2
