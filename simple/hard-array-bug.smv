@@ -7,6 +7,10 @@ VAR
   inc_x : boolean;
   inc_y : boolean;
 
+FROZENVAR
+  data0 : unsigned word[4];
+  data1 : unsigned word[4];
+
 INIT x = 0ud4_0
 
 INIT y = 0ud4_1
@@ -19,6 +23,6 @@ TRANS next(y) = (inc_y ? y + 0ud4_1 : y)
 
 INVAR (x = y) -> !inc_x
 
-TRANS next(mem) = WRITE(mem, y[2:0], y);
+TRANS next(mem) = WRITE(mem, y[2:0], y[3:3] = 0ud1_0 ? data1 : data0)
 
-INVARSPEC READ(mem, x[2:0]) = x
+INVARSPEC x[0:0] = 0ud1_1 -> READ(mem, x[2:0]) = data1

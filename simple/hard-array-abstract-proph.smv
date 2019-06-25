@@ -13,6 +13,8 @@ FUN
   
 FROZENVAR
   xproph : unsigned word[4];
+  data0 : unsigned word[4];
+  data1 : unsigned word[4];
 
 INIT x = 0ud4_0
 
@@ -29,10 +31,10 @@ TRANS next(y) = (inc_y ? y + 0ud4_1 : y)
 
 INVAR x=y -> !inc_x
 
---TRANS next(mem) = WRITE(mem, y, y);
+-- TRANS next(mem) = WRITE(mem, y, y[0:0] = 0ud1_1 ? data1 : data0);
 
-TRANS y = xproph -> read(next(mem), xproph) = y
+TRANS y = xproph -> read(next(mem), xproph) = (y[0:0] = 0ud1_1 ? data1 : data0)
 TRANS y != xproph -> read(next(mem), xproph) = read(mem, xproph)
 
---INVARSPEC read(mem, x) = y
-INVARSPEC xproph=x -> read(mem, xproph) = xproph
+-- INVARSPEC x[0:0] = 0ud1_1 -> READ(mem, x) = data1
+INVARSPEC xproph=x -> (x[0:0] = 0ud1_1 -> read(mem, x) = data1)
