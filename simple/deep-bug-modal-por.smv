@@ -1,3 +1,5 @@
+-- IDEA: switch modes and block different transitions depending on the last disable instruction
+
 MODULE main
 
 VAR
@@ -8,6 +10,7 @@ VAR
   inc_y : boolean;
   en_x : boolean;
   en_y : boolean;
+  mode : boolean; -- 0 is y 1 is x
 
 DEFINE depth := 0ud7_64;
 
@@ -46,14 +49,18 @@ INVAR (inc_x | inc_y)
 -- ################# POR ####################
 -- if you start running inc_y, you don't stop until it's disabled
 -- more specifically, you don't allow actions that you have a partial order relationship with to come after you
-TRANS (inc_y & next(en_y)) -> (!next(inc_x))
+--TRANS (inc_y & next(en_y)) -> (!next(inc_x))
 
 -- if you start running inc_x, you don't stop until it's disabled
-TRANS (inc_x & next(en_x)) -> (!next(inc_y))
+--TRANS (inc_x & next(en_x)) -> (!next(inc_y))
 
 -- por constraint from submission: overconstrains if both directions are used
--- TRANS (en_y & inc_x) -> (!next(inc_y))
--- TRANS (en_x & inc_y) -> (!next(inc_x))
+TRANS mode -> (en_y & inc_x) -> (!next(inc_y))
+TRANS !mode -> (en_x & inc_y) -> (!next(inc_x))
+
+TRANS !en_y -> !next(mode)
+TRANS !en_x -> next(mode)
+TRANS (en_x & en_y) -> (next(mode) = mode)
 
 TRANS next(mem) = (inc_y ? WRITE(mem, (y + 0ud7_1)[5:0], y + 0ud7_1) : mem);
 

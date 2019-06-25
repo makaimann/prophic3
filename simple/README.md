@@ -12,8 +12,9 @@ We hope that an abstraction refinement loop + some prophecy variables can improv
 * hard-array-bug.smv: a version with an overflow bug
 * deep-bug.smv: a similar system to hard-array-bug with a larger bit-width (bug triggers at bound 64)
 * deep-bug-proph.smv: same system with a prophecy variable
-* deep-bug-por.smv: same system but with por constraints (didn't prove POR here, need to do separately)
-* deep-bug-por-proph.smv: POR constraints and a prophecy variable
+* deep-bug-por.smv: same system but with por constraints (didn't prove POR here, need to do separately) -- BUGGY -- forces all the y's, doesn't explore states where inc_x starts
+* deep-bug-por-proph.smv: POR constraints and a prophecy variable -- BUGGY -- for same reason as above
+* deep-bug-modal-por.smv: Fixes the issues with above, uses the old encoding, but has a mode that prefers y or x depending on the mode. The mode only changes values when one of the instructions is disabled
 * array-int-trans.smv: a system which uses an array but the array does not appear in the property. I believe it still requires a quantified invariant over the array
 * array-int-trans-abstract.smv: manual run of abstraction refinement. Interesting feature, convergence requires a ghost variable
 * array-int-trans-abstract-minimal.smv: same as the above file, except unnecessary refinements are removed
