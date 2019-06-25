@@ -11,6 +11,7 @@ We hope that an abstraction refinement loop + some prophecy variables can improv
 * hard-array-proph.smv: this one is not inductive, and IC3+IA crunches away but doesn't solve quickly
 * hard-array-bug.smv: a version with an overflow bug
 * deep-bug.smv: a similar system to hard-array-bug with a larger bit-width (bug triggers at bound 64)
+* deep-bug-en-test.smv: checks that inc_y can't disable inc_x updates
 * deep-bug-proph.smv: same system with a prophecy variable
 * deep-bug-por.smv: same system but with por constraints (didn't prove POR here, need to do separately) -- BUGGY -- forces all the y's, doesn't explore states where inc_x starts
 * deep-bug-por-proph.smv: POR constraints and a prophecy variable -- BUGGY -- for same reason as above

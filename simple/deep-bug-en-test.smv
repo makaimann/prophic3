@@ -1,0 +1,35 @@
+MODULE main
+
+VAR
+  mem : array word[6] of word[7];
+  x : unsigned word [7];
+  y : unsigned word [7];
+  inc_x : boolean;
+  inc_y : boolean;
+  en_x : boolean;
+  en_y : boolean;
+
+DEFINE depth := 0ud7_64;
+
+INIT x = 0ud7_0
+
+INIT y = 0ud7_0
+
+INIT mem = CONSTARRAY(typeof(mem), 0ud7_0)
+
+TRANS next(x) = (inc_x ? x + 0ud7_1 : x)
+
+TRANS next(y) = (inc_y ? y + 0ud7_1 : y)
+
+INVAR en_x <-> (x != y)
+
+INVAR !en_x -> !inc_x
+
+INVAR en_y <-> ((y - x) < depth)
+
+INVAR !en_y -> !inc_y
+
+TRANS next(mem) = (inc_y ? WRITE(mem, (y + 0ud7_1)[5:0], y + 0ud7_1) : mem);
+
+-- INVARSPEC READ(mem, x[5:0]) = x
+INVARSPEC en_x & inc_y -> en_x
