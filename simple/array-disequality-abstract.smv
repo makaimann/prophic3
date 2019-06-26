@@ -2,7 +2,7 @@
 -- step 2: fails in state 1 -- add initial state for x and y and lemma about equality
 -- step 3: fails in state 2 with incorrect array update -- add update rule for mem2 and y
 -- step 4: fails in state 2 with incorrect value at mem1[1], should have stayed constant -- add prophecy variable for x and refine the transition
--- step 5 : fails in state 3 because of incorrect initial state at prophecy var -- refine initial state
+-- step 5: fails in state 3 because of incorrect initial state at prophecy var -- refine initial state
 
 MODULE main
 
