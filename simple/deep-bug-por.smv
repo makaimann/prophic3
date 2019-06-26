@@ -44,16 +44,8 @@ INVAR (inc_x | inc_y)
 -- in this case I believe it is, but I don't know what conditions there are in general
 
 -- ################# POR ####################
--- if you start running inc_y, you don't stop until it's disabled
--- more specifically, you don't allow actions that you have a partial order relationship with to come after you
-TRANS (inc_y & next(en_y)) -> (!next(inc_x))
-
--- if you start running inc_x, you don't stop until it's disabled
-TRANS (inc_x & next(en_x)) -> (!next(inc_y))
-
 -- por constraint from submission: overconstrains if both directions are used
--- TRANS (en_y & inc_x) -> (!next(inc_y))
--- TRANS (en_x & inc_y) -> (!next(inc_x))
+TRANS (en_y & inc_x) -> (!next(inc_y))
 
 TRANS next(mem) = (inc_y ? WRITE(mem, (y + 0ud7_1)[5:0], y + 0ud7_1) : mem);
 
