@@ -1,0 +1,65 @@
+
+--------------------------------------------
+Assertions of THEORY_BUILTIN: 
+Shared terms of THEORY_BUILTIN: 
+--------------------------------------------
+Assertions of THEORY_BOOL: 
+Shared terms of THEORY_BOOL: 
+--------------------------------------------
+Assertions of THEORY_UF: 
+Shared terms of THEORY_UF: 
+--------------------------------------------
+Assertions of THEORY_ARITH: 
+Shared terms of THEORY_ARITH: 
+--------------------------------------------
+Assertions of THEORY_ARRAYS: 
+[0]: (= (select arr1 x1) (select arr0 x1))
+(1): (not (= arr0 arr1))
+Shared terms of THEORY_ARRAYS: 
+
+--------------------------------------------
+Assertions of THEORY_BUILTIN: 
+Shared terms of THEORY_BUILTIN: 
+--------------------------------------------
+Assertions of THEORY_BOOL: 
+Shared terms of THEORY_BOOL: 
+--------------------------------------------
+Assertions of THEORY_UF: 
+Shared terms of THEORY_UF: 
+--------------------------------------------
+Assertions of THEORY_ARITH: 
+Shared terms of THEORY_ARITH: 
+--------------------------------------------
+Assertions of THEORY_ARRAYS: 
+[0]: (= (select arr1 x1) (select arr0 x1))
+(1): (not (= arr0 arr1))
+(2): (not (= (select arr0 array_ext_index_1) (select arr1 array_ext_index_1)))
+Shared terms of THEORY_ARRAYS: 
+
+--------------------------------------------
+Assertions of THEORY_BUILTIN: 
+Shared terms of THEORY_BUILTIN: 
+--------------------------------------------
+Assertions of THEORY_BOOL: 
+Shared terms of THEORY_BOOL: 
+--------------------------------------------
+Assertions of THEORY_UF: 
+Shared terms of THEORY_UF: 
+--------------------------------------------
+Assertions of THEORY_ARITH: 
+Shared terms of THEORY_ARITH: 
+--------------------------------------------
+Assertions of THEORY_ARRAYS: 
+[0]: (= (select arr1 x1) (select arr0 x1))
+(1): (not (= arr0 arr1))
+(2): (not (= (select arr0 array_ext_index_1) (select arr1 array_ext_index_1)))
+Shared terms of THEORY_ARRAYS: 
+sat
+(model
+(define-fun x0 () Int 0)
+(define-fun y0 () Int 1)
+(define-fun x1 () Int 0)
+(define-fun y1 () Int 1)
+(define-fun arr0 () (Array Int Int) (store (store ((as const (Array Int Int)) 0) 0 1) (- 1) 2))
+(define-fun arr1 () (Array Int Int) (store ((as const (Array Int Int)) 1) (- 1) (- 2)))
+)
