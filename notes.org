@@ -5,7 +5,23 @@
 ** With the counter invariants, it solves much easier and arrays + prophecy variables really help
    depth 16, datawid 2, arrays and prophecy variables: ~3m
    depth 16, datawid 2, bv only: ~6m
-
+** Abstraction
+*** Replace the array by an unbounded sort (need to allow unlimited writes)
+*** Don't add any constraints to the array replacement
+**** if we make it a counter there can be problems, for example it might force two arrays to be equal when they're actually not
+*** Remove writes
+*** Replace reads with uninterpreted function that takes the unbounded array sort and an index
+*** Replace array equality with uninterpreted function
+** Refinement
+*** Introduce quantified precondition -- if forall x . x = t -> phi
+*** Replace quantifier with prophecy variable
+*** Introduce history variable
+*** Add an array lemma over a particular index
+**** Note: this index doesn't actually have to occur in a read, lemma should be T-valid
+**** Common lemmas:initial state or representing the effect of a write
+***** fix the initial state for an index
+***** update the function for a write on the memory
+***** keep an index value constant when it's not being written to
 * Outstanding Issues
 ** Do we need history variables?
 *** array-int-trans* examples seem to imply we do
