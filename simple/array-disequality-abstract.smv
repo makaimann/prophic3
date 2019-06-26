@@ -1,0 +1,114 @@
+-- step 1 : abstract with read and equal functions
+-- step 2 : add initial state -- start off not equal
+-- step 3 : add rule about disequality for x
+-- step 4 : add rule about disequality for y
+-- step 5 : introduce a fresh symbol (frozen) -- not sure if it should be frozen or not
+-- step 6 : add invariants about updates to this new symbol (array_index), for x and y updates to mem1 and mem2
+-- step 7 : refine initial state further, reading from x and y gives value
+-- step 8 : add read update rule for mem1 with y and mem2 with x (e.g. opposite indices)
+-- step 9 : add read update rule for mem1 with next(y) and mem2 with next(x)
+-- step 10 : add read update rules for y + 1 and x + 1
+-- step 11 : introduce a prophecy variable for array_index
+-- step 12 : refine initial state on the prophecy variable
+-- step 13 : refine transition on the prophecy variable
+-- step 14 : refine equality for x + 1
+-- step 14 : refine equality for y + 1
+-- step 15 : add a prophecy variable for x, xproph
+-- step 16 : refine !equal based on the xproph var
+-- step 17 : update the transition relation for xproph
+-- step 18 : refine initial state on xproph
+
+MODULE main
+
+VAR
+  mem1 : integer;
+  mem2 : integer;
+  x : integer;
+  y : integer;
+
+FROZENVAR
+  -- not sure if this should be a frozen var or not
+  array_index : integer;
+  array_index_proph : integer;
+  xproph : integer;
+
+FUN
+  read : integer * integer -> integer;
+  equal : integer * integer -> boolean;
+
+INIT x = 0
+INIT y = 1
+
+-- INIT mem1 = CONSTARRAY(typeof(mem1), 0)
+-- INIT mem2 = WRITE(CONSTARRAY(typeof(mem2), 0), 1, 2)
+
+-- turns out this wasn't necessary -- other refinements cover this
+INIT !(equal(mem1, mem2))
+INIT read(mem1, x) = 0
+INIT read(mem1, y) = 0
+INIT read(mem2, x) = 0
+INIT read(mem2, y) = 2
+INIT read(mem1, array_index_proph) = 0
+INIT array_index_proph=1 -> read(mem2, array_index_proph) = 2
+INIT array_index_proph!=1 -> read(mem2, array_index_proph) = 0
+INIT read(mem1, xproph) = 0
+INIT xproph=1 -> read(mem2, xproph) = 2
+INIT xproph!=1 -> read(mem2, xproph) = 0
+
+TRANS next(x) = x + 1
+TRANS next(y) = y + 1
+
+-- TRANS next(mem1) = WRITE(mem1, x, x)
+-- TRANS next(mem2) = WRITE(mem2, y, y)
+
+TRANS read(next(mem1), x) = x
+TRANS read(next(mem2), y) = y
+
+INVAR (read(mem1, x) != read(mem2, x)) -> !(equal(mem1, mem2))
+INVAR (read(mem1, y) != read(mem2, y)) -> !(equal(mem1, mem2))
+
+TRANS (array_index = x) -> read(next(mem1), array_index) = x
+TRANS (array_index != x) -> read(next(mem1), array_index) = read(mem1, array_index)
+
+TRANS (array_index = y) -> read(next(mem2), array_index) = y
+TRANS (array_index != y) -> read(next(mem2), array_index) = read(mem2, array_index)
+
+TRANS (y = x) -> read(next(mem1), y) = y
+TRANS (y != x) -> read(next(mem1), y) = read(mem1, y)
+
+TRANS (x = y) -> read(next(mem2), x) = x
+TRANS (x != y) -> read(next(mem2), x) = read(mem2, x)
+
+TRANS (next(y) = x) -> read(next(mem1), next(y)) = next(y)
+TRANS (next(y) != x) -> read(next(mem1), next(y)) = read(mem1, next(y))
+
+TRANS (next(x) = y) -> read(next(mem2), next(x)) = next(x)
+TRANS (next(x) != y) -> read(next(mem2), next(x)) = read(mem2, next(x))
+
+TRANS ((y + 1) = x) -> read(next(mem1), (y + 1)) = (y + 1)
+TRANS ((y + 1) != x) -> read(next(mem1), (y + 1)) = read(mem1, (y + 1))
+
+TRANS ((x + 1) = y) -> read(next(mem2), (x + 1)) = (x + 1)
+TRANS ((x + 1) != y) -> read(next(mem2), (x + 1)) = read(mem2, (x + 1))
+
+TRANS (array_index_proph = x) -> read(next(mem1), array_index_proph) = array_index_proph
+TRANS (array_index_proph != x) -> read(next(mem1), array_index_proph) = read(mem1, array_index_proph)
+
+TRANS (array_index_proph = y) -> read(next(mem2), array_index_proph) = array_index_proph
+TRANS (array_index_proph != y) -> read(next(mem2), array_index_proph) = read(mem2, array_index_proph)
+
+TRANS (xproph = x) -> read(next(mem1), xproph) = xproph
+TRANS (xproph != x) -> read(next(mem1), xproph) = read(mem1, xproph)
+
+TRANS (xproph = y) -> read(next(mem2), xproph) = xproph
+TRANS (xproph != y) -> read(next(mem2), xproph) = read(mem2, xproph)
+
+INVAR (read(mem1, array_index) != read(mem2, array_index)) -> !(equal(mem1, mem2))
+
+INVAR (read(mem1, x+1) != read(mem2, x+1)) -> !(equal(mem1, mem2))
+INVAR (read(mem1, y+1) != read(mem2, y+1)) -> !(equal(mem1, mem2))
+
+INVAR (read(mem1, xproph) != read(mem2, xproph)) -> !(equal(mem1, mem2))
+
+-- INVARSPEC mem1 != mem2
+INVARSPEC xproph=x -> (array_index_proph=array_index -> !(equal(mem1, mem2)))

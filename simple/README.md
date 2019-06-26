@@ -24,6 +24,7 @@ We hope that an abstraction refinement loop + some prophecy variables can improv
 * array-int-trans-pipeline-abstract.smv: manual abstraction refinement, ends up using two ghost variables
 * array-int-trans-pipeline-ghost-inadequate.smv: shows that just keeping the ghost variable indices is not precise enough
 * array-disequality.smv: a system which maintains to memories that differ at exactly one index
+* array-disequality-abstract.smv: abstract version of disequality system, with enough refinements to prove the property
 * the index-value/* examples have the old examples that required quantified invariants such as forall x . read(mem, x) = x. this complicates things so we're not using those now
 
 Note: the deep-* benchmarks can be a motivating example for the TACAS submission on symmetry breaking
