@@ -5,3 +5,11 @@
 ** With the counter invariants, it solves much easier and arrays + prophecy variables really help
    depth 16, datawid 2, arrays and prophecy variables: ~3m
    depth 16, datawid 2, bv only: ~6m
+
+* Outstanding Issues
+** Do we need history variables?
+*** array-int-trans* examples seem to imply we do
+*** what happens if it's not a constant delay? Maybe we should then try the ITE encoding -- i.e. might need to keep track of new indices
+** How to handle array disequality?
+*** Note: we might not be able to handle comparisons between two arrays that started as CONSTARRAY
+*** This seems like it requires a quantifier in the assumption
