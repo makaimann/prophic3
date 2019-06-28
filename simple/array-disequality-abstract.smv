@@ -18,7 +18,8 @@ FROZENVAR
 
 FUN
   equal : integer * integer -> boolean;
-  read  : integer * integer -> integer;
+  read1 : integer * integer -> integer;
+  read2 : integer * integer -> integer;
 
 INIT x = 0
 
@@ -36,22 +37,22 @@ TRANS next(y) = y + 1
 
 -- step 2 refinement
 -- initial state refinement
-INIT read(mem1, x) = 0
-INIT read(mem1, y) = 0
-INIT y != 1 -> read(mem2, y) = 0
-INIT read(mem2, 1) = 2
+INIT read1(mem1, x) = 0
+INIT read1(mem1, y) = 0
+INIT y != 1 -> read2(mem2, y) = 0
+INIT read2(mem2, 1) = 2
 -- how that relates to array equality
-INVAR (read(mem1, x) != read(mem2, x)) -> !(equal(mem1, mem2))
-INVAR (read(mem1, y) != read(mem2, y)) -> !(equal(mem1, mem2))
+INVAR (read1(mem1, x) != read2(mem2, x)) -> !(equal(mem1, mem2))
+INVAR (read1(mem1, y) != read2(mem2, y)) -> !(equal(mem1, mem2))
 
 -- step 3 refinement
-TRANS read(next(mem2), y) = y
+TRANS read2(next(mem2), y) = y
 
 -- step 4 refinement
-TRANS xproph != x -> (read(next(mem1), xproph) = read(mem1, xproph))
+TRANS xproph != x -> (read1(next(mem1), xproph) = read1(mem1, xproph))
 
 -- step 5 refinement
-INIT read(mem1, xproph) = 0
+INIT read1(mem1, xproph) = 0
 
 -- INVARSPEC mem1 != mem2
 
