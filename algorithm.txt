@@ -15,8 +15,18 @@ available in the transition system. Therefore, we also allow the procedure to dy
    variable in a property
 
    - We rely on Theorems 3 and 4 from Ken McMillan's Eager Abstraction for Symbolic Model Checking
-     Theorem 4 allows us to introduce universal quantifiers to the property
-     Theorem 3 allows us to replace the quantified variable with a prophecy variable
+     Theorem 4 allows us to introduce a universal quantifier for a property, phi: phi -> forall z = t . phi
+     Theorem 3 allows us to replace the universally quantified variable, z, with a prophecy variable
+
+     Thus, we have an axiom schemata that looks like: forall z = t . phi,
+     where z does not appear in phi, and t occurs somewhere in the transition system
+
+     to pick t, we look at the final state of the counter-example trace for an index that was assigned to
+     the value we want to track (i.e. whichever concrete index was used to violate an array axiom). If we can
+     find a symbolic index that had that value, then we set to that symbolic index
+
+     Note: for performance reasons, we will likely not want to add every array axiom that is broken. We'll need
+     a way of finding ones that actually impact the property
 
 2. History variables: these are variables which can be added to the system to keep track of past values. These values can
    change temporally, but crucially they do not fall into the cone of influence of the original system. In other words,
@@ -63,6 +73,10 @@ Repeat until convergence:
     temporal formulas to constrain the behavior (e.g. a read 10 steps later has the same value at a given index)
 
 
+Note: as an optimization we should also consider adding multiple axioms in each refinement step
+      The idea Ahmed sketched out (based on his NRA work) was to have a BMC query which is iteratively refined
+      before returning to IC3+IA
+
 Identifying array axiom violations:
 
 We have a module which is fully aware of the array operations in the original system, including the initial state.
@@ -74,7 +88,10 @@ we'll populate it with X. X is a "don't-care", meaning if we simulate the counte
 to any value in the abstract counter-example without violating an array axiom.
 
 Whenever possible, we try to write lemmas over symbolic indices. Adding lemmas over interpreted constants is a last resort
-and is hopefully not necessary very often (it's possible it's never necessary).
+and is hopefully not necessary very often (it's possible it's never necessary). Furthermore, we try refinements in two layers.
+First, we try to apply axioms over one-step or two-steps of the transition system (e.g. adjacent unrolled symbols). For
+arrays, this might not be enough to rule out counter-examples. If there are not any one-step or two-step axioms that will
+rule out a given counter-example, we need to try a more advanced refinement such as adding a prophecy or history variable.
 
 Types of violations and the resulting refinement step:
 
