@@ -2,7 +2,7 @@ Abstraction Refinement Algorithm for IC3 via Implicit Predicate Abstraction for 
 
 Motivation and High Level Ideas:
 This procedure seeks to improve IC3-based model checking for systems that contain arrays. One of the primary issues
-with arrays in these systems is that quantifier-free interpolants for the theory of arrays are not guaranteed.
+in model checking with arrays is that quantifier-free interpolants for the theory of arrays are not guaranteed.
 Furthermore, it is often the case that array axioms do not need to be instantiated for every possible value to prove
 or disprove a given property. Thus, we propose an abstraction refinement loop that replaces the array with an unbounded
 sort and array operators with uninterpreted functions. We then lazily instantiate array axioms over these uninterpreted
@@ -33,7 +33,7 @@ in other words, the algorithm can always make a refinement step.
 
 Outline of Algorithm Steps
 
-This outline is loosely temporal, but cannot be translated directly to code yet. It is likely we will allow multiple
+This outline is approximately ordered, but cannot be translated directly to code yet. It is likely we will allow multiple
 refinement steps at any given time and the choice of which refinement to apply is a heuristic. Of course, the refinements
 will be guarded by some necessary preconditions.
 
@@ -45,6 +45,7 @@ Abstraction Steps
  2. Remove all writes to the array from the formula, but keep track of the write structure for use in the refinement step
  3. Replace all array reads with a binary uninterpreted function which takes the unbounded array sort and an index and
     returns something of the element sort
+    - use a distinct read function for each array
  4. Replace all array equalities with a binary uninterpreted function which takes two of the unbounded array sorts and
     returns a bool
 
@@ -68,7 +69,7 @@ We have a module which is fully aware of the array operations in the original sy
 It can thus simulate the updates to the array based on the assignments to index variables and element variables. If
 any of the array axioms are violated, we can figure out what went wrong.
 
-We'll model the initial state as writes on a  CONSTARRAY, but if the original initial state was unconstrained, then
+We'll model the initial state as writes on a CONSTARRAY, but if the original initial state was unconstrained, then
 we'll populate it with X. X is a "don't-care", meaning if we simulate the counter-example and have an X, it can be assigned
 to any value in the abstract counter-example without violating an array axiom.
 
@@ -85,7 +86,7 @@ Types of violations and the resulting refinement step:
       x != y -> read(mem1, x) = 0
       x  = y -> read(mem1, x) = 1
 
- 2. Array was not update correctly on a write -> add a constraint to the UF saying that the next memory provides a certain
+ 2. Array was not updated correctly on a write -> add a constraint to the UF saying that the next memory provides a certain
     value at that index, e.g.
 
     if we had: next(mem1) = WRITE(mem1, x, val)
@@ -98,22 +99,25 @@ Types of violations and the resulting refinement step:
     There are two cases for this one:
     - One of the array indices is equal to the value we should have maintained at the time-step it was lost
         this is the simpler case and we can simply rule it out by adding a lemma
+
         say mem1 is updated by x and not y, but it lost it's value at y in the abstract counter-example
         Then we add:
 
         y != x -> read(next(mem1), y) = read(mem1, y) // the array maintains the value
-    - None of the array indices in the formula was equal to that concrete index value when it was lost.
-        this is a harder case and we have two possible solutions
+
+    - None of the array indices in the transition system was equal to that concrete index value at the timestep it was lost
+        this is a harder case and we have two possible solutions:
         1. introduce a history or prophecy variable to track that location
-           the history one is relevant if one of the indices *used* to have that value in a previous timestep
+            - the prophecy variable is relevant if we need the array to maintain values at some symbolic index in the property
+            - the history one is relevant if one of the indices *used* to have that value in a previous timestep
         2. add a lemma over an interpreted constant (e.g. 5) for that array
            this should be a last resort
 
- 4. A universally quantified property is violated because in the assumptions it held, but then the index variable changed
+ 4. A universally quantified property is violated because in the assumptions it held, but then the index variable changed in the state update
     - instantiate a prophecy variable
 
  5. An equality relation doesn't produce the right value
-    - this is trickier to maintain, because we also need to reason about the array initial values and possible X
+    - this is trickier to maintain, because we also need to reason about the array initial values and possibly X values
       for example, if there's an X in each of the arrays at an index, it can always have found a way to be different
 
     4 cases:
@@ -145,11 +149,20 @@ Lemmas that require an existential quantifer use a fresh index symbol and are ad
 
 Possible preprocessing steps:
 
-1. replace all occurrences of writes on an array with a fresh array symbol and add an equality
-   - this might be necessary, otherwise we lose the information from the writes
+1. replace each write in nested writes on an array with a fresh array symbol and add an equality
+   - this might simplify the counter-example analysis
+
+   Example:
+
+   started with: next(mem1) = WRITE(WRITE(mem1, idx1, val1), idx2, val2)
+
+   ->: next(mem1) = WRITE(mem1_1, idx2, val2)
+       mem1_1 = WRITE(mem1, idx1, val1)
 
 
 Open Questions
  1. do we need history variables?
  2. if so, should they be simple delays or should they all store unique values? (e.g. the last two unique values of x)
  3. is this procedure complete?
+ 4. is the abstraction always an overapproximation?
+
