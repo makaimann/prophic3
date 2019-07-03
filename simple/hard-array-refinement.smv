@@ -1,0 +1,89 @@
+-- abstraction refinement steps
+
+-- step 1: abstract
+--         replace mem with integer
+--         remove initial state for mem
+--         remove write on mem
+--         replace READ in property with UF read
+-- step 2: refinement 1
+--         abstract counter-example where array is not updated when it should be
+--         fix it with a two-step lemma that gives the write semantics for mem and y
+-- step 3: refinement 2
+--         abstract counter-example doesn't keep the value at 0ud4_1 between State 1.2 and 1.3
+--         priority is to find a one-step or two-step lemma over symbolic indices
+--         x=0ud4_1 at Step 1.2
+--         fix with a two-step that keeps the value at x if it's not equal to the write index y
+--            (read over write lemma for when the index is not equal to the write index)
+-- step 4: refinement 3
+--         abstract counter-example doesn't keep the value at 0ud4_1 between State 1.2 and 1.3
+--         but this time there's no index that got the value 0ud4_1 within a two-step window of
+--         the array axiom being broken (from State 1.2 to 1.3)
+--
+--         thus we need to fall back on another procedure -- introduce a prophecy variable
+--
+--         We will use Theorem 4 followed by Theorem 3 from Eager Abstraction for Symbolic Model Checking
+--         Theorem 4 allows us to introduce a quantifier for a property, phi: phi -> forall z = t . phi
+--         Theorem 3 allows us to replace the universally quantified variable, z, with a prophecy variable
+--
+--         Thus, we have an axiom schemata that looks like: forall z = t . phi,
+--           where z does not appear in phi, and t occurs somewhere in the transition system
+--
+--         to pick t, we look at the final state of the counter-example trace for an index that was
+--         assigned to 0ud4_1 (the value that the array violated)
+--         x=0ud4_1 in that state, so we assign t = x
+--
+--         We then apply Theorem 3 to replace z with a prophecy variable, xproph
+--
+--         phi = x[0:0] = 0ud1_1 -> read(mem, x) = data1
+--         z = xproph
+--         t = x
+
+-- forall xproph = x . phi
+
+MODULE main
+
+VAR
+  -- step 1: abstract
+  -- mem : array unsigned word[4] of unsigned word[4]
+  mem : integer;
+  x : unsigned word[4];
+  y : unsigned word[4];
+  inc_x : boolean;
+  inc_y : boolean;
+
+FUN
+  read : integer * unsigned word[4] -> unsigned word[4];
+
+FROZENVAR
+  data0 : unsigned word[4];
+  data1 : unsigned word[4];
+  xproph : unsigned word[4];
+
+INIT x = 0ud4_0
+INIT y = 0ud4_1
+
+INVAR data0 = 0ud4_0
+INVAR data1 = 0ud4_1
+
+-- step 1: abstract
+-- INIT mem = CONSTARRAY(typeof(mem), 0ud4_0)
+
+TRANS next(x) = (inc_x ? x + 0ud4_1 : x)
+
+TRANS next(y) = (inc_y ? y + 0ud4_1 : y)
+
+INVAR (x = y) -> !inc_x
+
+-- step1: abstract
+-- TRANS next(mem) = WRITE(mem, y, y[0:0] = 0ud1_1 ? data1 : data0);
+
+-- step 2: refinement 1
+TRANS read(next(mem), y) = (y[0:0] = 0ud1_1 ? data1 : data0);
+-- step 3: refinement 2
+TRANS next(x) != y -> read(next(mem), next(x)) = read(mem, next(x))
+-- TRANS xproph != y -> (read(next(mem), xproph) = read(mem, xproph))
+
+-- step 1: abstract
+-- INVARSPEC x[0:0] = 0ud1_1 -> READ(mem, x) = data1
+INVARSPEC x[0:0] = 0ud1_1 -> read(mem, x) = data1
+-- INVARSPEC xproph = x -> (x[0:0] = 0ud1_1 -> read(mem, x) = data1)
