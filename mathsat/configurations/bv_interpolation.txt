@@ -1,0 +1,16 @@
+# configuration settings for bit-vector interpolation.
+# See the paper
+# A. Griggio, "Effective Word-Level Interpolation for Software Verification",
+# FMCAD'11
+
+# settings that should not be changed
+interpolation = true
+theory.eq_propagation = false
+theory.bv.eager = false
+theory.euf.dyn_ack = 0
+
+# settings that might be changed
+preprocessor.simplification = 3
+theory.bv.bit_blast_mode = 0
+theory.bv.interpolation_mode = 0
+theory.euf.enabled = true
