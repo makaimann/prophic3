@@ -1,0 +1,24 @@
+-- NuXmv bug? Maybe I'm not supposed to compare sequences of writes that started with a const array
+-- but if I change the arrays to the 0..15 form, it finds the counter-example
+
+MODULE main
+
+VAR
+  mem0 : array word[4] of word[4];
+  mem1 : array word[4] of word[4];
+  x : unsigned word[4];
+  data0 : unsigned word[4];
+  data1 : unsigned word[4];
+
+INIT x = 0ud4_0
+
+INIT mem0 = CONSTARRAY(typeof(mem0), 0ud4_0)
+INIT mem1 = CONSTARRAY(typeof(mem1), 0ud4_1)
+
+TRANS next(x) = x + 0ud4_1
+
+TRANS next(mem0) = WRITE(mem0, x, data0)
+
+TRANS next(mem1) = WRITE(mem1, x, data1)
+
+INVARSPEC mem0 != mem1
