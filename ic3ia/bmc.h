@@ -48,6 +48,8 @@ public:
     int witness(std::vector<TermList> &out);
     ///< generate a counterexample trace for falsified properties
 
+    Unroller& get_unroller() { return un_; };
+
 private:
     void initialize();
     ///< initialization of the internal state
