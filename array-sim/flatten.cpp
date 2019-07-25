@@ -46,6 +46,7 @@ msat_term flatten_arrays(msat_env env, msat_term term)  {
 
           if (msat_term_is_array_write(e, rebuilt))
           {
+            // TODO: maybe auto-generate this name in another way? Need to be sure it doesn't clash with user-provided names
             std::string name = "arr_flatten_" + std::to_string(d->num_arrs);
             msat_decl decl_arr  = msat_declare_function(e, name.c_str(), _type);
             d->num_arrs++;
