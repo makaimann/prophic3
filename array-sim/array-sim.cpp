@@ -25,28 +25,35 @@ int main()
 
   msat_decl decl_out  = msat_declare_function(env, "out", bvtype4);
   msat_decl decl_outN = msat_declare_function(env, "outN", bvtype4);
-  msat_decl decl_data  = msat_declare_function(env, "data", bvtype4);
+  msat_decl decl_data = msat_declare_function(env, "data", bvtype4);
   msat_decl decl_dataN = msat_declare_function(env, "dataN", bvtype4);
   msat_decl decl_arr  = msat_declare_function(env, "arr", arrtype);
   msat_decl decl_arrN = msat_declare_function(env, "arrN", arrtype);
 
   msat_term out  = msat_make_constant(env, decl_out);
   msat_term outN = msat_make_constant(env, decl_outN);
-  msat_term data  = msat_make_constant(env, decl_data);
+  msat_term data = msat_make_constant(env, decl_data);
   msat_term dataN = msat_make_constant(env, decl_dataN);
   msat_term arr = msat_make_constant(env, decl_arr);
   msat_term arrN = msat_make_constant(env, decl_arrN);
 
-  statevars[out]  = outN;
+  statevars[out] = outN;
   statevars[data] = dataN;
-  statevars[arr]  = arrN;
+  statevars[arr] = arrN;
 
   msat_term zero = msat_make_bv_int_number(env, 0, 4);
   msat_term init = msat_make_eq(env, out, zero);
-  init = msat_make_and(env, init, msat_make_eq(env, data, msat_make_bv_int_number(env, 1, 4)));
+  init = msat_make_and(
+      env, init, msat_make_eq(env, data, msat_make_bv_int_number(env, 1, 4)));
   msat_term trans = msat_make_eq(env, outN, msat_make_bv_plus(env, out, msat_make_bv_int_number(env, 1, 4)));
-  trans = msat_make_and(env, trans, msat_make_eq(env, dataN, msat_make_bv_plus(env, data, msat_make_bv_int_number(env, 1, 4))));
-  trans = msat_make_and(env, trans, msat_make_eq(env, arrN, msat_make_array_write(env, arr, out, data)));
+  trans = msat_make_and(
+      env, trans,
+      msat_make_eq(
+          env, dataN,
+          msat_make_bv_plus(env, data, msat_make_bv_int_number(env, 1, 4))));
+  trans = msat_make_and(
+      env, trans,
+      msat_make_eq(env, arrN, msat_make_array_write(env, arr, out, data)));
   msat_term prop = msat_make_bv_ult(env, out, msat_make_bv_int_number(env, 10, 4));
   counter.initialize(statevars, init, trans, prop, false);
 
@@ -59,7 +66,7 @@ int main()
   std::vector<TermList> wit;
   bmc.witness(wit);
 
-  Unroller& un = bmc.get_unroller();
+  Unroller &un = bmc.get_unroller();
 
   for(size_t i = 0; i < wit.size(); ++i)
   {
