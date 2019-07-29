@@ -73,26 +73,37 @@ int main() {
   msat_term prop =
       msat_make_bv_ult(env, count, msat_make_bv_int_number(env, 10, 4));
 
-  cout << "before: " << msat_to_smtlib2_term(env, trans) << endl;
+  cout << "Before: " << endl;
+  cout << "\tinit := " << msat_to_smtlib2_term(env, init) << endl;
+  cout << "\ttrans := " << msat_to_smtlib2_term(env, trans) << endl;
+  cout << "\tprop := " << msat_to_smtlib2_term(env, prop) << endl;
+  cout << endl;
 
   TermList formulas{init, trans, prop};
 
   TermList arr_assignments = array_utils::flatten_arrays(env, formulas);
 
-  cout << "after: " << msat_to_smtlib2_term(env, formulas[1]) << endl;
+  cout << "After flattening: " << endl;
+  cout << "\tinit := " << msat_to_smtlib2_term(env, formulas[0]) << endl;
+  cout << "\ttrans := " << msat_to_smtlib2_term(env, formulas[1]) << endl;
+  cout << "\tprop := " << msat_to_smtlib2_term(env, formulas[2]) << endl;
+
+  cout << endl;
 
   cout << "Array assignments:" << endl;
   for (msat_term c : arr_assignments) {
     cout << msat_to_smtlib2_term(env, c) << endl;
   }
+  cout << endl;
 
   vector<TermSet> sets;
   sets = array_utils::abstract(env, formulas);
 
   cout << "After abstraction:" << endl;
-  cout << msat_to_smtlib2_term(env, formulas[0]) << endl;
-  cout << msat_to_smtlib2_term(env, formulas[1]) << endl;
-  cout << msat_to_smtlib2_term(env, formulas[2]) << endl;
+  cout << "\tinit := " << msat_to_smtlib2_term(env, formulas[0]) << endl;
+  cout << "\ttrans := " << msat_to_smtlib2_term(env, formulas[1]) << endl;
+  cout << "\tprop := " << msat_to_smtlib2_term(env, formulas[2]) << endl;
+  cout << endl;
 
   return 0;
 }
