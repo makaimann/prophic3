@@ -7,8 +7,8 @@ debug: _DEBUG=-g
 debug: array-flatten-test.out
 debug: array-sim.out
 
-array-flatten-test.out: array-flatten-test.cpp flatten.cpp $(IC3IA_SRC)
-	$(CXX) $(_DEBUG) -std=c++17 -Wl,-rpath,$(MSAT_HOME)/lib -I$(MSAT_HOME)/include -I$(IC3IA_HOME) -L$(MSAT_HOME)/lib -o array-flatten-test.out array-flatten-test.cpp flatten.cpp $(IC3IA_SRC) -lmathsat
+array-flatten-test.out: array-flatten-test.cpp array_abstract.cpp $(IC3IA_SRC)
+	$(CXX) $(_DEBUG) -std=c++17 -Wl,-rpath,$(MSAT_HOME)/lib -I$(MSAT_HOME)/include -I$(IC3IA_HOME) -L$(MSAT_HOME)/lib -o array-flatten-test.out array-flatten-test.cpp array_abstract.cpp $(IC3IA_SRC) -lmathsat
 
 array-sim.out: array-sim.cpp $(IC3IA_SRC)
 	$(CXX) $(_DEBUG) -std=c++17 -Wl,-rpath,$(MSAT_HOME)/lib -I$(MSAT_HOME)/include -I$(IC3IA_HOME) -L$(MSAT_HOME)/lib -o array-sim.out array-sim.cpp $(IC3IA_SRC) -lmathsat

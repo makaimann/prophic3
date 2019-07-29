@@ -1,4 +1,4 @@
-#include "flatten.h"
+#include "array_abstract.h"
 
 using namespace ic3ia;
 

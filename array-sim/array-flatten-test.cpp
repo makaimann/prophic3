@@ -8,7 +8,7 @@
 
 #include "bmc.h"
 
-#include "flatten.h"
+#include "array_abstract.h"
 
 using namespace std;
 using namespace ic3ia;
