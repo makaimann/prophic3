@@ -50,9 +50,25 @@ int main()
                                                                        data)));
   msat_term prop = msat_make_bv_ult(env, out, msat_make_bv_int_number(env, 10, 4));
 
-  cout << msat_to_smtlib2_term(env, trans) << endl;
+  cout << "before: " << msat_to_smtlib2_term(env, trans) << endl;
 
-  cout << msat_to_smtlib2_term(env, array_utils::flatten_arrays(env, trans)) << endl;
+  pair<msat_term, TermList> p = array_utils::flatten_arrays(env, trans);
+
+  msat_term new_trans = p.first;
+  TermList arr_assignments = p.second;
+  cout << "after: " << msat_to_smtlib2_term(env, new_trans) << endl;
+
+  cout << "Array assignments:" << endl;
+  for(msat_term c : arr_assignments)
+  {
+    cout << msat_to_smtlib2_term(env, c) << endl;
+  }
+
+  msat_type funtype = msat_get_function_type(env, &bvtype4, 1, bvtype4);
+  msat_decl read_decl = msat_declare_function(env, "read", funtype);
+  msat_term readout = msat_make_uf(env, read_decl, &out);
+
+  cout << "read(out) := " << msat_to_smtlib2_term(env, readout) << endl;
 
   return 0;
 }
