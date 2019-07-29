@@ -103,6 +103,8 @@ std::vector<TermSet> abstract(msat_env env, TermList &terms) {
     }
 
     if (!preorder) {
+
+
       msat_type _type = msat_term_get_type(t);
       msat_decl s = msat_term_get_decl(t);
 
@@ -114,7 +116,7 @@ std::vector<TermSet> abstract(msat_env env, TermList &terms) {
       // array / array pair
       //       that's what I'm currently doing
       //       I think it's okay not to as long as we have integer sorts
-      //       but maybe it would be easier for debugging anyway
+      //       but maybe it would be easier for debugging to keep it as-is?
 
       if (msat_is_array_type(e, _type, nullptr, nullptr)) {
         // turn arrays to integers
@@ -123,7 +125,8 @@ std::vector<TermSet> abstract(msat_env env, TermList &terms) {
         msat_decl decl_arrint =
             msat_declare_function(e, name.c_str(), msat_get_integer_type(e));
         d->cache[t] = msat_make_constant(e, decl_arrint);
-      } else if (msat_term_is_equal(e, t)) {
+      } else if (msat_term_is_equal(e, t) &&
+                 msat_is_array_type(e, msat_term_get_type(msat_term_get_arg(t, 0)), nullptr, nullptr)) {
         // replace array equality with uninterpreted functions
 
         msat_term lhs = msat_term_get_arg(t, 0);
@@ -134,36 +137,34 @@ std::vector<TermSet> abstract(msat_env env, TermList &terms) {
         msat_term rhs_cache = d->cache[rhs];
 
         // check if it's an array
-        if (msat_is_array_type(e, msat_term_get_type(lhs), nullptr, nullptr)) {
-          msat_decl eqfun;
-          if ((d->eqfuns.find(lhs) != d->eqfuns.end()) &&
-              ((*d->eqfuns.find(lhs)).second.find(rhs) !=
-               (*d->eqfuns.find(lhs)).second.end())) {
-            // cache hit
-            eqfun = (*d->eqfuns.find(lhs)).second[rhs];
-          } else {
-            msat_type param_types[2] = {msat_get_integer_type(e),
-                                        msat_get_integer_type(e)};
-            msat_type funtype = msat_get_function_type(e, &param_types[0], 2,
-                                                       msat_get_bool_type(e));
-            std::string name = "equal_";
-            name += msat_term_repr(lhs);
-            name += "_";
-            name += msat_term_repr(rhs);
-            eqfun = msat_declare_function(e, name.c_str(), funtype);
-            std::unordered_map<msat_term, msat_decl> m;
-            m[rhs] = eqfun;
-            d->eqfuns[lhs] = m;
-          }
-
-          msat_term cached_args[2] = {lhs_cache, rhs_cache};
-          msat_term eq_uf = msat_make_uf(e, eqfun, &cached_args[0]);
-          d->cache[t] = eq_uf;
-          d->equalities.insert(eq_uf);
+        msat_decl eqfun;
+        if ((d->eqfuns.find(lhs) != d->eqfuns.end()) &&
+            ((*d->eqfuns.find(lhs)).second.find(rhs) !=
+             (*d->eqfuns.find(lhs)).second.end())) {
+          // cache hit
+          eqfun = (*d->eqfuns.find(lhs)).second[rhs];
         } else {
-          d->cache[t] = t;
+          msat_type param_types[2] = {msat_get_integer_type(e),
+                                      msat_get_integer_type(e)};
+          msat_type funtype = msat_get_function_type(e, &param_types[0], 2,
+                                                     msat_get_bool_type(e));
+          std::string name = "equal_";
+          name += msat_term_repr(lhs);
+          name += "_";
+          name += msat_term_repr(rhs);
+          eqfun = msat_declare_function(e, name.c_str(), funtype);
+          std::unordered_map<msat_term, msat_decl> m;
+          m[rhs] = eqfun;
+          d->eqfuns[lhs] = m;
         }
+
+        msat_term cached_args[2] = {lhs_cache, rhs_cache};
+        msat_term eq_uf = msat_make_uf(e, eqfun, &cached_args[0]);
+        d->cache[t] = eq_uf;
+        d->equalities.insert(eq_uf);
       } else if (msat_term_is_array_read(e, t)) {
+        // replace array reads with uninterpreted functions
+
         msat_term arr = msat_term_get_arg(t, 0);
         msat_term arr_cache = d->cache[arr];
 
@@ -204,6 +205,7 @@ std::vector<TermSet> abstract(msat_env env, TermList &terms) {
         d->cache[t] = read_uf;
         d->reads.insert(read_uf);
       } else {
+        // rebuild the term
         size_t arity = msat_term_arity(t);
         msat_term res = t;
         if (arity > 0) {
