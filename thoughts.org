@@ -1,0 +1,36 @@
+* Identifying Broken Array Axioms
+** Have Array tracker for every array in the system
+** Need to examine a bmc trace and find missing axioms
+*** Plan is to enumerate axioms
+**** 3 kinds
+***** one-step
+***** two-step
+***** multi-time
+*** 3 kinds of refinements
+**** Regular bmc to k <-- probably going to use this one
+**** bmc to k with predicate assignments
+**** bmc to k with concrete model
+*** abstraction procedure we currently have:
+**** flatten arrays to remove writes
+**** replace all arrays with integers
+**** use to_int on all indices, and keep track of them
+**** replace array equality with uf and keep a list of them to use for axioms
+**** replace reads with uf and keep a list of them to use for axioms
+** Flatten arrays
+*** when you flatten, create a new TS and populate it
+*** as you're flattening need to decide if fresh symbols are state variables or inputs
+**** if it's only in trans, it can be an input
+**** if it's in init or prop, it has to be a state variable (because init and prop are only over state vars)
+*** for modularity, it should include all the stores at the top-level
+** Abstract
+*** create a new TS and populate it
+*** top-level array equalities should just be removed from formula (but kept somewhere for enumerating axioms)
+**** use them for generating lemmas
+**** an optimization is to have a top-level propagator in case there are any equalities without stores
+** Always use integer indices, and use lambda as an int
+*** we have a general idea why this is sound
+*** Say the original universal instantiation is a conjunction over indices, Fi, and then there's Fl over lambda
+**** if Fi is unsat, then Fl can't make it sat
+**** if Fi is sat, then lambda can always be chosen to be some other integer to make Fl sat as well
+***** need to think on this a bit more and be completely sure: gets tricky with universal quantifiers (e.g. constant arrays) being compared
+**** lambda is constrained to be different from all other indices (which is why it should be an integer)
