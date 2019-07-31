@@ -158,21 +158,31 @@ TransitionSystem flatten_arrays(msat_env env, TransitionSystem & ts) {
   return new_ts;
 }
 
-ArrayInfo abstract_arrays(msat_env env, TermList &terms) {
+std::pair<msat_term, ArrayInfo> abstract_arrays_helper(msat_env env,
+                                                       msat_term term,
+                                                       bool remove_top_level_arr_eq,
+                                                       TermSet & indices,
+                                                       TermMap & new_state_vars,
+                                                       TermSet & removed_state_vars
+                                                ) {
   struct Data {
     TermMap &cache;
     TermList args;
     TermSet indices;
     TermSet equalities;
     TermSet reads;
+    TermMap & new_state_vars;     // passed from inputs, persists beyond scope of this function
+    TermSet & removed_state_vars; // passed from inputs, persists beyond scope of this function
     std::unordered_map<msat_term, std::unordered_map<msat_term, msat_decl>>
         &eqfuns;
     std::unordered_map<msat_term, msat_decl> &readfuns;
     Data(TermMap &c,
+         TermMap &nsv,
+         TermSet &rsv,
          std::unordered_map<msat_term, std::unordered_map<msat_term, msat_decl>>
              &e,
          std::unordered_map<msat_term, msat_decl> &r)
-        : cache(c), eqfuns(e), readfuns(r) {}
+        : cache(c), eqfuns(e), readfuns(r), new_state_vars(nsv), removed_state_vars(rsv) {}
   };
 
   auto visit = [](msat_env e, msat_term t, int preorder,
@@ -185,8 +195,6 @@ ArrayInfo abstract_arrays(msat_env env, TermList &terms) {
     }
 
     if (!preorder) {
-
-
       msat_type _type = msat_term_get_type(t);
       msat_decl s = msat_term_get_decl(t);
 
@@ -206,7 +214,13 @@ ArrayInfo abstract_arrays(msat_env env, TermList &terms) {
         name += "_int";
         msat_decl decl_arrint =
             msat_declare_function(e, name.c_str(), msat_get_integer_type(e));
-        d->cache[t] = msat_make_constant(e, decl_arrint);
+        msat_term arr_int = msat_make_constant(e, decl_arrint);
+        msat_decl decl_arrintN =
+          msat_declare_function(e, (name + "N").c_str(), msat_get_integer_type(e));
+        msat_term arr_intN = msat_make_constant(e, decl_arrintN);
+        d->cache[t] = arr_int;
+        d->new_state_vars[arr_int] = arr_intN;
+        d->removed_state_vars.insert(t);
       } else if (is_array_equality(e, t)) {
         // replace array equality with uninterpreted functions
 
@@ -312,75 +326,82 @@ ArrayInfo abstract_arrays(msat_env env, TermList &terms) {
   std::unordered_map<msat_term, msat_decl> readfuns;
 
   ArrayInfo ainf;
+  Data data(cache, new_state_vars, removed_state_vars, eqfuns, readfuns);
 
-  assert(terms.size() == 3); // expecting init, trans, prop
-  for (size_t i = 0; i < 3; ++i)
+  msat_term res = msat_make_true(env);
+  if (remove_top_level_arr_eq)
   {
-
-    // create a new Data object each time to clear the tracked sets
-    // note: the maps are the same, because we don't want to clear
-    //       the cache or the stored uninterpreted functions
-    Data data(cache, eqfuns, readfuns);
-
-    TermSet * arr_equalities;
-    if (i == 0)
+    for(auto t : conjunctive_partition(env, term))
     {
-      arr_equalities = &ainf.init_equalities;
-    }
-    else if (i == 1)
-    {
-      arr_equalities = &ainf.trans_equalities;
-    }
-
-    msat_term t = terms[i];
-    msat_term res = msat_make_true(env);
-
-    for (auto tt : conjunctive_partition(env, t))
-    {
-      if (i < 2 && is_array_equality(env, tt)) // for everything except property
+      // TODO: check that this is right
+      //       Even after flattening, I think we need to check that it only includes two array symbols
+      //       This could accidentally remove some equalities that it shouldn't
+      if(is_array_equality(env, t))
       {
-        arr_equalities->insert(tt);
+        ainf.equalities.insert(t);
       }
       else
       {
-        msat_visit_term(env, tt, visit, &data);
-        res = msat_make_and(env, res, cache[tt]);
+        msat_visit_term(env, t, visit, &data);
+        res = msat_make_and(env, res, cache[t]);
       }
     }
-
-    // modify the vector in-place
-    terms[i] = res;
-
-    // update the ArrayInfo struct
-    for(msat_term idx : data.indices)
-    {
-      ainf.indices.insert(idx);
-    }
-
-    if (i == 0)
-    {
-      ainf.init_eq_ufs = data.equalities;
-      ainf.init_read_ufs = data.reads;
-    }
-    else if (i == 1)
-    {
-      ainf.trans_eq_ufs = data.equalities;
-      ainf.trans_read_ufs = data.reads;
-    }
-    else
-    {
-      ainf.prop_eq_ufs = data.equalities;
-      ainf.prop_read_ufs = data.reads;
-    }
-
+  }
+  else
+  {
+    msat_visit_term(env, term, visit, &data);
+    res = cache[term];
   }
 
-  // // modify the vector in-place
-  // for (size_t i = 0; i < terms.size(); ++i) {
-  //   terms[i] = cache[terms[i]];
-  // }
+  ainf.eq_ufs = data.equalities;
+  ainf.read_ufs = data.reads;
 
-  return ainf;
+  // add to the set of array indices
+  for (auto idx : data.indices)
+  {
+    indices.insert(idx);
+  }
+
+  return std::pair<msat_term, ArrayInfo>(res, ainf);
+
+}
+
+std::pair<TransitionSystem, AbstractionCollateral> abstract_arrays(TransitionSystem & ts)
+{
+  msat_env env = ts.get_env();
+  TransitionSystem new_ts(env);
+  TermSet indices;
+
+  TermMap new_state_vars;
+  TermSet removed_state_vars;
+
+
+  std::pair<msat_term, ArrayInfo> p = abstract_arrays_helper(env, ts.init(), true, indices, new_state_vars, removed_state_vars);
+  msat_term new_init = p.first;
+  ArrayInfo init_info = p.second;
+
+  p = abstract_arrays_helper(env, ts.trans(), true, indices, new_state_vars, removed_state_vars);
+  msat_term new_trans = p.first;
+  ArrayInfo trans_info = p.second;
+
+  p = abstract_arrays_helper(env, ts.prop(), true, indices, new_state_vars, removed_state_vars);
+  msat_term new_prop = p.first;
+  ArrayInfo prop_info = p.second;
+
+  // add all old state elements unless they've been removed
+  for (auto sv : ts.statevars())
+  {
+    if (removed_state_vars.find(sv) == removed_state_vars.end())
+    {
+      new_state_vars[sv] = ts.next(sv);
+    }
+  }
+
+  new_ts.initialize(new_state_vars, new_init, new_trans, new_prop, ts.live_prop());
+
+  AbstractionCollateral ac(indices, init_info, trans_info, prop_info);
+
+  return std::pair<TransitionSystem, AbstractionCollateral>(new_ts, ac);
 }
 
 } // namespace array_utils
