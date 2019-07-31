@@ -5,8 +5,64 @@ using namespace ic3ia;
 
 namespace array_utils {
 
+TermList conjunctive_partition(msat_env env, msat_term term)
+{
+  if (!msat_term_is_and(env, term))
+  {
+    return TermList{term};
+  }
+  else
+  {
+    TermList partition;
+    TermSet visited;
+    TermList to_process({term});
+    while (!to_process.empty())
+    {
+      msat_term t = to_process.back();
+      to_process.pop_back();
+
+      if (visited.find(t) != visited.end())
+      {
+        // cache hit
+        continue;
+      }
+
+      if (!msat_term_is_and(env, t))
+      {
+        // add to partition
+        partition.push_back(t);
+      }
+      else
+      {
+        // split on the and
+        for(size_t i = 0; i < msat_term_arity(t); ++i)
+        {
+          to_process.push_back(msat_term_get_arg(t, i));
+        }
+      }
+    }
+
+    return partition;
+  }
+}
+
+// TODO: Figure out if this pattern is all we want
+//       in abstraction part, should we only remove
+//       equalities between array symbols (with only
+//       up to one store?)
+bool is_array_equality(msat_env env, msat_term term)
+{
+  if (!msat_term_is_equal(env, term))
+  {
+    return false;
+  }
+  // assuming term is well-typed i.e. don't need to check both
+  msat_type _type = msat_term_get_type(msat_term_get_arg(term, 0));
+  return msat_is_array_type(env, _type, nullptr, nullptr);
+}
+
 // based on ic3ia/utils.h::apply_substitution
-TermList flatten_arrays(msat_env env, TermList &terms) {
+void flatten_arrays(msat_env env, TermList &terms) {
   struct Data {
     TermMap &cache;
     TermList args;
@@ -65,18 +121,27 @@ TermList flatten_arrays(msat_env env, TermList &terms) {
   Data data(cache);
 
   for (auto t : terms) {
+
     msat_visit_term(env, t, visit, &data);
   }
 
   // modify the vector in-place
   for (size_t i = 0; i < terms.size(); ++i) {
-    terms[i] = cache[terms[i]];
+    msat_term new_term = cache[terms[i]];
+    if (i == 1)
+    {
+      // this one is trans
+      for (auto a : data.arr_assignments)
+      {
+        new_term = msat_make_and(env, new_term, a);
+      }
+    }
+    terms[i] = new_term;
   }
 
-  return data.arr_assignments;
 }
 
-std::vector<TermSet> abstract(msat_env env, TermList &terms) {
+ArrayInfo abstract_arrays(msat_env env, TermList &terms) {
   struct Data {
     TermMap &cache;
     TermList args;
@@ -125,8 +190,7 @@ std::vector<TermSet> abstract(msat_env env, TermList &terms) {
         msat_decl decl_arrint =
             msat_declare_function(e, name.c_str(), msat_get_integer_type(e));
         d->cache[t] = msat_make_constant(e, decl_arrint);
-      } else if (msat_term_is_equal(e, t) &&
-                 msat_is_array_type(e, msat_term_get_type(msat_term_get_arg(t, 0)), nullptr, nullptr)) {
+      } else if (is_array_equality(e, t)) {
         // replace array equality with uninterpreted functions
 
         msat_term lhs = msat_term_get_arg(t, 0);
@@ -229,19 +293,77 @@ std::vector<TermSet> abstract(msat_env env, TermList &terms) {
   std::unordered_map<msat_term, std::unordered_map<msat_term, msat_decl>>
       eqfuns;
   std::unordered_map<msat_term, msat_decl> readfuns;
-  Data data(cache, eqfuns, readfuns);
 
-  for (auto t : terms) {
-    msat_visit_term(env, t, visit, &data);
+  ArrayInfo ainf;
+
+  assert(terms.size() == 3); // expecting init, trans, prop
+  for (size_t i = 0; i < 3; ++i)
+  {
+
+    // create a new Data object each time to clear the tracked sets
+    // note: the maps are the same, because we don't want to clear
+    //       the cache or the stored uninterpreted functions
+    Data data(cache, eqfuns, readfuns);
+
+    TermSet * arr_equalities;
+    if (i == 0)
+    {
+      arr_equalities = &ainf.init_equalities;
+    }
+    else if (i == 1)
+    {
+      arr_equalities = &ainf.trans_equalities;
+    }
+
+    msat_term t = terms[i];
+    msat_term res = msat_make_true(env);
+
+    for (auto tt : conjunctive_partition(env, t))
+    {
+      if (i < 2 && is_array_equality(env, tt)) // for everything except property
+      {
+        arr_equalities->insert(tt);
+      }
+      else
+      {
+        msat_visit_term(env, tt, visit, &data);
+        res = msat_make_and(env, res, cache[tt]);
+      }
+    }
+
+    // modify the vector in-place
+    terms[i] = res;
+
+    // update the ArrayInfo struct
+    for(msat_term idx : data.indices)
+    {
+      ainf.indices.insert(idx);
+    }
+
+    if (i == 0)
+    {
+      ainf.init_eq_ufs = data.equalities;
+      ainf.init_read_ufs = data.reads;
+    }
+    else if (i == 1)
+    {
+      ainf.trans_eq_ufs = data.equalities;
+      ainf.trans_read_ufs = data.reads;
+    }
+    else
+    {
+      ainf.prop_eq_ufs = data.equalities;
+      ainf.prop_read_ufs = data.reads;
+    }
+
   }
 
-  // modify the vector in-place
-  for (size_t i = 0; i < terms.size(); ++i) {
-    terms[i] = cache[terms[i]];
-  }
+  // // modify the vector in-place
+  // for (size_t i = 0; i < terms.size(); ++i) {
+  //   terms[i] = cache[terms[i]];
+  // }
 
-  std::vector<TermSet> sets = {data.indices, data.equalities, data.reads};
-  return sets;
+  return ainf;
 }
 
 } // namespace array_utils

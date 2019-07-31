@@ -81,8 +81,7 @@ int main() {
 
   TermList formulas{init, trans, prop};
 
-  TermList arr_assignments = array_utils::flatten_arrays(env, formulas);
-
+  array_utils::flatten_arrays(env, formulas);
   cout << "After flattening: " << endl;
   cout << "\tinit := " << msat_to_smtlib2_term(env, formulas[0]) << endl;
   cout << "\ttrans := " << msat_to_smtlib2_term(env, formulas[1]) << endl;
@@ -90,20 +89,38 @@ int main() {
 
   cout << endl;
 
-  cout << "Array assignments:" << endl;
-  for (msat_term c : arr_assignments) {
-    cout << msat_to_smtlib2_term(env, c) << endl;
-  }
-  cout << endl;
-
-  vector<TermSet> sets;
-  sets = array_utils::abstract(env, formulas);
+  array_utils::ArrayInfo ainf = array_utils::abstract_arrays(env, formulas);
 
   cout << "After abstraction:" << endl;
   cout << "\tinit := " << msat_to_smtlib2_term(env, formulas[0]) << endl;
   cout << "\ttrans := " << msat_to_smtlib2_term(env, formulas[1]) << endl;
   cout << "\tprop := " << msat_to_smtlib2_term(env, formulas[2]) << endl;
   cout << endl;
+
+  cout << "ArrayInfo:" << endl;
+  cout << "indices:" << endl;
+  for (auto i : ainf.indices)
+  {
+    cout << "\t" << msat_to_smtlib2_term(env, i) << endl;
+  }
+  cout << "trans_equalities:" << endl;
+  for (auto c : ainf.trans_equalities)
+  {
+    cout << "\t" << msat_to_smtlib2_term(env, c) << endl;
+  }
+  cout << "trans_eq_ufs:" << endl;
+  for (auto c : ainf.trans_eq_ufs)
+  {
+    cout << "\t" << msat_to_smtlib2_term(env, c) << endl;
+  }
+  cout << "trans_read_ufs:" << endl;
+  for (auto c : ainf.trans_read_ufs)
+  {
+    cout << "\t" << msat_to_smtlib2_term(env, c) << endl;
+  }
+
+
+
 
   return 0;
 }
