@@ -62,13 +62,14 @@ bool is_array_equality(msat_env env, msat_term term)
 }
 
 // based on ic3ia/utils.h::apply_substitution
-void flatten_arrays(msat_env env, TermList &terms) {
+TransitionSystem flatten_arrays(msat_env env, TransitionSystem & ts) {
   struct Data {
     TermMap &cache;
     TermList args;
     TermList arr_assignments;
+    TermMap &new_state_vars;
     int num_arrs;
-    Data(TermMap &c) : cache(c), num_arrs(0) {}
+    Data(TermMap &c, TermMap &m) : cache(c), new_state_vars(m), num_arrs(0) {}
   };
 
   auto visit = [](msat_env e, msat_term t, int preorder,
@@ -105,7 +106,11 @@ void flatten_arrays(msat_env env, TermList &terms) {
         msat_decl decl_arr = msat_declare_function(e, name.c_str(), _type);
         d->num_arrs++;
         res = msat_make_constant(e, decl_arr);
+        // TODO: optimization -- if only appears in trans, don't make it a state variable
+        msat_decl decl_arrN = msat_declare_function(e, (name + "N").c_str(), _type);
+        msat_term resN = msat_make_constant(e, decl_arrN);
         msat_term arr_eq = msat_make_equal(e, res, rebuilt);
+        d->new_state_vars[res] = resN;
         d->arr_assignments.push_back(arr_eq);
       } else {
         res = rebuilt;
@@ -118,27 +123,39 @@ void flatten_arrays(msat_env env, TermList &terms) {
   };
 
   TermMap cache;
-  Data data(cache);
+  TermMap new_state_vars;
+  Data data(cache, new_state_vars);
 
-  for (auto t : terms) {
+  msat_visit_term(env, ts.init(), visit, &data);
+  msat_visit_term(env, ts.prop(), visit, &data);
+  // important that trans comes last. if an array store only appears
+  // in trans, we can make the new array symbol an input!
+  msat_visit_term(env, ts.trans(), visit, &data);
 
-    msat_visit_term(env, t, visit, &data);
+  msat_term new_init = cache[ts.init()];
+  msat_term new_prop = cache[ts.prop()];
+  msat_term new_trans = cache[ts.trans()];
+
+  // update trans with the array assignments
+  for (auto a : data.arr_assignments)
+  {
+    new_trans = msat_make_and(env, new_trans, a);
   }
 
-  // modify the vector in-place
-  for (size_t i = 0; i < terms.size(); ++i) {
-    msat_term new_term = cache[terms[i]];
-    if (i == 1)
-    {
-      // this one is trans
-      for (auto a : data.arr_assignments)
-      {
-        new_term = msat_make_and(env, new_term, a);
-      }
-    }
-    terms[i] = new_term;
+  // add the original state variables back in
+  // need to be given upfront for new_ts.initialize to work correctly
+  for(auto sv : ts.statevars())
+  {
+    new_state_vars[sv] = ts.next(sv);
   }
 
+  TransitionSystem new_ts(env);
+  new_ts.initialize(new_state_vars,
+                    new_init,
+                    new_trans,
+                    new_prop,
+                    ts.live_prop());
+  return new_ts;
 }
 
 ArrayInfo abstract_arrays(msat_env env, TermList &terms) {

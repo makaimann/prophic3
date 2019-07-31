@@ -73,54 +73,54 @@ int main() {
   msat_term prop =
       msat_make_bv_ult(env, count, msat_make_bv_int_number(env, 10, 4));
 
+  // initialize transition system
+  counter.initialize(statevars, init, trans, prop, false);
+
   cout << "Before: " << endl;
   cout << "\tinit := " << msat_to_smtlib2_term(env, init) << endl;
   cout << "\ttrans := " << msat_to_smtlib2_term(env, trans) << endl;
   cout << "\tprop := " << msat_to_smtlib2_term(env, prop) << endl;
   cout << endl;
 
-  TermList formulas{init, trans, prop};
+  // flatten the transition system
+  counter = array_utils::flatten_arrays(env, counter);
 
-  array_utils::flatten_arrays(env, formulas);
   cout << "After flattening: " << endl;
-  cout << "\tinit := " << msat_to_smtlib2_term(env, formulas[0]) << endl;
-  cout << "\ttrans := " << msat_to_smtlib2_term(env, formulas[1]) << endl;
-  cout << "\tprop := " << msat_to_smtlib2_term(env, formulas[2]) << endl;
+  cout << "\tinit := " << msat_to_smtlib2_term(env, counter.init()) << endl;
+  cout << "\ttrans := " << msat_to_smtlib2_term(env, counter.trans()) << endl;
+  cout << "\tprop := " << msat_to_smtlib2_term(env, counter.prop()) << endl;
 
   cout << endl;
 
-  array_utils::ArrayInfo ainf = array_utils::abstract_arrays(env, formulas);
+  // array_utils::ArrayInfo ainf = array_utils::abstract_arrays(env, formulas);
 
-  cout << "After abstraction:" << endl;
-  cout << "\tinit := " << msat_to_smtlib2_term(env, formulas[0]) << endl;
-  cout << "\ttrans := " << msat_to_smtlib2_term(env, formulas[1]) << endl;
-  cout << "\tprop := " << msat_to_smtlib2_term(env, formulas[2]) << endl;
-  cout << endl;
+  // cout << "After abstraction:" << endl;
+  // cout << "\tinit := " << msat_to_smtlib2_term(env, formulas[0]) << endl;
+  // cout << "\ttrans := " << msat_to_smtlib2_term(env, formulas[1]) << endl;
+  // cout << "\tprop := " << msat_to_smtlib2_term(env, formulas[2]) << endl;
+  // cout << endl;
 
-  cout << "ArrayInfo:" << endl;
-  cout << "indices:" << endl;
-  for (auto i : ainf.indices)
-  {
-    cout << "\t" << msat_to_smtlib2_term(env, i) << endl;
-  }
-  cout << "trans_equalities:" << endl;
-  for (auto c : ainf.trans_equalities)
-  {
-    cout << "\t" << msat_to_smtlib2_term(env, c) << endl;
-  }
-  cout << "trans_eq_ufs:" << endl;
-  for (auto c : ainf.trans_eq_ufs)
-  {
-    cout << "\t" << msat_to_smtlib2_term(env, c) << endl;
-  }
-  cout << "trans_read_ufs:" << endl;
-  for (auto c : ainf.trans_read_ufs)
-  {
-    cout << "\t" << msat_to_smtlib2_term(env, c) << endl;
-  }
-
-
-
+  // cout << "ArrayInfo:" << endl;
+  // cout << "indices:" << endl;
+  // for (auto i : ainf.indices)
+  // {
+  //   cout << "\t" << msat_to_smtlib2_term(env, i) << endl;
+  // }
+  // cout << "trans_equalities:" << endl;
+  // for (auto c : ainf.trans_equalities)
+  // {
+  //   cout << "\t" << msat_to_smtlib2_term(env, c) << endl;
+  // }
+  // cout << "trans_eq_ufs:" << endl;
+  // for (auto c : ainf.trans_eq_ufs)
+  // {
+  //   cout << "\t" << msat_to_smtlib2_term(env, c) << endl;
+  // }
+  // cout << "trans_read_ufs:" << endl;
+  // for (auto c : ainf.trans_read_ufs)
+  // {
+  //   cout << "\t" << msat_to_smtlib2_term(env, c) << endl;
+  // }
 
   return 0;
 }

@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "utils.h"
+#include "ts.h"
 
 namespace array_utils {
 
@@ -47,7 +48,7 @@ ic3ia::TermList conjunctive_partition(msat_env env, msat_term term);
  * constraints that contain only a single store. Those are to be used for enumerating
  * lemmas.
  */
-void flatten_arrays(msat_env env, ic3ia::TermList &terms);
+ic3ia::TransitionSystem flatten_arrays(msat_env env, ic3ia::TransitionSystem & ts);
 
 /**
  * Replaces reads and array equalities with uninterpreted functions
