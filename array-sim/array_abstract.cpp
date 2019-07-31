@@ -384,7 +384,9 @@ std::pair<TransitionSystem, AbstractionCollateral> abstract_arrays(TransitionSys
   msat_term new_trans = p.first;
   ArrayInfo trans_info = p.second;
 
-  p = abstract_arrays_helper(env, ts.prop(), true, indices, new_state_vars, removed_state_vars);
+  // don't want to remove top-level equalities in property
+  // want to have a uf to refer to when adding lemmas
+  p = abstract_arrays_helper(env, ts.prop(), false, indices, new_state_vars, removed_state_vars);
   msat_term new_prop = p.first;
   ArrayInfo prop_info = p.second;
 
