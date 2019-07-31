@@ -110,9 +110,14 @@ int main() {
 
   cout << "trans ArrayInfo:" << endl;
   cout << "equalities:" << endl;
-  for (auto c : ac.trans_info.equalities)
+  for (auto eq : ac.trans_info.equalities)
   {
-    cout << "\t" << msat_to_smtlib2_term(env, c) << endl;
+    cout << "\t" << eq << endl;
+  }
+  cout << "store equalities:" << endl;
+  for (auto seq : ac.trans_info.store_equalities)
+  {
+    cout << "\t" << seq << endl;
   }
   cout << "eq_ufs:" << endl;
   for (auto c : ac.trans_info.eq_ufs)

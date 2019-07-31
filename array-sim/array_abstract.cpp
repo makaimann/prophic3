@@ -5,6 +5,20 @@ using namespace ic3ia;
 
 namespace array_utils {
 
+std::ostream & operator<<(std::ostream & output, const AbstractArrayEq ae)
+{
+  //output << "test";
+  output << msat_term_repr(ae.arr0) << " = " << msat_term_repr(ae.arr1);
+  return output;
+}
+
+std::ostream & operator<<(std::ostream & output, const AbstractArrayEqStore aes)
+{
+  output << msat_term_repr(aes.arr0) << " = ABS_STORE(" << msat_term_repr(aes.arr1)
+         << ", " << msat_term_repr(aes.idx) << ", " << msat_term_repr(aes.val) << ")";
+  return output;
+}
+
 TermList conjunctive_partition(msat_env env, msat_term term)
 {
   if (!msat_term_is_and(env, term))
@@ -55,6 +69,31 @@ bool is_array_equality(msat_env env, msat_term term)
   // assuming term is well-typed i.e. don't need to check both
   msat_type _type = msat_term_get_type(msat_term_get_arg(term, 0));
   return msat_is_array_type(env, _type, nullptr, nullptr);
+}
+
+msat_term idx_to_int(msat_env env, msat_term term)
+{
+  msat_type _type = msat_term_get_type(term);
+  msat_term res;
+
+  if (msat_is_bv_type(env, _type, nullptr))
+  {
+    res = msat_make_int_from_ubv(env, term);
+  }
+  else if (msat_is_bool_type(env, _type))
+  {
+    res = msat_make_term_ite(env, term, msat_make_int_number(env, 1), msat_make_int_number(env, 0));
+  }
+  else if (msat_is_integer_type(env, _type))
+  {
+    res = term;
+  }
+  else
+  {
+    // TODO: Create a custom exception with a message
+    throw "Unhandled type";
+  }
+  return res;
 }
 
 // based on ic3ia/utils.h::apply_substitution
@@ -261,15 +300,8 @@ std::pair<msat_term, ArrayInfo> abstract_arrays_helper(msat_env env,
 
         // turn idx into an integer
         msat_term idx = msat_term_get_arg(t, 1);
-        msat_term int_idx = d->cache[idx];
-        msat_type int_idx_type = msat_term_get_type(int_idx);
-        if (!msat_is_integer_type(e, int_idx_type)) {
-          if (!msat_is_bv_type(e, int_idx_type, nullptr)) {
-            throw std::runtime_error("unsupported array index");
-          }
-          int_idx = msat_make_int_from_ubv(e, int_idx);
-          d->indices.insert(int_idx);
-        }
+        msat_term int_idx = idx_to_int(e, d->cache[idx]);
+        d->indices.insert(int_idx);
 
         msat_type arridxtype;
         msat_type arrelemtype;
@@ -324,6 +356,7 @@ std::pair<msat_term, ArrayInfo> abstract_arrays_helper(msat_env env,
   ArrayInfo ainf;
   Data data(cache, new_state_vars, removed_state_vars, eqfuns, readfuns);
 
+  TermSet array_equalities;
   msat_term res = msat_make_true(env);
   if (remove_top_level_arr_eq)
   {
@@ -331,7 +364,10 @@ std::pair<msat_term, ArrayInfo> abstract_arrays_helper(msat_env env,
     {
       if(is_array_equality(env, t))
       {
-        ainf.equalities.insert(t);
+        // visit children
+        msat_visit_term(env, msat_term_get_arg(t, 0), visit, &data);
+        msat_visit_term(env, msat_term_get_arg(t, 1), visit, &data);
+        array_equalities.insert(t);
       }
       else
       {
@@ -339,11 +375,45 @@ std::pair<msat_term, ArrayInfo> abstract_arrays_helper(msat_env env,
         res = msat_make_and(env, res, cache[t]);
       }
     }
+
+    // now sort (by whether or not they involve a store) and save the abstracted array equality lemmas
+    msat_term lhs;
+    msat_term rhs;
+    for(auto eq : array_equalities)
+    {
+      assert(msat_term_is_equal(env, eq));
+      lhs = msat_term_get_arg(eq, 0);
+      rhs = msat_term_get_arg(eq, 1);
+
+      if (msat_term_is_array_write(env, lhs))
+      {
+        assert(!msat_term_is_array_write(env, rhs));
+        msat_term arr1 = cache.at(msat_term_get_arg(lhs, 0));
+        msat_term idx  = idx_to_int(env, cache.at(msat_term_get_arg(lhs, 1)));
+        msat_term val  = cache.at(msat_term_get_arg(lhs, 2));
+        ainf.store_equalities.push_back(AbstractArrayEqStore(cache.at(rhs), arr1, idx, val));
+      }
+      else if (msat_term_is_array_write(env, rhs))
+      {
+        assert(!msat_term_is_array_write(env, lhs));
+        msat_term arr1 = cache.at(msat_term_get_arg(rhs, 0));
+        msat_term idx  = cache.at(msat_term_get_arg(rhs, 1));
+        msat_term val  = cache.at(msat_term_get_arg(rhs, 2));
+        ainf.store_equalities.push_back(AbstractArrayEqStore(cache.at(lhs), arr1, idx, val));
+      }
+      else
+      {
+        assert(msat_is_array_type(env, msat_term_get_type(lhs), nullptr, nullptr) &&
+               msat_is_array_type(env, msat_term_get_type(rhs), nullptr, nullptr));
+
+        ainf.equalities.push_back(AbstractArrayEq(cache.at(lhs), cache.at(rhs)));
+      }
+    }
   }
   else
   {
     msat_visit_term(env, term, visit, &data);
-    res = cache[term];
+    res = cache.at(term);
   }
 
   ainf.eq_ufs = data.equalities;
