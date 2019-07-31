@@ -46,10 +46,6 @@ TermList conjunctive_partition(msat_env env, msat_term term)
   }
 }
 
-// TODO: Figure out if this pattern is all we want
-//       in abstraction part, should we only remove
-//       equalities between array symbols (with only
-//       up to one store?)
 bool is_array_equality(msat_env env, msat_term term)
 {
   if (!msat_term_is_equal(env, term))
@@ -333,9 +329,6 @@ std::pair<msat_term, ArrayInfo> abstract_arrays_helper(msat_env env,
   {
     for(auto t : conjunctive_partition(env, term))
     {
-      // TODO: check that this is right
-      //       Even after flattening, I think we need to check that it only includes two array symbols
-      //       This could accidentally remove some equalities that it shouldn't
       if(is_array_equality(env, t))
       {
         ainf.equalities.insert(t);
