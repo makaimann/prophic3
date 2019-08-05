@@ -76,7 +76,12 @@ int main() {
                                      ));
 
   msat_term prop =
-      msat_make_bv_ult(env, count, msat_make_bv_int_number(env, 10, 4));
+      msat_make_bv_ult(env,
+                       msat_make_array_read(env, arr, count),
+                       msat_make_bv_int_number(env, 10, 4));
+  // just for testing that eq_ufs are stored correctly
+  // msat_term prop =
+  //   msat_make_eq(env, arr, arrN);
 
   // initialize transition system
   counter.initialize(statevars, init, trans, prop, false);
@@ -133,7 +138,15 @@ int main() {
   cout << "eq_ufs:" << endl;
   for (auto c : ac.trans_info.eq_ufs)
   {
-    cout << "\t" << msat_to_smtlib2_term(env, c) << endl;
+    cout << "\t" << msat_to_smtlib2_term(env, c.first) << " : "
+         << msat_to_smtlib2_term(env, c.second) << endl;
+  }
+
+  cout << "prop eq_ufs:" << endl;
+  for (auto c : ac.prop_info.eq_ufs)
+  {
+    cout << "\t" << msat_to_smtlib2_term(env, c.first) << " : "
+         << msat_to_smtlib2_term(env, c.second) << endl;
   }
 
   return 0;

@@ -59,7 +59,7 @@ struct ArrayInfo
   // constant array equalities
   std::vector<AbstractConstArrayEq> const_array_equalities;
   // equality uf applications
-  ic3ia::TermSet eq_ufs;
+  ic3ia::TermMap eq_ufs;
   /* // read uf applications   <--- I don't think we need these after all.
                                     nothing to do with them anyway
                                     all lemmas start from equalities/stores

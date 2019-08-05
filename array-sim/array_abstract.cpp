@@ -209,7 +209,7 @@ std::pair<msat_term, ArrayInfo> abstract_arrays_helper(msat_env env,
     TermMap &cache;
     TermList args;
     TermSet indices;
-    TermSet equalities;
+    TermMap eq_ufs;
     TermMap & new_state_vars;     // passed from inputs, persists beyond scope of this function
     TermSet & removed_state_vars; // passed from inputs, persists beyond scope of this function
     std::unordered_map<msat_term, std::unordered_map<msat_term, msat_decl>> // only used for caching
@@ -295,7 +295,21 @@ std::pair<msat_term, ArrayInfo> abstract_arrays_helper(msat_env env,
         msat_term cached_args[2] = {lhs_cache, rhs_cache};
         msat_term eq_uf = msat_make_uf(e, eqfun, &cached_args[0]);
         d->cache[t] = eq_uf;
-        d->equalities.insert(eq_uf);
+        // TODO
+        // Create a witness index for array dis-equalities (if the UF evaluates false)
+        std::string name = "witness_";
+        name += msat_term_repr(lhs);
+        name += "_";
+        name += msat_term_repr(rhs);
+        msat_decl decl_witness =
+          msat_declare_function(e, name.c_str(), msat_get_integer_type(e));
+        msat_term witness = msat_make_constant(e, decl_witness);
+        msat_decl decl_witnessN =
+          msat_declare_function(e, (name + "N").c_str(), msat_get_integer_type(e));
+        msat_term witnessN = msat_make_constant(e, decl_witnessN);
+        d->eq_ufs[eq_uf] = witness;
+        // update state variables
+        d->new_state_vars[witness] = witnessN;
       } else if (msat_term_is_array_read(e, t)) {
         // replace array reads with uninterpreted functions
 
@@ -431,7 +445,7 @@ std::pair<msat_term, ArrayInfo> abstract_arrays_helper(msat_env env,
     res = cache.at(term);
   }
 
-  ainf.eq_ufs = data.equalities;
+  ainf.eq_ufs = data.eq_ufs;
 
   // add to the set of array indices
   for (auto idx : data.indices)
