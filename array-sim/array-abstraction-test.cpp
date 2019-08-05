@@ -42,8 +42,13 @@ int main() {
 
   msat_term zero = msat_make_bv_int_number(env, 0, 4);
   msat_term init = msat_make_eq(env, count, zero);
+  msat_term const_array0 = msat_make_array_const(env, arrtype, zero);
+
   init = msat_make_and(
       env, init, msat_make_eq(env, data, msat_make_bv_int_number(env, 1, 4)));
+
+  init = msat_make_and(env, init,
+                       msat_make_eq(env, arr, const_array0));
 
   msat_term trans = msat_make_eq(
       env, countN,
@@ -106,6 +111,12 @@ int main() {
   for (auto i : ac.indices)
   {
     cout << "\t" << msat_to_smtlib2_term(env, i) << endl;
+  }
+
+  cout << "init const array equalities:" << endl;
+  for (auto ceq : ac.init_info.const_array_equalities)
+  {
+    cout << "\t" << ceq << endl;
   }
 
   cout << "trans ArrayInfo:" << endl;

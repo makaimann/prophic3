@@ -7,7 +7,6 @@ namespace array_utils {
 
 std::ostream & operator<<(std::ostream & output, const AbstractArrayEq ae)
 {
-  //output << "test";
   output << msat_term_repr(ae.arr0) << " = " << msat_term_repr(ae.arr1);
   return output;
 }
@@ -16,6 +15,12 @@ std::ostream & operator<<(std::ostream & output, const AbstractArrayEqStore aes)
 {
   output << msat_term_repr(aes.arr0) << " = ABS_STORE(" << msat_term_repr(aes.arr1)
          << ", " << msat_term_repr(aes.idx) << ", " << msat_term_repr(aes.val) << ")";
+  return output;
+}
+
+std::ostream & operator<<(std::ostream & output, const AbstractConstArrayEq ace)
+{
+  output << "forall i . read(" << msat_term_repr(ace.arr) << ", i) := " << msat_term_repr(ace.val);
   return output;
 }
 
@@ -400,6 +405,18 @@ std::pair<msat_term, ArrayInfo> abstract_arrays_helper(msat_env env,
         msat_term idx  = cache.at(msat_term_get_arg(rhs, 1));
         msat_term val  = cache.at(msat_term_get_arg(rhs, 2));
         ainf.store_equalities.push_back(AbstractArrayEqStore(cache.at(lhs), arr1, idx, val));
+      }
+      else if (msat_term_is_array_const(env, lhs))
+      {
+        msat_term arr = cache.at(rhs);
+        msat_term val = cache.at(msat_term_get_arg(lhs, 0));
+        ainf.const_array_equalities.push_back(AbstractConstArrayEq(arr, val));
+      }
+      else if (msat_term_is_array_const(env, rhs))
+      {
+        msat_term arr = cache.at(lhs);
+        msat_term val = cache.at(msat_term_get_arg(rhs, 0));
+        ainf.const_array_equalities.push_back(AbstractConstArrayEq(arr, val));
       }
       else
       {

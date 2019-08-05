@@ -34,9 +34,21 @@ struct AbstractArrayEqStore
     : arr0(a0), arr1(a1), idx(i), val(v) {}
 };
 
+// holds an equality between array and a const array
+// Therefore, it just holds an array and a value
+// which it should have at every index
+struct AbstractConstArrayEq
+{
+  msat_term arr;
+  msat_term val;
+  AbstractConstArrayEq(msat_term a, msat_term v)
+    : arr(a), val(v) {}
+};
+
 // print to stream
 std::ostream & operator<<(std::ostream & output, const AbstractArrayEq ae);
 std::ostream & operator<<(std::ostream & output, const AbstractArrayEqStore aes);
+std::ostream & operator<<(std::ostream & output, const AbstractConstArrayEq ace);
 
 struct ArrayInfo
 {
@@ -44,6 +56,8 @@ struct ArrayInfo
   std::vector<AbstractArrayEq> equalities;
   // top-level array equalities with ONE store that were removed from system
   std::vector<AbstractArrayEqStore> store_equalities;
+  // constant array equalities
+  std::vector<AbstractConstArrayEq> const_array_equalities;
   // equality uf applications
   ic3ia::TermSet eq_ufs;
   // read uf applications
@@ -51,7 +65,8 @@ struct ArrayInfo
   ArrayInfo() {}
   ArrayInfo(const ArrayInfo & ai)
     : equalities(ai.equalities), store_equalities(ai.store_equalities),
-      eq_ufs(ai.eq_ufs),         read_ufs(ai.read_ufs) {}
+      const_array_equalities(ai.const_array_equalities), eq_ufs(ai.eq_ufs),
+      read_ufs(ai.read_ufs) {}
 };
 
 struct AbstractionCollateral
