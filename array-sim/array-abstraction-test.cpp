@@ -119,7 +119,7 @@ int main() {
     cout << "\t" << ceq << endl;
   }
 
-  cout << "trans ArrayInfo:" << endl;
+  cout << "trans ArrayInfo(size=" << ac.trans_info.size() << ")" << endl;
   cout << "equalities:" << endl;
   for (auto eq : ac.trans_info.equalities)
   {

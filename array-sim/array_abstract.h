@@ -71,6 +71,10 @@ struct ArrayInfo
       const_array_equalities(ai.const_array_equalities), eq_ufs(ai.eq_ufs)
       {}
   //      read_ufs(ai.read_ufs) {}
+  size_t size()
+  {
+    return (equalities.size() + store_equalities.size() + const_array_equalities.size() + eq_ufs.size());
+  }
 };
 
 struct AbstractionCollateral
