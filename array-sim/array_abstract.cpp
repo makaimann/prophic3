@@ -212,16 +212,16 @@ std::pair<msat_term, ArrayInfo> abstract_arrays_helper(msat_env env,
     TermSet equalities;
     TermMap & new_state_vars;     // passed from inputs, persists beyond scope of this function
     TermSet & removed_state_vars; // passed from inputs, persists beyond scope of this function
-    std::unordered_map<msat_term, std::unordered_map<msat_term, msat_decl>>
-        &eqfuns;
-    std::unordered_map<msat_term, msat_decl> &readfuns;
+    std::unordered_map<msat_term, std::unordered_map<msat_term, msat_decl>> // only used for caching
+        &eq_cache;
+    std::unordered_map<msat_term, msat_decl> &read_cache;
     Data(TermMap &c,
          TermMap &nsv,
          TermSet &rsv,
          std::unordered_map<msat_term, std::unordered_map<msat_term, msat_decl>>
              &e,
          std::unordered_map<msat_term, msat_decl> &r)
-        : cache(c), eqfuns(e), readfuns(r), new_state_vars(nsv), removed_state_vars(rsv) {}
+        : cache(c), eq_cache(e), read_cache(r), new_state_vars(nsv), removed_state_vars(rsv) {}
   };
 
   auto visit = [](msat_env e, msat_term t, int preorder,
@@ -272,11 +272,11 @@ std::pair<msat_term, ArrayInfo> abstract_arrays_helper(msat_env env,
 
         // check if it's an array
         msat_decl eqfun;
-        if ((d->eqfuns.find(lhs) != d->eqfuns.end()) &&
-            ((*d->eqfuns.find(lhs)).second.find(rhs) !=
-             (*d->eqfuns.find(lhs)).second.end())) {
+        if ((d->eq_cache.find(lhs) != d->eq_cache.end()) &&
+            ((*d->eq_cache.find(lhs)).second.find(rhs) !=
+             (*d->eq_cache.find(lhs)).second.end())) {
           // cache hit
-          eqfun = (*d->eqfuns.find(lhs)).second[rhs];
+          eqfun = (*d->eq_cache.find(lhs)).second[rhs];
         } else {
           msat_type param_types[2] = {msat_get_integer_type(e),
                                       msat_get_integer_type(e)};
@@ -289,7 +289,7 @@ std::pair<msat_term, ArrayInfo> abstract_arrays_helper(msat_env env,
           eqfun = msat_declare_function(e, name.c_str(), funtype);
           std::unordered_map<msat_term, msat_decl> m;
           m[rhs] = eqfun;
-          d->eqfuns[lhs] = m;
+          d->eq_cache[lhs] = m;
         }
 
         msat_term cached_args[2] = {lhs_cache, rhs_cache};
@@ -314,8 +314,8 @@ std::pair<msat_term, ArrayInfo> abstract_arrays_helper(msat_env env,
         assert(msat_is_array_type(e, arrtype, &arridxtype, &arrelemtype));
         msat_decl readfun;
 
-        if (d->readfuns.find(arr) != d->readfuns.end()) {
-          readfun = d->readfuns[arr];
+        if (d->read_cache.find(arr) != d->read_cache.end()) {
+          readfun = d->read_cache[arr];
         } else {
           msat_type param_types[2] = {msat_get_integer_type(e),
                                       msat_get_integer_type(e)};
@@ -324,7 +324,7 @@ std::pair<msat_term, ArrayInfo> abstract_arrays_helper(msat_env env,
           std::string name = "read_";
           name += msat_term_repr(arr);
           readfun = msat_declare_function(e, name.c_str(), funtype);
-          d->readfuns[arr] = readfun;
+          d->read_cache[arr] = readfun;
         }
 
         msat_term cached_args[2] = {arr_cache, int_idx};
@@ -353,11 +353,11 @@ std::pair<msat_term, ArrayInfo> abstract_arrays_helper(msat_env env,
 
   TermMap cache;
   std::unordered_map<msat_term, std::unordered_map<msat_term, msat_decl>>
-      eqfuns;
-  std::unordered_map<msat_term, msat_decl> readfuns;
+      eq_cache;
+  std::unordered_map<msat_term, msat_decl> read_cache;
 
   ArrayInfo ainf;
-  Data data(cache, new_state_vars, removed_state_vars, eqfuns, readfuns);
+  Data data(cache, new_state_vars, removed_state_vars, eq_cache, read_cache);
 
   TermSet array_equalities;
   msat_term res = msat_make_true(env);
