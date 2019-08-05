@@ -210,7 +210,6 @@ std::pair<msat_term, ArrayInfo> abstract_arrays_helper(msat_env env,
     TermList args;
     TermSet indices;
     TermSet equalities;
-    TermSet reads;
     TermMap & new_state_vars;     // passed from inputs, persists beyond scope of this function
     TermSet & removed_state_vars; // passed from inputs, persists beyond scope of this function
     std::unordered_map<msat_term, std::unordered_map<msat_term, msat_decl>>
@@ -331,7 +330,6 @@ std::pair<msat_term, ArrayInfo> abstract_arrays_helper(msat_env env,
         msat_term cached_args[2] = {arr_cache, int_idx};
         msat_term read_uf = msat_make_uf(e, readfun, &cached_args[0]);
         d->cache[t] = read_uf;
-        d->reads.insert(read_uf);
       } else {
         // rebuild the term
         size_t arity = msat_term_arity(t);
@@ -434,7 +432,6 @@ std::pair<msat_term, ArrayInfo> abstract_arrays_helper(msat_env env,
   }
 
   ainf.eq_ufs = data.equalities;
-  ainf.read_ufs = data.reads;
 
   // add to the set of array indices
   for (auto idx : data.indices)

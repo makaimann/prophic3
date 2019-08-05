@@ -60,13 +60,17 @@ struct ArrayInfo
   std::vector<AbstractConstArrayEq> const_array_equalities;
   // equality uf applications
   ic3ia::TermSet eq_ufs;
-  // read uf applications
-  ic3ia::TermSet read_ufs;
+  /* // read uf applications   <--- I don't think we need these after all.
+                                    nothing to do with them anyway
+                                    all lemmas start from equalities/stores
+   */
+  /* ic3ia::TermSet read_ufs; */
   ArrayInfo() {}
   ArrayInfo(const ArrayInfo & ai)
     : equalities(ai.equalities), store_equalities(ai.store_equalities),
-      const_array_equalities(ai.const_array_equalities), eq_ufs(ai.eq_ufs),
-      read_ufs(ai.read_ufs) {}
+      const_array_equalities(ai.const_array_equalities), eq_ufs(ai.eq_ufs)
+      {}
+  //      read_ufs(ai.read_ufs) {}
 };
 
 struct AbstractionCollateral

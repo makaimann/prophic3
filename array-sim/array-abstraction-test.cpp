@@ -135,11 +135,6 @@ int main() {
   {
     cout << "\t" << msat_to_smtlib2_term(env, c) << endl;
   }
-  cout << "read_ufs:" << endl;
-  for (auto c : ac.trans_info.read_ufs)
-  {
-    cout << "\t" << msat_to_smtlib2_term(env, c) << endl;
-  }
 
   return 0;
 }
