@@ -40,6 +40,10 @@ int main() {
   msat_term arr = msat_make_constant(env, decl_arr);
   msat_term arrN = msat_make_constant(env, decl_arrN);
 
+  statevars[arr] = arrN;
+  statevars[count] = countN;
+  statevars[data] = dataN;
+
   msat_term zero = msat_make_bv_int_number(env, 0, 4);
   msat_term init = msat_make_eq(env, count, zero);
   msat_term const_array0 = msat_make_array_const(env, arrtype, zero);

@@ -144,7 +144,8 @@ std::pair<msat_term, ArrayInfo> abstract_arrays_helper(msat_env env,
                                                        bool remove_top_level_arr_eq,
                                                        ic3ia::TermSet & indices,
                                                        ic3ia::TermMap & new_state_vars,
-                                                       ic3ia::TermSet & removed_state_vars
+                                                       ic3ia::TermSet & removed_state_vars,
+                                                       ic3ia::TermMap & cache
                                                        );
 
  std::pair<ic3ia::TransitionSystem, AbstractionCollateral> abstract_arrays(ic3ia::TransitionSystem & ts);
