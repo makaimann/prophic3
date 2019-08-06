@@ -124,30 +124,55 @@ int main() {
     cout << "\t" << ceq << endl;
   }
 
-  cout << "trans ArrayInfo(size=" << ac.trans_info.size() << ")" << endl;
-  cout << "equalities:" << endl;
-  for (auto eq : ac.trans_info.equalities)
+  cout << "trans ArrayInfo(size=" << (ac.trans_1s_info.size() + ac.trans_2s_info.size()) << ")" << endl;
+  cout << "1 step equalities:" << endl;
+  for (auto eq : ac.trans_1s_info.equalities)
   {
     cout << "\t" << eq << endl;
   }
-  cout << "store equalities:" << endl;
-  for (auto seq : ac.trans_info.store_equalities)
+  cout << "2 step equalities:" << endl;
+  for (auto eq : ac.trans_2s_info.equalities)
+  {
+    cout << "\t" << eq << endl;
+  }
+
+  cout << "1 step store equalities:" << endl;
+  for (auto seq : ac.trans_1s_info.store_equalities)
   {
     cout << "\t" << seq << endl;
   }
-  cout << "eq_ufs:" << endl;
-  for (auto c : ac.trans_info.eq_ufs)
+  cout << "2 step store equalities:" << endl;
+  for (auto seq : ac.trans_2s_info.store_equalities)
+  {
+    cout << "\t" << seq << endl;
+  }
+
+  cout << "1 step eq_ufs:" << endl;
+  for (auto c : ac.trans_1s_info.eq_ufs)
+  {
+    cout << "\t" << msat_to_smtlib2_term(env, c.first) << " : "
+         << msat_to_smtlib2_term(env, c.second) << endl;
+  }
+  cout << "1 step eq_ufs:" << endl;
+  for (auto c : ac.trans_2s_info.eq_ufs)
   {
     cout << "\t" << msat_to_smtlib2_term(env, c.first) << " : "
          << msat_to_smtlib2_term(env, c.second) << endl;
   }
 
-  cout << "prop eq_ufs:" << endl;
-  for (auto c : ac.prop_info.eq_ufs)
+  cout << "prop 1 step eq_ufs:" << endl;
+  for (auto c : ac.prop_1s_info.eq_ufs)
   {
     cout << "\t" << msat_to_smtlib2_term(env, c.first) << " : "
          << msat_to_smtlib2_term(env, c.second) << endl;
   }
+  cout << "prop 2 step eq_ufs:" << endl;
+  for (auto c : ac.prop_2s_info.eq_ufs)
+  {
+    cout << "\t" << msat_to_smtlib2_term(env, c.first) << " : "
+         << msat_to_smtlib2_term(env, c.second) << endl;
+  }
+
 
   return 0;
 }

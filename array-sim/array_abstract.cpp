@@ -101,6 +101,114 @@ msat_term idx_to_int(msat_env env, msat_term term)
   return res;
 }
 
+std::pair<ArrayInfo, ArrayInfo> sort_array_infos(ArrayInfo ai, TransitionSystem & ts)
+{
+  struct Data {
+    TermMap cache;
+    bool has_next;
+    TransitionSystem &ts;
+    Data(TransitionSystem &ts) : has_next(false), ts(ts) {}
+  };
+
+  auto contains_next = [](msat_env e, msat_term t, int preorder,
+                          void *data) -> msat_visit_status {
+    Data *d = static_cast<Data *>(data);
+
+    if (d->cache.find(t) != d->cache.end())
+    {
+      // cache hit
+      return MSAT_VISIT_SKIP;
+    }
+
+    if (preorder)
+    {
+      if(d->ts.is_nextstatevar(t))
+      {
+        d->has_next = true;
+        return MSAT_VISIT_ABORT;
+      }
+      else
+      {
+        return MSAT_VISIT_PROCESS;
+      }
+    }
+
+    return MSAT_VISIT_PROCESS;
+  };
+
+  Data data(ts);
+
+  ArrayInfo ai1s;
+  ArrayInfo ai2s;
+
+  // check each lemma to see if it is one-step or two-step
+  for(AbstractArrayEq l : ai.equalities)
+  {
+    data.has_next = false;
+    msat_visit_term(ts.get_env(), l.arr0, contains_next, &data);
+    msat_visit_term(ts.get_env(), l.arr1, contains_next, &data);
+    if (data.has_next)
+    {
+      ai2s.equalities.push_back(l);
+    }
+    else
+    {
+      ai1s.equalities.push_back(l);
+    }
+  }
+
+  for(AbstractArrayEqStore l : ai.store_equalities)
+  {
+    data.has_next = false;
+    msat_visit_term(ts.get_env(), l.arr0, contains_next, &data);
+    msat_visit_term(ts.get_env(), l.arr1, contains_next, &data);
+    msat_visit_term(ts.get_env(), l.idx, contains_next, &data);
+    msat_visit_term(ts.get_env(), l.val, contains_next, &data);
+    if (data.has_next)
+    {
+      ai2s.store_equalities.push_back(l);
+    }
+    else
+    {
+      ai1s.store_equalities.push_back(l);
+    }
+  }
+
+  for(AbstractConstArrayEq l : ai.const_array_equalities)
+  {
+    data.has_next = false;
+    msat_visit_term(ts.get_env(), l.arr, contains_next, &data);
+    msat_visit_term(ts.get_env(), l.val, contains_next, &data);
+    if (data.has_next)
+    {
+      ai2s.const_array_equalities.push_back(l);
+    }
+    else
+    {
+      ai1s.const_array_equalities.push_back(l);
+    }
+  }
+
+  for(auto l : ai.eq_ufs)
+  {
+    data.has_next = false;
+    msat_visit_term(ts.get_env(), l.first, contains_next, &data);
+    msat_visit_term(ts.get_env(), l.second, contains_next, &data);
+    if (data.has_next)
+    {
+      ai2s.eq_ufs[l.first] = l.second;
+    }
+    else
+    {
+      ai1s.eq_ufs[l.first] = l.second;
+    }
+  }
+
+  assert(ai.size() == (ai1s.size() + ai2s.size()));
+  return std::pair<ArrayInfo, ArrayInfo>(ai1s, ai2s);
+}
+
+
 // based on ic3ia/utils.h::apply_substitution
 TransitionSystem flatten_arrays(msat_env env, TransitionSystem & ts) {
   struct Data {
@@ -492,7 +600,16 @@ std::pair<TransitionSystem, AbstractionCollateral> abstract_arrays(TransitionSys
 
   new_ts.initialize(new_state_vars, new_init, new_trans, new_prop, ts.live_prop());
 
-  AbstractionCollateral ac(indices, init_info, trans_info, prop_info);
+  // sort array info by one-step or two-step lemmas
+  std::pair<ArrayInfo, ArrayInfo> init_info_sorted = sort_array_infos(init_info, ts);
+  std::pair<ArrayInfo, ArrayInfo> trans_info_sorted = sort_array_infos(trans_info, ts);
+  std::pair<ArrayInfo, ArrayInfo> prop_info_sorted = sort_array_infos(prop_info, ts);
+
+  assert(init_info_sorted.second.size() == 0); // info shouldn't have ANY 2-step lemmas
+
+  AbstractionCollateral ac(indices, init_info_sorted.first,
+                           trans_info_sorted.first, trans_info_sorted.second,
+                           prop_info_sorted.first, prop_info_sorted.second);
 
   return std::pair<TransitionSystem, AbstractionCollateral>(new_ts, ac);
 }

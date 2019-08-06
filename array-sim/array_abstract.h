@@ -79,12 +79,18 @@ struct ArrayInfo
 
 struct AbstractionCollateral
 {
-  ic3ia::TermSet indices;           // all terms used as array indices
-  ArrayInfo init_info;              // abstraction info for init
-  ArrayInfo trans_info;             // abstraction info for trans
-  ArrayInfo prop_info;              // abstraction info for prop
-  AbstractionCollateral(ic3ia::TermSet i, ArrayInfo ii, ArrayInfo ti, ArrayInfo pi)
-    : indices(i), init_info(ii), trans_info(ti), prop_info(pi) {}
+  ic3ia::TermSet indices;              // all terms used as array indices
+  ArrayInfo init_info;              // abstraction info for init (always one-step)
+  ArrayInfo trans_1s_info;             // one-step abstraction info for trans
+  ArrayInfo trans_2s_info;             // two-step abstraction info for trans
+  ArrayInfo prop_1s_info;              // one-step abstraction info for prop
+  ArrayInfo prop_2s_info;              // two-step abstraction info for prop
+  AbstractionCollateral(ic3ia::TermSet i, ArrayInfo ii,
+                        ArrayInfo ti1s, ArrayInfo ti2s,
+                        ArrayInfo pi1s, ArrayInfo pi2s)
+    : indices(i), init_info(ii),
+      trans_1s_info(ti1s), trans_2s_info(ti2s),
+      prop_1s_info(pi1s), prop_2s_info(pi2s) {}
 };
 
 
@@ -104,6 +110,12 @@ ic3ia::TermList conjunctive_partition(msat_env env, msat_term term);
   * It leaves integer indices alone and throws an error for any other type
   */
  msat_term idx_to_int(msat_env env, msat_term idx);
+
+ /**
+  * Splits one ArrayInfo struct into two.
+  * The first has one-step lemmas and the second has two-step lemmas
+  */
+ std::pair<ArrayInfo, ArrayInfo> sort_array_infos(ArrayInfo ai, ic3ia::TransitionSystem & ts);
 
 // TODO : don't pass env
 /**
