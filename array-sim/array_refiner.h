@@ -13,11 +13,12 @@ namespace array_utils
   public:
     // TODO: take by reference or copy? Might want to add things to it only temporarily
     ArrayAxiomEnumerator(AbstractionCollateral ac, ic3ia::TransitionSystem & ts) : ac(ac), ts(ts) {}
-    /* Helper function for enumerating top-level equalities */
+    /* Enumerate extentionality axioms for all indices: arr0 = arr1 -> arr0[i] = arr1[i] for all i*/
     void enumerate_read_equalities(ic3ia::TermList & axioms,
                                    msat_term arr0,
                                    msat_term arr1,
                                    ic3ia::TermSet & indices);
+    /* Enumerate store axioms on all indices: arr0[idx] = val, forall i != val. arr0[i] = arr1[i]*/
     void enumerate_store_equalities(ic3ia::TermList & axioms,
                                     msat_term arr0,
                                     msat_term arr1,
