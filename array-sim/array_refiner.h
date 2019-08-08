@@ -18,6 +18,12 @@ namespace array_utils
                                    msat_term arr0,
                                    msat_term arr1,
                                    ic3ia::TermSet & indices);
+    void enumerate_store_equalities(ic3ia::TermList & axioms,
+                                    msat_term arr0,
+                                    msat_term arr1,
+                                    msat_term idx,
+                                    msat_term val,
+                                    ic3ia::TermSet & indices);
     ic3ia::TermList init_equalities();
     /* ic3ia::TermList init_stores(); */
     /* ic3ia::TermList init_eq_uf(); */

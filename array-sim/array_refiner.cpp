@@ -29,14 +29,14 @@ void ArrayAxiomEnumerator::enumerate_read_equalities(TermList & axioms,
 TermList ArrayAxiomEnumerator::init_equalities()
 {
   ArrayInfo & init_info = ac.init_info;
-  TermSet & indices = ac.indices;
+  TermSet & curr_indices = ac.curr_indices;
 
   TermList axioms;
-  axioms.reserve(init_info.equalities.size()*indices.size());
+  axioms.reserve(init_info.equalities.size()*curr_indices.size());
 
   for (auto eq : init_info.equalities)
   {
-    enumerate_read_equalities(axioms, eq.arr0, eq.arr1, indices);
+    enumerate_read_equalities(axioms, eq.arr0, eq.arr1, curr_indices);
   }
 
   return axioms;
