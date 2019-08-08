@@ -704,15 +704,10 @@ std::pair<TransitionSystem, AbstractionCollateral> abstract_arrays(TransitionSys
   }
 
   // add any next-state versions that might not have existed
-  TermSet next_state_indices;
+  TermSet next_indices;
   for (auto idx : indices)
   {
-    next_state_indices.insert(new_ts.next(idx));
-  }
-  // add to indices, contains all indices current and next
-  for (auto ni : next_state_indices)
-  {
-    indices.insert(ni);
+    next_indices.insert(new_ts.next(idx));
   }
 
   // sort array info by one-step or two-step lemmas
@@ -723,7 +718,7 @@ std::pair<TransitionSystem, AbstractionCollateral> abstract_arrays(TransitionSys
   assert(init_info_sorted.second.size() == 0); // info shouldn't have ANY 2-step lemmas
 
   // TODO: figure out when/where to add an extra lambda index
-  AbstractionCollateral ac(curr_indices, indices, read_ufs, init_info_sorted.first,
+  AbstractionCollateral ac(curr_indices, next_indices, read_ufs, init_info_sorted.first,
                            trans_info_sorted.first, trans_info_sorted.second,
                            prop_info_sorted.first, prop_info_sorted.second);
 

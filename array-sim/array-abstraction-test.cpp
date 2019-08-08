@@ -117,7 +117,7 @@ int main() {
   cout << endl;
 
   cout << "array indices:" << endl;
-  for (auto i : ac.indices)
+  for (auto i : ac.curr_indices)
   {
     cout << "\t" << msat_to_smtlib2_term(env, i) << endl;
   }

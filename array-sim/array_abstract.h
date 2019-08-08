@@ -83,18 +83,18 @@ struct ArrayInfo
 struct AbstractionCollateral
 {
   ic3ia::TermSet curr_indices;         // all terms used as array indices at current time
-  ic3ia::TermSet indices;              // all terms used as array indices and their next state versions
+  ic3ia::TermSet next_indices;         // next-state of all terms used as array indices
   std::unordered_map<msat_term, msat_decl> read_ufs;
   ArrayInfo init_info;                 // abstraction info for init (always one-step)
   ArrayInfo trans_1s_info;             // one-step abstraction info for trans
   ArrayInfo trans_2s_info;             // two-step abstraction info for trans
   ArrayInfo prop_1s_info;              // one-step abstraction info for prop
   ArrayInfo prop_2s_info;              // two-step abstraction info for prop
-  AbstractionCollateral(ic3ia::TermSet ci, ic3ia::TermSet i,
+  AbstractionCollateral(ic3ia::TermSet ci, ic3ia::TermSet ni,
                         std::unordered_map<msat_term, msat_decl> r, ArrayInfo ii,
                         ArrayInfo ti1s, ArrayInfo ti2s,
                         ArrayInfo pi1s, ArrayInfo pi2s)
-    : curr_indices(ci), indices(i),
+    : curr_indices(ci), next_indices(ni),
       read_ufs(r), init_info(ii),
       trans_1s_info(ti1s), trans_2s_info(ti2s),
       prop_1s_info(pi1s), prop_2s_info(pi2s) {}
