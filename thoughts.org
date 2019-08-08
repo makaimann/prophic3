@@ -34,3 +34,8 @@
 **** if Fi is sat, then lambda can always be chosen to be some other integer to make Fl sat as well
 ***** need to think on this a bit more and be completely sure: gets tricky with universal quantifiers (e.g. constant arrays) being compared
 **** lambda is constrained to be different from all other indices (which is why it should be an integer)
+*** lambda might not need to be different from all other indices in the transition system version
+**** hand-wavey idea: because it's an overapproximation, it can always find a way to violate the system by setting it to the wrong value
+**** although it's difficult for constant arrays
+***** because we need to compare them on indices that haven't otherwise occured
+***** need to think about the approximation direction though

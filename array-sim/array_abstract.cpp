@@ -681,6 +681,7 @@ std::pair<TransitionSystem, AbstractionCollateral> abstract_arrays(TransitionSys
 
   assert(init_info_sorted.second.size() == 0); // info shouldn't have ANY 2-step lemmas
 
+  // TODO: figure out when/where to add an extra lambda index
   AbstractionCollateral ac(indices, init_info_sorted.first,
                            trans_info_sorted.first, trans_info_sorted.second,
                            prop_info_sorted.first, prop_info_sorted.second);
