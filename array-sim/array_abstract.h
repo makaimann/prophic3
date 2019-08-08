@@ -1,3 +1,6 @@
+#ifndef ARRAY_ABSTRACT_H
+#define ARRAY_ABSTRACT_H
+
 #include "mathsat.h"
 
 #include <iostream>
@@ -80,12 +83,14 @@ struct ArrayInfo
 struct AbstractionCollateral
 {
   ic3ia::TermSet indices;              // all terms used as array indices
-  ArrayInfo init_info;              // abstraction info for init (always one-step)
+  std::unordered_map<msat_term, msat_decl> read_ufs;
+  ArrayInfo init_info;                 // abstraction info for init (always one-step)
   ArrayInfo trans_1s_info;             // one-step abstraction info for trans
   ArrayInfo trans_2s_info;             // two-step abstraction info for trans
   ArrayInfo prop_1s_info;              // one-step abstraction info for prop
   ArrayInfo prop_2s_info;              // two-step abstraction info for prop
-  AbstractionCollateral(ic3ia::TermSet i, ArrayInfo ii,
+  AbstractionCollateral(ic3ia::TermSet i, std::unordered_map<msat_term, msat_decl>,
+                        ArrayInfo ii,
                         ArrayInfo ti1s, ArrayInfo ti2s,
                         ArrayInfo pi1s, ArrayInfo pi2s)
     : indices(i), init_info(ii),
@@ -151,3 +156,5 @@ std::pair<msat_term, ArrayInfo> abstract_arrays_helper(msat_env env,
  std::pair<ic3ia::TransitionSystem, AbstractionCollateral> abstract_arrays(ic3ia::TransitionSystem & ts);
 
 } // namespace array_utils
+
+#endif

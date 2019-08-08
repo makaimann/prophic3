@@ -311,28 +311,37 @@ TransitionSystem flatten_arrays(msat_env env, TransitionSystem & ts) {
 std::pair<msat_term, ArrayInfo> abstract_arrays_helper(msat_env env,
                                                        msat_term term,
                                                        bool remove_top_level_arr_eq,
+                                                       TermMap & cache,
                                                        TermSet & indices,
                                                        TermMap & new_state_vars,
                                                        TermSet & removed_state_vars,
-                                                       TermMap &cache
+                                                       std::unordered_map<msat_term, msat_decl> & read_cache
                                                 ) {
   struct Data {
-    TermMap &cache;               // passed from inputs, persists beyond scope of this function
     TermList args;
-    TermSet indices;
-    TermMap eq_ufs;
+    TermMap &cache;               // passed from inputs, persists beyond scope of this function
+    TermSet & indices;            // passed from inputs, persists beyond scope of this function
     TermMap & new_state_vars;     // passed from inputs, persists beyond scope of this function
     TermSet & removed_state_vars; // passed from inputs, persists beyond scope of this function
-    std::unordered_map<msat_term, std::unordered_map<msat_term, msat_decl>> // only used for caching
-        &eq_cache;
+    TermMap eq_ufs;
     std::unordered_map<msat_term, msat_decl> &read_cache;
+    std::unordered_map<msat_term, std::unordered_map<msat_term, msat_decl>> // only used for caching
+    &eq_cache;
     Data(TermMap &c,
+         TermSet &i,
          TermMap &nsv,
          TermSet &rsv,
+         std::unordered_map<msat_term, msat_decl> &r,
          std::unordered_map<msat_term, std::unordered_map<msat_term, msat_decl>>
-             &e,
-         std::unordered_map<msat_term, msat_decl> &r)
-        : cache(c), eq_cache(e), read_cache(r), new_state_vars(nsv), removed_state_vars(rsv) {}
+         &e
+         )
+        : cache(c),
+          indices(i),
+          new_state_vars(nsv),
+          removed_state_vars(rsv),
+          read_cache(r),
+          eq_cache(e)
+          {}
   };
 
   auto visit = [](msat_env e, msat_term t, int preorder,
@@ -461,10 +470,9 @@ std::pair<msat_term, ArrayInfo> abstract_arrays_helper(msat_env env,
 
   std::unordered_map<msat_term, std::unordered_map<msat_term, msat_decl>>
       eq_cache;
-  std::unordered_map<msat_term, msat_decl> read_cache;
 
   ArrayInfo ainf;
-  Data data(cache, new_state_vars, removed_state_vars, eq_cache, read_cache);
+  Data data(cache, indices, new_state_vars, removed_state_vars, read_cache, eq_cache);
 
   // FIXME: when remove_top_level_arr_eq is false (e.g. for property), we could still get stores in the visit lambda
   //        these will become un-typed
@@ -573,12 +581,6 @@ std::pair<msat_term, ArrayInfo> abstract_arrays_helper(msat_env env,
 
   ainf.eq_ufs = data.eq_ufs;
 
-  // add to the set of array indices
-  for (auto idx : data.indices)
-  {
-    indices.insert(idx);
-  }
-
   return std::pair<msat_term, ArrayInfo>(res, ainf);
 
 }
@@ -587,11 +589,12 @@ std::pair<TransitionSystem, AbstractionCollateral> abstract_arrays(TransitionSys
 {
   msat_env env = ts.get_env();
   TransitionSystem new_ts(env);
-  TermSet indices;
 
+  TermMap cache;
+  TermSet indices;
   TermMap new_state_vars;
   TermSet removed_state_vars;
-  TermMap cache;
+  std::unordered_map<msat_term, msat_decl> read_ufs;
 
   // cache all the array state variables
   for (auto sv : ts.statevars())
@@ -634,20 +637,23 @@ std::pair<TransitionSystem, AbstractionCollateral> abstract_arrays(TransitionSys
   std::pair<msat_term, ArrayInfo> p = abstract_arrays_helper(env,
                                                              ts.init(),
                                                              true,
+                                                             cache,
                                                              indices,
                                                              new_state_vars,
                                                              removed_state_vars,
-                                                             cache);
+                                                             read_ufs);
   msat_term new_init = p.first;
   ArrayInfo init_info = p.second;
 
   p = abstract_arrays_helper(env,
                              ts.trans(),
                              true,
+                             cache,
                              indices,
                              new_state_vars,
                              removed_state_vars,
-                             cache);
+                             read_ufs
+                             );
   msat_term new_trans = p.first;
   ArrayInfo trans_info = p.second;
 
@@ -656,10 +662,12 @@ std::pair<TransitionSystem, AbstractionCollateral> abstract_arrays(TransitionSys
   p = abstract_arrays_helper(env,
                              ts.prop(),
                              false,
+                             cache,
                              indices,
                              new_state_vars,
                              removed_state_vars,
-                             cache);
+                             read_ufs
+                             );
   msat_term new_prop = p.first;
   ArrayInfo prop_info = p.second;
 
@@ -682,7 +690,7 @@ std::pair<TransitionSystem, AbstractionCollateral> abstract_arrays(TransitionSys
   assert(init_info_sorted.second.size() == 0); // info shouldn't have ANY 2-step lemmas
 
   // TODO: figure out when/where to add an extra lambda index
-  AbstractionCollateral ac(indices, init_info_sorted.first,
+  AbstractionCollateral ac(indices, read_ufs, init_info_sorted.first,
                            trans_info_sorted.first, trans_info_sorted.second,
                            prop_info_sorted.first, prop_info_sorted.second);
 
