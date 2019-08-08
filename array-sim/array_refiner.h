@@ -26,7 +26,7 @@ namespace array_utils
                                     msat_term val,
                                     ic3ia::TermSet & indices);
     ic3ia::TermList init_equalities();
-    /* ic3ia::TermList init_stores(); */
+    ic3ia::TermList init_stores();
     /* ic3ia::TermList init_eq_uf(); */
   private:
     AbstractionCollateral ac;

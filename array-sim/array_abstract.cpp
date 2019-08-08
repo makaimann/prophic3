@@ -277,20 +277,33 @@ TransitionSystem flatten_arrays(msat_env env, TransitionSystem & ts) {
   Data data(cache, new_state_vars);
 
   msat_visit_term(env, ts.init(), visit, &data);
+  msat_term new_init = cache[ts.init()];
+  // update init with the array assignments
+  for (auto a : data.arr_assignments)
+  {
+    new_init = msat_make_and(env, new_init, a);
+  }
+  data.arr_assignments.clear();
+
   msat_visit_term(env, ts.prop(), visit, &data);
+  msat_term new_prop = cache[ts.prop()];
+  // update prop with the array assignments
+  for (auto a : data.arr_assignments)
+  {
+    new_prop = msat_make_and(env, new_prop, a);
+  }
+  data.arr_assignments.clear();
+
   // important that trans comes last. if an array store only appears
   // in trans, we can make the new array symbol an input!
   msat_visit_term(env, ts.trans(), visit, &data);
-
-  msat_term new_init = cache[ts.init()];
-  msat_term new_prop = cache[ts.prop()];
   msat_term new_trans = cache[ts.trans()];
-
   // update trans with the array assignments
   for (auto a : data.arr_assignments)
   {
     new_trans = msat_make_and(env, new_trans, a);
   }
+
 
   // add the original state variables back in
   // need to be given upfront for new_ts.initialize to work correctly

@@ -40,12 +40,16 @@ int main(int argc, const char **argv)
 
   ArrayAxiomEnumerator aae(ac, ts);
 
-  TermList axioms = aae.init_equalities();
-
   cout << "init equality axioms" << endl;
-  for (auto a : axioms)
+  for (auto a : aae.init_equalities())
   {
-    cout << msat_to_smtlib2_term(env, a) << endl;
+    cout << "\t" << msat_to_smtlib2_term(env, a) << endl;
+  }
+
+  cout << "init store axioms" << endl;
+  for (auto a : aae.init_stores())
+  {
+    cout << "\t" << msat_to_smtlib2_term(env, a) << endl;
   }
 
   return 0;

@@ -75,4 +75,20 @@ TermList ArrayAxiomEnumerator::init_equalities()
   return axioms;
 }
 
+TermList ArrayAxiomEnumerator::init_stores()
+{
+  ArrayInfo & init_info = ac.init_info;
+  TermSet & curr_indices = ac.curr_indices;
+
+  TermList axioms;
+  axioms.reserve(init_info.store_equalities.size()*curr_indices.size());
+
+  for (auto eq : init_info.store_equalities)
+  {
+    enumerate_store_equalities(axioms, eq.arr0, eq.arr1, eq.idx, eq.val, curr_indices);
+  }
+
+  return axioms;
+}
+
 }
