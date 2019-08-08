@@ -89,11 +89,12 @@ struct AbstractionCollateral
   ArrayInfo trans_2s_info;             // two-step abstraction info for trans
   ArrayInfo prop_1s_info;              // one-step abstraction info for prop
   ArrayInfo prop_2s_info;              // two-step abstraction info for prop
-  AbstractionCollateral(ic3ia::TermSet i, std::unordered_map<msat_term, msat_decl>,
+  AbstractionCollateral(ic3ia::TermSet i, std::unordered_map<msat_term, msat_decl> r,
                         ArrayInfo ii,
                         ArrayInfo ti1s, ArrayInfo ti2s,
                         ArrayInfo pi1s, ArrayInfo pi2s)
-    : indices(i), init_info(ii),
+    : indices(i), read_ufs(r),
+      init_info(ii),
       trans_1s_info(ti1s), trans_2s_info(ti2s),
       prop_1s_info(pi1s), prop_2s_info(pi2s) {}
 };

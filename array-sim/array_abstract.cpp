@@ -323,8 +323,10 @@ std::pair<msat_term, ArrayInfo> abstract_arrays_helper(msat_env env,
     TermSet & indices;            // passed from inputs, persists beyond scope of this function
     TermMap & new_state_vars;     // passed from inputs, persists beyond scope of this function
     TermSet & removed_state_vars; // passed from inputs, persists beyond scope of this function
+    std::unordered_map<msat_term,
+                       msat_decl>
+            & read_cache;         // passed from inputs, persists beyond scope of this function
     TermMap eq_ufs;
-    std::unordered_map<msat_term, msat_decl> &read_cache;
     std::unordered_map<msat_term, std::unordered_map<msat_term, msat_decl>> // only used for caching
     &eq_cache;
     Data(TermMap &c,
@@ -430,21 +432,8 @@ std::pair<msat_term, ArrayInfo> abstract_arrays_helper(msat_env env,
         msat_type arrtype = msat_term_get_type(arr);
         // populate arridxtype and arrelemtype
         assert(msat_is_array_type(e, arrtype, &arridxtype, &arrelemtype));
-        msat_decl readfun;
 
-        if (d->read_cache.find(arr) != d->read_cache.end()) {
-          readfun = d->read_cache[arr];
-        } else {
-          msat_type param_types[2] = {msat_get_integer_type(e),
-                                      msat_get_integer_type(e)};
-          msat_type funtype =
-              msat_get_function_type(e, &param_types[0], 2, arrelemtype);
-          std::string name = "read_";
-          name += msat_term_repr(arr);
-          readfun = msat_declare_function(e, name.c_str(), funtype);
-          d->read_cache[arr] = readfun;
-        }
-
+        msat_decl readfun = d->read_cache.at(arr);
         msat_term cached_args[2] = {arr_cache, int_idx};
         msat_term read_uf = msat_make_uf(e, readfun, &cached_args[0]);
         d->cache[t] = read_uf;
@@ -596,12 +585,13 @@ std::pair<TransitionSystem, AbstractionCollateral> abstract_arrays(TransitionSys
   TermSet removed_state_vars;
   std::unordered_map<msat_term, msat_decl> read_ufs;
 
+  msat_type _type;
+  msat_type arrelemtype;
   // cache all the array state variables
   for (auto sv : ts.statevars())
   {
-    msat_type _type = msat_term_get_type(sv);
-
-    if (msat_is_array_type(env, _type, nullptr, nullptr)) {
+    _type = msat_term_get_type(sv);
+    if (msat_is_array_type(env, _type, nullptr, &arrelemtype)) {
       // turn arrays to integers
       std::string name = msat_term_repr(sv);
       name += "_int";
@@ -615,15 +605,28 @@ std::pair<TransitionSystem, AbstractionCollateral> abstract_arrays(TransitionSys
       cache[ts.next(sv)] = arr_intN;
       new_state_vars[arr_int] = arr_intN;
       removed_state_vars.insert(sv);
+
+      // create a read function for these arrays
+      msat_type param_types[2] = {msat_get_integer_type(env),
+                                  msat_get_integer_type(env)};
+      msat_type funtype =
+        msat_get_function_type(env, &param_types[0], 2, arrelemtype);
+      std::string readname = "read_";
+      readname += msat_term_repr(sv);
+      msat_decl readfun = msat_declare_function(env, readname.c_str(), funtype);
+      read_ufs[arr_int] = readfun;
+      // use the same read function for the next-state
+      // added to map for convenience
+      read_ufs[arr_intN] = readfun;
     }
   }
 
   // cache input variables
   for (auto iv : ts.inputvars())
   {
-    msat_type _type = msat_term_get_type(iv);
+    _type = msat_term_get_type(iv);
 
-    if (msat_is_array_type(env, _type, nullptr, nullptr)) {
+    if (msat_is_array_type(env, _type, nullptr, &arrelemtype)) {
       // turn arrays to integers
       std::string name = msat_term_repr(iv);
       name += "_int";
@@ -631,6 +634,16 @@ std::pair<TransitionSystem, AbstractionCollateral> abstract_arrays(TransitionSys
         msat_declare_function(env, name.c_str(), msat_get_integer_type(env));
       msat_term arr_int = msat_make_constant(env, decl_arrint);
       cache[iv] = arr_int;
+
+      // create a read function for this array
+      msat_type param_types[2] = {msat_get_integer_type(env),
+                                  msat_get_integer_type(env)};
+      msat_type funtype =
+        msat_get_function_type(env, &param_types[0], 2, arrelemtype);
+      std::string readname = "read_";
+      readname += msat_term_repr(iv);
+      msat_decl readfun = msat_declare_function(env, readname.c_str(), funtype);
+      read_ufs[arr_int] = readfun;
     }
   }
 
