@@ -511,6 +511,7 @@ std::pair<msat_term, ArrayInfo> abstract_arrays_helper(msat_env env,
         msat_term idx  = idx_to_int(env, cache.at(msat_term_get_arg(lhs, 1)));
         msat_term val  = cache.at(msat_term_get_arg(lhs, 2));
 
+        data.indices.insert(idx);
         ainf.store_equalities.push_back(AbstractArrayEqStore(cache.at(rhs), arr1, idx, val));
       }
       else if (msat_term_is_array_write(env, rhs))
@@ -526,6 +527,8 @@ std::pair<msat_term, ArrayInfo> abstract_arrays_helper(msat_env env,
         msat_term arr1 = cache.at(msat_term_get_arg(rhs, 0));
         msat_term idx  = cache.at(msat_term_get_arg(rhs, 1));
         msat_term val  = cache.at(msat_term_get_arg(rhs, 2));
+
+        data.indices.insert(idx);
         ainf.store_equalities.push_back(AbstractArrayEqStore(cache.at(lhs), arr1, idx, val));
       }
       else if (msat_term_is_array_const(env, lhs))
