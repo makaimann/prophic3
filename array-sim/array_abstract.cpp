@@ -433,7 +433,7 @@ std::pair<msat_term, ArrayInfo> abstract_arrays_helper(msat_env env,
         // populate arridxtype and arrelemtype
         assert(msat_is_array_type(e, arrtype, &arridxtype, &arrelemtype));
 
-        msat_decl readfun = d->read_cache.at(arr);
+        msat_decl readfun = d->read_cache.at(arr_cache);
         msat_term cached_args[2] = {arr_cache, int_idx};
         msat_term read_uf = msat_make_uf(e, readfun, &cached_args[0]);
         d->cache[t] = read_uf;
