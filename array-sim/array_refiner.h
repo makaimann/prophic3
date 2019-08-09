@@ -3,9 +3,8 @@
 
 #include <vector>
 
-#include "array_abstract.h"
+#include "array_abstracter.h"
 
-// TODO unify names e.g. array_abstract vs array_abstracter refine/refiner
 namespace array_utils
 {
   class ArrayAxiomEnumerator

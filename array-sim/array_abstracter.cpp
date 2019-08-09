@@ -1,4 +1,4 @@
-#include "array_abstract.h"
+#include "array_abstracter.h"
 #include "assert.h"
 
 using namespace ic3ia;

@@ -8,7 +8,7 @@
 
 #include "bmc.h"
 
-#include "array_abstract.h"
+#include "array_abstracter.h"
 
 using namespace std;
 using namespace ic3ia;

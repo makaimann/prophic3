@@ -3,7 +3,7 @@
 #include "mathsat.h"
 #include "utils.h"
 
-#include "array_abstract.h"
+#include "array_abstracter.h"
 #include "array_refiner.h"
 
 using namespace std;
