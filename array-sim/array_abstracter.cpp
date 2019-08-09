@@ -352,6 +352,11 @@ std::pair<msat_term, ArrayInfo> abstract_arrays_helper(msat_env env,
       //       I think it's okay not to as long as we have integer sorts
       //       but maybe it would be easier for debugging to keep it as-is?
 
+      // TODO: Make sure that any equality with const arrays are flattened
+      //       Want to only deal with those at the top level
+
+      // check if it's an array
+
       if (is_array_equality(e, t)) {
         // replace array equality with uninterpreted functions
 
@@ -362,10 +367,6 @@ std::pair<msat_term, ArrayInfo> abstract_arrays_helper(msat_env env,
         msat_term lhs_cache = d->cache[lhs];
         msat_term rhs_cache = d->cache[rhs];
 
-        // TODO: Flatten equalities with constant arrays
-        //       Want to only deal with those at the top level
-
-        // check if it's an array
         msat_decl eqfun;
         if ((d->eq_cache.find(lhs) != d->eq_cache.end()) &&
             ((*d->eq_cache.find(lhs)).second.find(rhs) !=
