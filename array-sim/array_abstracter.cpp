@@ -362,6 +362,9 @@ std::pair<msat_term, ArrayInfo> abstract_arrays_helper(msat_env env,
         msat_term lhs_cache = d->cache[lhs];
         msat_term rhs_cache = d->cache[rhs];
 
+        // TODO: Flatten equalities with constant arrays
+        //       Want to only deal with those at the top level
+
         // check if it's an array
         msat_decl eqfun;
         if ((d->eq_cache.find(lhs) != d->eq_cache.end()) &&

@@ -5,19 +5,24 @@
 
 #include "array_abstracter.h"
 
+#include "bmc.h"
+
 namespace array_utils
 {
   class ArrayAxiomEnumerator
   {
   public:
     // TODO: take by reference or copy? Might want to add things to it only temporarily
-    ArrayAxiomEnumerator(AbstractionCollateral ac, ic3ia::TransitionSystem & ts) : ac(ac), ts(ts) {}
+    ArrayAxiomEnumerator(AbstractionCollateral ac, ic3ia::TransitionSystem & ts, const ic3ia::Options &opts)
+      : ac(ac), ts(ts), bmc(ic3ia::Bmc(ts, opts)) {}
     ic3ia::TermList init_equalities();
     ic3ia::TermList init_stores();
+    ic3ia::TermList init_const_arrays();
     /* ic3ia::TermList init_eq_uf(); */
   private:
     AbstractionCollateral ac;
     ic3ia::TransitionSystem & ts;
+    ic3ia::Bmc bmc;
 
     /* logical implication */
     msat_term implies(msat_env env, msat_term antecedent, msat_term consequent);
@@ -31,18 +36,25 @@ namespace array_utils
     /* Bound a lambda that's representing a bit-vector */
     msat_term bound_lambda(msat_env env, msat_term lambda, size_t width);
 
-    /* Enumerate extentionality axioms for all indices: arr0 = arr1 -> arr0[i] = arr1[i] for all i*/
+    /* Enumerate extentionality axioms for all indices: arr0 = arr1 -> arr0[i] = arr1[i] for all i */
     void enumerate_read_equalities(ic3ia::TermList & axioms,
                                    msat_term arr0,
                                    msat_term arr1,
                                    ic3ia::TermSet & indices);
-    /* Enumerate store axioms on all indices: arr0[idx] = val, forall i != val. arr0[i] = arr1[i]*/
+
+    /* Enumerate store axioms on all indices: arr0[idx] = val, forall i != val. arr0[i] = arr1[i] */
     void enumerate_store_equalities(ic3ia::TermList & axioms,
                                     msat_term arr0,
                                     msat_term arr1,
                                     msat_term idx,
                                     msat_term val,
                                     ic3ia::TermSet & indices);
+
+    /* Enumerate store axioms on all indices: forall i . arr[i] = val */
+    void enumerate_const_array_equalities(ic3ia::TermList & axioms,
+                                          msat_term arr,
+                                          msat_term val,
+                                          ic3ia::TermSet & indices);
   };
 }
 

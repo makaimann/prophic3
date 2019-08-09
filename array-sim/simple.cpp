@@ -38,7 +38,7 @@ int main(int argc, const char **argv)
   ts = p.first;
   AbstractionCollateral ac = p.second;
 
-  ArrayAxiomEnumerator aae(ac, ts);
+  ArrayAxiomEnumerator aae(ac, ts, opts);
 
   cout << "init equality axioms" << endl;
   for (auto a : aae.init_equalities())
@@ -48,6 +48,12 @@ int main(int argc, const char **argv)
 
   cout << "init store axioms" << endl;
   for (auto a : aae.init_stores())
+  {
+    cout << "\t" << msat_to_smtlib2_term(env, a) << endl;
+  }
+
+  cout << "init const_array axioms" << endl;
+  for (auto a : aae.init_const_arrays())
   {
     cout << "\t" << msat_to_smtlib2_term(env, a) << endl;
   }

@@ -11,10 +11,14 @@ namespace array_utils
 TermList ArrayAxiomEnumerator::init_equalities()
 {
   ArrayInfo & init_info = ac.init_info;
+
+  TermSet indices;
+  // note: making assumption that curr_indices uses symbol at 0
+  // this should hold for ic3ia
   TermSet & curr_indices = ac.curr_indices;
 
   TermList axioms;
-  // this is a lower-bound -- might be one more for lambda
+  // this is a lower-bound -- might be one more per equality for lambda
   axioms.reserve(init_info.equalities.size()*curr_indices.size());
 
   for (auto eq : init_info.equalities)
@@ -28,15 +32,36 @@ TermList ArrayAxiomEnumerator::init_equalities()
 TermList ArrayAxiomEnumerator::init_stores()
 {
   ArrayInfo & init_info = ac.init_info;
+  // note: making assumption that curr_indices uses symbol at 0
+  // this should hold for ic3ia
   TermSet & curr_indices = ac.curr_indices;
 
   TermList axioms;
-  // this is a lower-bound -- might be one more for lambda
+  // this is a lower-bound -- might be one more per equality for lambda
   axioms.reserve(init_info.store_equalities.size()*curr_indices.size());
 
   for (auto eq : init_info.store_equalities)
   {
     enumerate_store_equalities(axioms, eq.arr0, eq.arr1, eq.idx, eq.val, curr_indices);
+  }
+
+  return axioms;
+}
+
+TermList ArrayAxiomEnumerator::init_const_arrays()
+{
+  ArrayInfo & init_info = ac.init_info;
+  // note: making assumption that curr_indices uses symbol at 0
+  // this should hold for ic3ia
+  TermSet & curr_indices = ac.curr_indices;
+
+  TermList axioms;
+  // this is a lower bound -- might be one more per equality for lambda
+  axioms.reserve(init_info.const_array_equalities.size()*curr_indices.size());
+
+  for (auto eq : init_info.const_array_equalities)
+  {
+    enumerate_const_array_equalities(axioms, eq.arr, eq.val, curr_indices);
   }
 
   return axioms;
@@ -179,6 +204,47 @@ void ArrayAxiomEnumerator::enumerate_store_equalities(TermList & axioms,
                                            msat_make_uf(env, read1, &args1[0])
                                            );
     axioms.push_back(implies(env, antecedent, consequent));
+  }
+  else
+  {
+    // TODO: Handle other values
+    // only handling bv and int for now
+    assert(msat_is_integer_type(env, _type));
+  }
+
+}
+
+void ArrayAxiomEnumerator::enumerate_const_array_equalities(TermList & axioms,
+                                                            msat_term arr,
+                                                            msat_term val,
+                                                            TermSet & indices)
+{
+  msat_env env = ts.get_env();
+  std::unordered_map<msat_term, msat_decl> & read_ufs = ac.read_ufs;
+  msat_decl read = read_ufs.at(arr);
+
+  // equals value at every index
+  for (auto i : indices)
+  {
+    msat_term args[2] = {arr, i};
+    axioms.push_back(msat_make_equal(env,
+                                     msat_make_uf(env, read, &args[0]),
+                                     val));
+  }
+
+  // add it for lambda too in the finite domain case
+  // no special implication here, just assert that it also equals the value
+  msat_type _type = ac.orig_sorts[arr];
+  size_t width;
+  if(msat_is_bv_type(env, _type, &width))
+  {
+
+    msat_term lambda = get_lambda_from_type(_type);
+    msat_term args[2] = {arr, lambda};
+    axioms.push_back(msat_make_equal(env,
+                                     msat_make_uf(env, read, &args[0]),
+                                     val
+                                     ));
   }
   else
   {
