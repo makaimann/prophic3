@@ -701,6 +701,23 @@ std::pair<TransitionSystem, AbstractionCollateral> abstract_arrays(TransitionSys
       msat_term lambdaN = msat_make_constant(env, lambda_declN);
       new_ts.add_statevar(lambda, lambdaN);
       new_ts.add_trans(msat_make_equal(env, lambda, lambdaN)); // lambda is a frozen var
+
+      // enforce that it's different from all other indices
+      // TODO: optimization idea -- use strictly less than instead of not equals for unbounded domains
+      //       can always find a value in that case
+      msat_term alldiff = msat_make_true(env);
+      for(auto i : curr_indices)
+      {
+        // only if the sorts match
+        if (data.orig_sorts[i] == _type)
+        {
+          alldiff = msat_make_and(env, alldiff,
+                                  msat_make_not(env,
+                                                msat_make_equal(env, lambda, i)));
+        }
+      }
+      new_ts.add_trans(alldiff);
+
       // need to keep track of original type for refinement
       lambdas[lambda] = _type;
     }
