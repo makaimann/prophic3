@@ -74,6 +74,10 @@ struct ArrayInfo
   }
 };
 
+/* Contains all the information about arrays that was removed from the
+ *  the transition relation.
+ * This is used in array_refiner.* for adding array axioms.
+ */
 struct AbstractionCollateral
 {
   ic3ia::TermSet curr_indices;         // all terms used as array indices at current time
@@ -94,6 +98,10 @@ struct AbstractionCollateral
       prop_1s_info(pi1s), prop_2s_info(pi2s) {}
 };
 
+/* Struct to be used by abstraction pass.
+ * Contains some information that will end up in AbstractionCollateral,
+ * and other things, like caches that are only for traversal of the formulae.
+ */
 struct AbstractionData
 {
   ic3ia::TermList args;
