@@ -324,44 +324,12 @@ TransitionSystem flatten_arrays(msat_env env, TransitionSystem & ts) {
 std::pair<msat_term, ArrayInfo> abstract_arrays_helper(msat_env env,
                                                        msat_term term,
                                                        bool remove_top_level_arr_eq,
-                                                       TermMap & cache,
-                                                       TermSet & indices,
-                                                       TermMap & new_state_vars,
-                                                       TermSet & removed_state_vars,
-                                                       std::unordered_map<msat_term, msat_decl> & read_cache
-                                                ) {
-  struct Data {
-    TermList args;
-    TermMap &cache;               // passed from inputs, persists beyond scope of this function
-    TermSet & indices;            // passed from inputs, persists beyond scope of this function
-    TermMap & new_state_vars;     // passed from inputs, persists beyond scope of this function
-    TermSet & removed_state_vars; // passed from inputs, persists beyond scope of this function
-    std::unordered_map<msat_term,
-                       msat_decl>
-            & read_cache;         // passed from inputs, persists beyond scope of this function
-    TermMap eq_ufs;
-    std::unordered_map<msat_term, std::unordered_map<msat_term, msat_decl>> // only used for caching
-    &eq_cache;
-    Data(TermMap &c,
-         TermSet &i,
-         TermMap &nsv,
-         TermSet &rsv,
-         std::unordered_map<msat_term, msat_decl> &r,
-         std::unordered_map<msat_term, std::unordered_map<msat_term, msat_decl>>
-         &e
-         )
-        : cache(c),
-          indices(i),
-          new_state_vars(nsv),
-          removed_state_vars(rsv),
-          read_cache(r),
-          eq_cache(e)
-          {}
-  };
+                                                       AbstractionData & data)
+{
 
   auto visit = [](msat_env e, msat_term t, int preorder,
                   void *data) -> msat_visit_status {
-    Data *d = static_cast<Data *>(data);
+    AbstractionData *d = static_cast<AbstractionData *>(data);
 
     if (d->cache.find(t) != d->cache.end()) {
       // cache hit
@@ -446,7 +414,7 @@ std::pair<msat_term, ArrayInfo> abstract_arrays_helper(msat_env env,
         // populate arridxtype and arrelemtype
         assert(msat_is_array_type(e, arrtype, &arridxtype, &arrelemtype));
 
-        msat_decl readfun = d->read_cache.at(arr_cache);
+        msat_decl readfun = d->read_ufs.at(arr_cache);
         msat_term cached_args[2] = {arr_cache, int_idx};
         msat_term read_uf = msat_make_uf(e, readfun, &cached_args[0]);
         d->cache[t] = read_uf;
@@ -470,11 +438,7 @@ std::pair<msat_term, ArrayInfo> abstract_arrays_helper(msat_env env,
     return MSAT_VISIT_PROCESS;
   };
 
-  std::unordered_map<msat_term, std::unordered_map<msat_term, msat_decl>>
-      eq_cache;
-
   ArrayInfo ainf;
-  Data data(cache, indices, new_state_vars, removed_state_vars, read_cache, eq_cache);
 
   // FIXME: when remove_top_level_arr_eq is false (e.g. for property), we could still get stores in the visit lambda
   //        these will become un-typed
@@ -494,7 +458,7 @@ std::pair<msat_term, ArrayInfo> abstract_arrays_helper(msat_env env,
       else
       {
         msat_visit_term(env, t, visit, &data);
-        res = msat_make_and(env, res, cache[t]);
+        res = msat_make_and(env, res, data.cache[t]);
       }
     }
 
@@ -517,12 +481,12 @@ std::pair<msat_term, ArrayInfo> abstract_arrays_helper(msat_env env,
         msat_visit_term(env, msat_term_get_arg(lhs, 2), visit, &data);
         msat_visit_term(env, rhs, visit, &data);
 
-        msat_term arr1 = cache.at(msat_term_get_arg(lhs, 0));
-        msat_term idx  = idx_to_int(env, cache.at(msat_term_get_arg(lhs, 1)));
-        msat_term val  = cache.at(msat_term_get_arg(lhs, 2));
+        msat_term arr1 = data.cache.at(msat_term_get_arg(lhs, 0));
+        msat_term idx  = idx_to_int(env, data.cache.at(msat_term_get_arg(lhs, 1)));
+        msat_term val  = data.cache.at(msat_term_get_arg(lhs, 2));
 
         data.indices.insert(idx);
-        ainf.store_equalities.push_back(AbstractArrayEqStore(cache.at(rhs), arr1, idx, val));
+        ainf.store_equalities.push_back(AbstractArrayEqStore(data.cache.at(rhs), arr1, idx, val));
       }
       else if (msat_term_is_array_write(env, rhs))
       {
@@ -534,12 +498,12 @@ std::pair<msat_term, ArrayInfo> abstract_arrays_helper(msat_env env,
         msat_visit_term(env, msat_term_get_arg(rhs, 1), visit, &data);
         msat_visit_term(env, msat_term_get_arg(rhs, 2), visit, &data);
 
-        msat_term arr1 = cache.at(msat_term_get_arg(rhs, 0));
-        msat_term idx  = cache.at(msat_term_get_arg(rhs, 1));
-        msat_term val  = cache.at(msat_term_get_arg(rhs, 2));
+        msat_term arr1 = data.cache.at(msat_term_get_arg(rhs, 0));
+        msat_term idx  = data.cache.at(msat_term_get_arg(rhs, 1));
+        msat_term val  = data.cache.at(msat_term_get_arg(rhs, 2));
 
         data.indices.insert(idx);
-        ainf.store_equalities.push_back(AbstractArrayEqStore(cache.at(lhs), arr1, idx, val));
+        ainf.store_equalities.push_back(AbstractArrayEqStore(data.cache.at(lhs), arr1, idx, val));
       }
       else if (msat_term_is_array_const(env, lhs))
       {
@@ -548,8 +512,8 @@ std::pair<msat_term, ArrayInfo> abstract_arrays_helper(msat_env env,
         // visit right-hand side
         msat_visit_term(env, rhs, visit, &data);
 
-        msat_term arr = cache.at(rhs);
-        msat_term val = cache.at(msat_term_get_arg(lhs, 0));
+        msat_term arr = data.cache.at(rhs);
+        msat_term val = data.cache.at(msat_term_get_arg(lhs, 0));
         ainf.const_array_equalities.push_back(AbstractConstArrayEq(arr, val));
       }
       else if (msat_term_is_array_const(env, rhs))
@@ -557,8 +521,8 @@ std::pair<msat_term, ArrayInfo> abstract_arrays_helper(msat_env env,
         // visit left-hand side
         msat_visit_term(env, lhs, visit, &data);
 
-        msat_term arr = cache.at(lhs);
-        msat_term val = cache.at(msat_term_get_arg(rhs, 0));
+        msat_term arr = data.cache.at(lhs);
+        msat_term val = data.cache.at(msat_term_get_arg(rhs, 0));
         ainf.const_array_equalities.push_back(AbstractConstArrayEq(arr, val));
       }
       else
@@ -571,14 +535,14 @@ std::pair<msat_term, ArrayInfo> abstract_arrays_helper(msat_env env,
         assert(msat_is_array_type(env, msat_term_get_type(lhs), nullptr, nullptr) &&
                msat_is_array_type(env, msat_term_get_type(rhs), nullptr, nullptr));
 
-        ainf.equalities.push_back(AbstractArrayEq(cache.at(lhs), cache.at(rhs)));
+        ainf.equalities.push_back(AbstractArrayEq(data.cache.at(lhs), data.cache.at(rhs)));
       }
     }
   }
   else
   {
     msat_visit_term(env, term, visit, &data);
-    res = cache.at(term);
+    res = data.cache.at(term);
   }
 
   ainf.eq_ufs = data.eq_ufs;
@@ -592,11 +556,7 @@ std::pair<TransitionSystem, AbstractionCollateral> abstract_arrays(TransitionSys
   msat_env env = ts.get_env();
   TransitionSystem new_ts(env);
 
-  TermMap cache;
-  TermSet indices;
-  TermMap new_state_vars;
-  TermSet removed_state_vars;
-  std::unordered_map<msat_term, msat_decl> read_ufs;
+  AbstractionData data = AbstractionData();
 
   msat_type _type;
   msat_type arrelemtype;
@@ -614,10 +574,10 @@ std::pair<TransitionSystem, AbstractionCollateral> abstract_arrays(TransitionSys
       msat_decl decl_arrintN =
         msat_declare_function(env, (name + "N").c_str(), msat_get_integer_type(env));
       msat_term arr_intN = msat_make_constant(env, decl_arrintN);
-      cache[sv] = arr_int;
-      cache[ts.next(sv)] = arr_intN;
-      new_state_vars[arr_int] = arr_intN;
-      removed_state_vars.insert(sv);
+      data.cache[sv] = arr_int;
+      data.cache[ts.next(sv)] = arr_intN;
+      data.new_state_vars[arr_int] = arr_intN;
+      data.removed_state_vars.insert(sv);
 
       // create a read function for these arrays
       msat_type param_types[2] = {msat_get_integer_type(env),
@@ -627,10 +587,10 @@ std::pair<TransitionSystem, AbstractionCollateral> abstract_arrays(TransitionSys
       std::string readname = "read_";
       readname += msat_term_repr(sv);
       msat_decl readfun = msat_declare_function(env, readname.c_str(), funtype);
-      read_ufs[arr_int] = readfun;
+      data.read_ufs[arr_int] = readfun;
       // use the same read function for the next-state
       // added to map for convenience
-      read_ufs[arr_intN] = readfun;
+      data.read_ufs[arr_intN] = readfun;
     }
   }
 
@@ -646,7 +606,7 @@ std::pair<TransitionSystem, AbstractionCollateral> abstract_arrays(TransitionSys
       msat_decl decl_arrint =
         msat_declare_function(env, name.c_str(), msat_get_integer_type(env));
       msat_term arr_int = msat_make_constant(env, decl_arrint);
-      cache[iv] = arr_int;
+      data.cache[iv] = arr_int;
 
       // create a read function for this array
       msat_type param_types[2] = {msat_get_integer_type(env),
@@ -656,29 +616,21 @@ std::pair<TransitionSystem, AbstractionCollateral> abstract_arrays(TransitionSys
       std::string readname = "read_";
       readname += msat_term_repr(iv);
       msat_decl readfun = msat_declare_function(env, readname.c_str(), funtype);
-      read_ufs[arr_int] = readfun;
+      data.read_ufs[arr_int] = readfun;
     }
   }
 
   std::pair<msat_term, ArrayInfo> p = abstract_arrays_helper(env,
                                                              ts.init(),
                                                              true,
-                                                             cache,
-                                                             indices,
-                                                             new_state_vars,
-                                                             removed_state_vars,
-                                                             read_ufs);
+                                                             data);
   msat_term new_init = p.first;
   ArrayInfo init_info = p.second;
 
   p = abstract_arrays_helper(env,
                              ts.trans(),
                              true,
-                             cache,
-                             indices,
-                             new_state_vars,
-                             removed_state_vars,
-                             read_ufs
+                             data
                              );
   msat_term new_trans = p.first;
   ArrayInfo trans_info = p.second;
@@ -688,11 +640,7 @@ std::pair<TransitionSystem, AbstractionCollateral> abstract_arrays(TransitionSys
   p = abstract_arrays_helper(env,
                              ts.prop(),
                              false,
-                             cache,
-                             indices,
-                             new_state_vars,
-                             removed_state_vars,
-                             read_ufs
+                             data
                              );
   msat_term new_prop = p.first;
   ArrayInfo prop_info = p.second;
@@ -700,25 +648,25 @@ std::pair<TransitionSystem, AbstractionCollateral> abstract_arrays(TransitionSys
   // add all old state elements unless they've been removed
   for (auto sv : ts.statevars())
   {
-    if (removed_state_vars.find(sv) == removed_state_vars.end())
+    if (data.removed_state_vars.find(sv) == data.removed_state_vars.end())
     {
-      new_state_vars[sv] = ts.next(sv);
+      data.new_state_vars[sv] = ts.next(sv);
     }
   }
 
-  new_ts.initialize(new_state_vars, new_init, new_trans, new_prop, ts.live_prop());
+  new_ts.initialize(data.new_state_vars, new_init, new_trans, new_prop, ts.live_prop());
 
 
   // sort the indices
   TermSet curr_indices;
-  for (auto idx : indices)
+  for (auto idx : data.indices)
   {
     curr_indices.insert(new_ts.cur(idx));
   }
 
   // add any next-state versions that might not have existed
   TermSet next_indices;
-  for (auto idx : indices)
+  for (auto idx : data.indices)
   {
     next_indices.insert(new_ts.next(idx));
   }
@@ -731,7 +679,7 @@ std::pair<TransitionSystem, AbstractionCollateral> abstract_arrays(TransitionSys
   assert(init_info_sorted.second.size() == 0); // info shouldn't have ANY 2-step lemmas
 
   // TODO: figure out when/where to add an extra lambda index
-  AbstractionCollateral ac(curr_indices, next_indices, read_ufs, init_info_sorted.first,
+  AbstractionCollateral ac(curr_indices, next_indices, data.read_ufs, init_info_sorted.first,
                            trans_info_sorted.first, trans_info_sorted.second,
                            prop_info_sorted.first, prop_info_sorted.second);
 

@@ -63,17 +63,11 @@ struct ArrayInfo
   std::vector<AbstractConstArrayEq> const_array_equalities;
   // equality uf applications
   ic3ia::TermMap eq_ufs;
-  /* // read uf applications   <--- I don't think we need these after all.
-                                    nothing to do with them anyway
-                                    all lemmas start from equalities/stores
-   */
-  /* ic3ia::TermSet read_ufs; */
   ArrayInfo() {}
   ArrayInfo(const ArrayInfo & ai)
     : equalities(ai.equalities), store_equalities(ai.store_equalities),
       const_array_equalities(ai.const_array_equalities), eq_ufs(ai.eq_ufs)
       {}
-  //      read_ufs(ai.read_ufs) {}
   size_t size()
   {
     return (equalities.size() + store_equalities.size() + const_array_equalities.size() + eq_ufs.size());
@@ -100,6 +94,26 @@ struct AbstractionCollateral
       prop_1s_info(pi1s), prop_2s_info(pi2s) {}
 };
 
+struct AbstractionData
+{
+  ic3ia::TermList args;
+  ic3ia::TermMap cache;
+  ic3ia::TermSet indices;
+  ic3ia::TermMap new_state_vars;
+  ic3ia::TermSet removed_state_vars;
+  ic3ia::TermMap eq_ufs;
+  std::unordered_map<msat_term,
+    msat_decl>
+    read_ufs;
+  std::unordered_map<msat_term,
+    msat_type>
+    orig_sorts;
+  std::unordered_map<msat_term,
+    std::unordered_map<msat_term,
+    msat_decl>>
+    eq_cache;
+  AbstractionData() {}
+};
 
 /**
  * Takes a formula. splits it on ANDs and returns a list of conjuncts
@@ -149,10 +163,7 @@ ic3ia::TransitionSystem flatten_arrays(msat_env env, ic3ia::TransitionSystem & t
 std::pair<msat_term, ArrayInfo> abstract_arrays_helper(msat_env env,
                                                        msat_term term,
                                                        bool remove_top_level_arr_eq,
-                                                       ic3ia::TermSet & indices,
-                                                       ic3ia::TermMap & new_state_vars,
-                                                       ic3ia::TermSet & removed_state_vars,
-                                                       ic3ia::TermMap & cache
+                                                       AbstractionData & data
                                                        );
 
  std::pair<ic3ia::TransitionSystem, AbstractionCollateral> abstract_arrays(ic3ia::TransitionSystem & ts);
