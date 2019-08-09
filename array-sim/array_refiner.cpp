@@ -17,12 +17,16 @@ void ArrayAxiomEnumerator::enumerate_read_equalities(TermList & axioms,
 
   for (auto i : indices)
   {
-    msat_term args0[2] = {arr0, i};
-    msat_term args1[2] = {arr1, i};
-    axioms.push_back(msat_make_equal(env,
-                                     msat_make_uf(env, read0, &args0[0]),
-                                     msat_make_uf(env, read1, &args1[0])
-                                     ));
+    // only if the sorts match
+    if (msat_type_equals(ac.orig_sorts.at(arr0), ac.orig_sorts.at(i)))
+    {
+      msat_term args0[2] = {arr0, i};
+      msat_term args1[2] = {arr1, i};
+      axioms.push_back(msat_make_equal(env,
+                                       msat_make_uf(env, read0, &args0[0]),
+                                       msat_make_uf(env, read1, &args1[0])
+                                       ));
+    }
   }
 }
 
@@ -47,7 +51,7 @@ void ArrayAxiomEnumerator::enumerate_store_equalities(TermList & axioms,
   // equal at every index except for the write index
   for (auto i : indices)
   {
-    if (i != idx)
+    if ((i != idx) && msat_type_equals(ac.orig_sorts.at(arr0), ac.orig_sorts.at(i)))
     {
       args0[1] = i;
       args1[1] = i;

@@ -15,6 +15,9 @@
 
 namespace array_utils {
 
+using TermTypeMap    = std::unordered_map<msat_term, msat_type>;
+using TermDeclMap    = std::unordered_map<msat_term, msat_decl>;
+
 // holds an abstract array equality, arr0 = arr1
 // the terms are integers, but represent arrays
 struct AbstractArrayEq
@@ -80,20 +83,23 @@ struct ArrayInfo
  */
 struct AbstractionCollateral
 {
-  ic3ia::TermSet curr_indices;         // all terms used as array indices at current time
-  ic3ia::TermSet next_indices;         // next-state of all terms used as array indices
-  std::unordered_map<msat_term, msat_decl> read_ufs;
+  ic3ia::TermSet curr_indices;         // all terms used as array indices at current time, indexed by original sort
+  ic3ia::TermSet next_indices;         // next-state of all terms used as array indices, indexed by original sort
+  TermDeclMap read_ufs;                // maps abstracted arrays to their read UF
+  TermTypeMap orig_sorts;              // maps indices to their original sort and arrays to their original index sorts
   ArrayInfo init_info;                 // abstraction info for init (always one-step)
   ArrayInfo trans_1s_info;             // one-step abstraction info for trans
   ArrayInfo trans_2s_info;             // two-step abstraction info for trans
   ArrayInfo prop_1s_info;              // one-step abstraction info for prop
   ArrayInfo prop_2s_info;              // two-step abstraction info for prop
   AbstractionCollateral(ic3ia::TermSet ci, ic3ia::TermSet ni,
-                        std::unordered_map<msat_term, msat_decl> r, ArrayInfo ii,
+                        TermDeclMap r, TermTypeMap os,
+                        ArrayInfo ii,
                         ArrayInfo ti1s, ArrayInfo ti2s,
                         ArrayInfo pi1s, ArrayInfo pi2s)
     : curr_indices(ci), next_indices(ni),
-      read_ufs(r), init_info(ii),
+      read_ufs(r), orig_sorts(os),
+      init_info(ii),
       trans_1s_info(ti1s), trans_2s_info(ti2s),
       prop_1s_info(pi1s), prop_2s_info(pi2s) {}
 };
@@ -110,16 +116,9 @@ struct AbstractionData
   ic3ia::TermMap new_state_vars;
   ic3ia::TermSet removed_state_vars;
   ic3ia::TermMap eq_ufs;
-  std::unordered_map<msat_term,
-    msat_decl>
-    read_ufs;
-  std::unordered_map<msat_term,
-    msat_type>
-    orig_sorts;
-  std::unordered_map<msat_term,
-    std::unordered_map<msat_term,
-    msat_decl>>
-    eq_cache;
+  TermDeclMap read_ufs;
+  TermTypeMap orig_sorts;
+  std::unordered_map<msat_term, TermDeclMap> eq_cache;
   AbstractionData() {}
 };
 
