@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "array_abstracter.h"
 #include "assert.h"
 
@@ -683,6 +685,27 @@ std::pair<TransitionSystem, AbstractionCollateral> abstract_arrays(TransitionSys
     next_indices.insert(new_ts.next(idx));
   }
 
+  // create lambda indices for each index sort
+  // represents an index which hasn't been seen yet
+  std::vector<msat_type> types; // msat_type not hashable
+  TermTypeMap lambdas;
+  for(auto elem : data.orig_sorts)
+  {
+    msat_type _type = elem.second;
+    if(std::find(types.begin(), types.end(), _type) == types.end())
+    {
+      types.push_back(_type);
+      msat_decl lambda_decl = msat_declare_function(env, "__lambda__", msat_get_integer_type(env));
+      msat_term lambda = msat_make_constant(env, lambda_decl);
+      msat_decl lambda_declN = msat_declare_function(env, "__lambda__N", msat_get_integer_type(env));
+      msat_term lambdaN = msat_make_constant(env, lambda_declN);
+      new_ts.add_statevar(lambda, lambdaN);
+      new_ts.add_trans(msat_make_equal(env, lambda, lambdaN)); // lambda is a frozen var
+      // need to keep track of original type for refinement
+      lambdas[lambda] = _type;
+    }
+  }
+
   // sort array info by one-step or two-step lemmas
   std::pair<ArrayInfo, ArrayInfo> init_info_sorted  = sort_array_infos(init_info, new_ts);
   std::pair<ArrayInfo, ArrayInfo> trans_info_sorted = sort_array_infos(trans_info, new_ts);
@@ -693,7 +716,7 @@ std::pair<TransitionSystem, AbstractionCollateral> abstract_arrays(TransitionSys
   // TODO: figure out when/where to add an extra lambda index
   AbstractionCollateral ac(curr_indices, next_indices,
                            data.read_ufs, data.orig_sorts,
-                           init_info_sorted.first,
+                           lambdas, init_info_sorted.first,
                            trans_info_sorted.first, trans_info_sorted.second,
                            prop_info_sorted.first, prop_info_sorted.second);
 

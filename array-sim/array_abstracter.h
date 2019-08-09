@@ -13,6 +13,13 @@
 #include "utils.h"
 #include "ts.h"
 
+
+// convenience operator
+inline bool operator==(msat_type t0, msat_type t1)
+{
+ return msat_type_equals(t0, t1);
+}
+
 namespace array_utils {
 
 using TermTypeMap    = std::unordered_map<msat_term, msat_type>;
@@ -87,6 +94,7 @@ struct AbstractionCollateral
   ic3ia::TermSet next_indices;         // next-state of all terms used as array indices, indexed by original sort
   TermDeclMap read_ufs;                // maps abstracted arrays to their read UF
   TermTypeMap orig_sorts;              // maps indices to their original sort and arrays to their original index sorts
+  TermTypeMap lambdas;                 // lambda indices that represent all unseen indices for that sort
   ArrayInfo init_info;                 // abstraction info for init (always one-step)
   ArrayInfo trans_1s_info;             // one-step abstraction info for trans
   ArrayInfo trans_2s_info;             // two-step abstraction info for trans
@@ -94,12 +102,12 @@ struct AbstractionCollateral
   ArrayInfo prop_2s_info;              // two-step abstraction info for prop
   AbstractionCollateral(ic3ia::TermSet ci, ic3ia::TermSet ni,
                         TermDeclMap r, TermTypeMap os,
-                        ArrayInfo ii,
+                        TermTypeMap l, ArrayInfo ii,
                         ArrayInfo ti1s, ArrayInfo ti2s,
                         ArrayInfo pi1s, ArrayInfo pi2s)
     : curr_indices(ci), next_indices(ni),
       read_ufs(r), orig_sorts(os),
-      init_info(ii),
+      lambdas(l), init_info(ii),
       trans_1s_info(ti1s), trans_2s_info(ti2s),
       prop_1s_info(pi1s), prop_2s_info(pi2s) {}
 };
