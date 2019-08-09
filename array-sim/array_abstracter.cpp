@@ -695,9 +695,11 @@ std::pair<TransitionSystem, AbstractionCollateral> abstract_arrays(TransitionSys
     if(std::find(types.begin(), types.end(), _type) == types.end())
     {
       types.push_back(_type);
-      msat_decl lambda_decl = msat_declare_function(env, "__lambda__", msat_get_integer_type(env));
+      std::string name = "__lambda__";
+      name += msat_type_repr(_type);
+      msat_decl lambda_decl = msat_declare_function(env, name.c_str(), msat_get_integer_type(env));
       msat_term lambda = msat_make_constant(env, lambda_decl);
-      msat_decl lambda_declN = msat_declare_function(env, "__lambda__N", msat_get_integer_type(env));
+      msat_decl lambda_declN = msat_declare_function(env, (name + "N").c_str(), msat_get_integer_type(env));
       msat_term lambdaN = msat_make_constant(env, lambda_declN);
       new_ts.add_statevar(lambda, lambdaN);
       new_ts.add_trans(msat_make_equal(env, lambda, lambdaN)); // lambda is a frozen var
