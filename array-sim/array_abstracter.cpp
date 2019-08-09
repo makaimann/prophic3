@@ -251,7 +251,7 @@ TransitionSystem flatten_arrays(msat_env env, TransitionSystem & ts) {
         rebuilt = msat_make_term(e, s, &args[0]);
       }
 
-      if (msat_term_is_array_write(e, rebuilt)) {
+      if (msat_term_is_array_write(e, rebuilt) || msat_term_is_array_const(e, rebuilt)) {
         // TODO: maybe auto-generate this name in another way? Need to be sure
         // it doesn't clash with user-provided names
         std::string name = "arr_flatten_" + std::to_string(d->num_arrs);
@@ -264,7 +264,9 @@ TransitionSystem flatten_arrays(msat_env env, TransitionSystem & ts) {
         msat_term arr_eq = msat_make_equal(e, res, rebuilt);
         d->new_state_vars[res] = resN;
         d->arr_assignments.push_back(arr_eq);
-      } else {
+      }
+      else
+      {
         res = rebuilt;
       }
 
@@ -352,11 +354,7 @@ std::pair<msat_term, ArrayInfo> abstract_arrays_helper(msat_env env,
       //       I think it's okay not to as long as we have integer sorts
       //       but maybe it would be easier for debugging to keep it as-is?
 
-      // TODO: Make sure that any equality with const arrays are flattened
-      //       Want to only deal with those at the top level
-
       // check if it's an array
-
       if (is_array_equality(e, t)) {
         // replace array equality with uninterpreted functions
 
