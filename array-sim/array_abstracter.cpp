@@ -718,8 +718,22 @@ std::pair<TransitionSystem, AbstractionCollateral> abstract_arrays(TransitionSys
       }
       new_ts.add_trans(alldiff);
 
-      // need to keep track of original type for refinement
-      lambdas[lambda] = _type;
+      // if it's an infinite domain index, can just add it to index sets
+      // otherwise keep it separate
+      // for now, only handle int and bit-vector
+      if (msat_is_integer_type(env, _type))
+      {
+        curr_indices.insert(lambda);
+      }
+      else if (msat_is_bv_type(env, _type, nullptr))
+      {
+        // need to keep track of original type for refinement
+        lambdas[lambda] = _type;
+      }
+      else
+      {
+        throw "UNHANDLED_TYPE";
+      }
     }
   }
 
