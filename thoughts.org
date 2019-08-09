@@ -37,5 +37,20 @@
 *** lambda might not need to be different from all other indices in the transition system version
 **** hand-wavey idea: because it's an overapproximation, it can always find a way to violate the system by setting it to the wrong value
 **** although it's difficult for constant arrays
-***** because we need to compare them on indices that haven't otherwise occured
-***** need to think about the approximation direction though
+**** IMPORTANT: Lambda can produce incorrect example even if we use integers for everything (but there's a solution)
+***** If the index domain is finite, then lambda could make a formula unsat when it should be sat
+***** Think about comparing two sequences of stores on different const arrays for equality
+      This will always being unsat for infinite domains (e.g. with lambda) because there's always
+      another index that hasn't been written to.
+
+      But for finite domain indices, you can exhaust the domain.
+
+      Proposed solution:
+      Prefix all lemmas including lambda with:
+      (lambda in range) -> lemma
+
+      e.g. for a BV{2}
+      (0 <= lambda <= 3) -> lemma
+
+      Thus, if you've written to all indices, lambda has to be chosen outside of the range and the lemma is disabled
+      Otherwise, you still need it
