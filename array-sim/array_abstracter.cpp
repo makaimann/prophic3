@@ -683,11 +683,12 @@ std::pair<TransitionSystem, AbstractionCollateral> abstract_arrays(TransitionSys
     curr_indices.insert(new_ts.cur(idx));
   }
 
+  // TODO: Decide if we should actually add these
   // add any next-state versions that might not have existed
-  TermSet next_indices;
+  // shown up in the transition relation already
   for (auto idx : data.indices)
   {
-    next_indices.insert(new_ts.next(idx));
+    data.indices.insert(new_ts.next(idx));
   }
 
   // create lambda indices for each index sort
@@ -731,6 +732,7 @@ std::pair<TransitionSystem, AbstractionCollateral> abstract_arrays(TransitionSys
       if (msat_is_integer_type(env, _type))
       {
         curr_indices.insert(lambda);
+        data.indices.insert(lambda); // don't need next(lambda) because lambda is a frozenvar
       }
       else if (msat_is_bv_type(env, _type, nullptr))
       {
@@ -752,7 +754,7 @@ std::pair<TransitionSystem, AbstractionCollateral> abstract_arrays(TransitionSys
   assert(init_info_sorted.second.size() == 0); // info shouldn't have ANY 2-step lemmas
 
   // TODO: figure out when/where to add an extra lambda index
-  AbstractionCollateral ac(curr_indices, next_indices,
+  AbstractionCollateral ac(curr_indices, data.indices,
                            data.read_ufs, data.orig_sorts,
                            lambdas, init_info_sorted.first,
                            trans_info_sorted.first, trans_info_sorted.second,

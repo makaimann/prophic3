@@ -90,8 +90,8 @@ struct ArrayInfo
  */
 struct AbstractionCollateral
 {
-  ic3ia::TermSet curr_indices;         // all terms used as array indices at current time, indexed by original sort
-  ic3ia::TermSet next_indices;         // next-state of all terms used as array indices, indexed by original sort
+  ic3ia::TermSet curr_indices;         // all terms used as array indices at current time
+  ic3ia::TermSet all_indices;          // all indices (current and next)
   TermDeclMap read_ufs;                // maps abstracted arrays to their read UF
   TermTypeMap orig_sorts;              // maps indices to their original sort and arrays to their original index sorts
   TermTypeMap lambdas;                 // lambda indices that represent all unseen indices for that sort
@@ -100,12 +100,12 @@ struct AbstractionCollateral
   ArrayInfo trans_2s_info;             // two-step abstraction info for trans
   ArrayInfo prop_1s_info;              // one-step abstraction info for prop
   ArrayInfo prop_2s_info;              // two-step abstraction info for prop
-  AbstractionCollateral(ic3ia::TermSet ci, ic3ia::TermSet ni,
+  AbstractionCollateral(ic3ia::TermSet ci, ic3ia::TermSet ai,
                         TermDeclMap r, TermTypeMap os,
                         TermTypeMap l, ArrayInfo ii,
                         ArrayInfo ti1s, ArrayInfo ti2s,
                         ArrayInfo pi1s, ArrayInfo pi2s)
-    : curr_indices(ci), next_indices(ni),
+    : curr_indices(ci), all_indices(ai),
       read_ufs(r), orig_sorts(os),
       lambdas(l), init_info(ii),
       trans_1s_info(ti1s), trans_2s_info(ti2s),

@@ -241,10 +241,12 @@ void ArrayAxiomEnumerator::enumerate_const_array_equalities(TermList & axioms,
 
     msat_term lambda = get_lambda_from_type(_type);
     msat_term args[2] = {arr, lambda};
-    axioms.push_back(msat_make_equal(env,
-                                     msat_make_uf(env, read, &args[0]),
-                                     val
-                                     ));
+    axioms.push_back(implies(env,
+                             bound_lambda(env, lambda, width),
+                             msat_make_equal(env,
+                                             msat_make_uf(env, read, &args[0]),
+                                             val
+                                             )));
   }
   else
   {
