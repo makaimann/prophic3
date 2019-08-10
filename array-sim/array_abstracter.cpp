@@ -393,12 +393,15 @@ std::pair<msat_term, ArrayInfo> abstract_arrays_helper(msat_env env,
         name += msat_term_repr(lhs);
         name += "_";
         name += msat_term_repr(rhs);
+
+        msat_type idx_type;
+        msat_is_array_type(e, msat_term_get_type(lhs), &idx_type, nullptr);
         msat_decl decl_witness =
-          msat_declare_function(e, name.c_str(), msat_get_integer_type(e));
-        msat_term witness = msat_make_constant(e, decl_witness);
+          msat_declare_function(e, name.c_str(), idx_type);
+        msat_term witness = idx_to_int(e, msat_make_constant(e, decl_witness));
         msat_decl decl_witnessN =
-          msat_declare_function(e, (name + "N").c_str(), msat_get_integer_type(e));
-        msat_term witnessN = msat_make_constant(e, decl_witnessN);
+          msat_declare_function(e, (name + "N").c_str(), idx_type);
+        msat_term witnessN = idx_to_int(e, msat_make_constant(e, decl_witnessN));
         d->eq_ufs[eq_uf] = witness;
         // update state variables
         d->new_state_vars[witness] = witnessN;
