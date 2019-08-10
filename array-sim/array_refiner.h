@@ -14,7 +14,10 @@ namespace array_utils
   public:
     // TODO: take by reference or copy? Might want to add things to it only temporarily
     ArrayAxiomEnumerator(AbstractionCollateral ac, ic3ia::TransitionSystem & ts, const ic3ia::Options &opts)
-      : ac(ac), ts(ts), bmc(ic3ia::Bmc(ts, opts)) {}
+      : ac(ac), ts(ts), bmc(ic3ia::Bmc(ts, opts))
+    {
+      env = ts.get_env();
+    }
     ic3ia::TermList init_equalities();
     ic3ia::TermList init_stores();
     ic3ia::TermList init_const_arrays();
@@ -23,9 +26,10 @@ namespace array_utils
     AbstractionCollateral ac;
     ic3ia::TransitionSystem & ts;
     ic3ia::Bmc bmc;
+    msat_env env;
 
     /* logical implication */
-    msat_term implies(msat_env env, msat_term antecedent, msat_term consequent);
+    msat_term implies(msat_term antecedent, msat_term consequent);
 
     /* Looks up the corresponding lambda index for a type
      * Only for finite-domain types (bv only at this point)
@@ -34,7 +38,7 @@ namespace array_utils
     msat_term get_lambda_from_type(msat_type _type);
 
     /* Bound a lambda that's representing a bit-vector */
-    msat_term bound_lambda(msat_env env, msat_term lambda, size_t width);
+    msat_term bound_lambda(msat_term lambda, size_t width);
 
     /* Enumerate extentionality axioms for all indices: arr0 = arr1 -> arr0[i] = arr1[i] for all i */
     void enumerate_read_equalities(ic3ia::TermList & axioms,

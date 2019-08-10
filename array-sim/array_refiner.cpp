@@ -3,8 +3,6 @@
 
 #include "array_refiner.h"
 
-// TODO: cache the env in the class, and don't pass it to any functions
-
 using namespace ic3ia;
 
 namespace array_utils
@@ -88,7 +86,7 @@ TermList ArrayAxiomEnumerator::init_eq_uf()
   return axioms;
 }
 
-msat_term ArrayAxiomEnumerator::implies(msat_env env, msat_term antecedent, msat_term consequent)
+msat_term ArrayAxiomEnumerator::implies(msat_term antecedent, msat_term consequent)
 {
   return msat_make_or(env, msat_make_not(env, antecedent),
                       consequent);
@@ -109,7 +107,7 @@ msat_term ArrayAxiomEnumerator::get_lambda_from_type(msat_type _type)
   return lambda;
 }
 
-msat_term ArrayAxiomEnumerator::bound_lambda(msat_env env, msat_term lambda, size_t width)
+msat_term ArrayAxiomEnumerator::bound_lambda(msat_term lambda, size_t width)
 {
   // FIXME: Technically not supporting any bit-width here
   //        I think maxint is probably enough though -- I'd hope!
@@ -160,7 +158,7 @@ void ArrayAxiomEnumerator::enumerate_read_equalities(TermList & axioms,
                                            msat_make_uf(env, read1, &args1[0])
                                            );
 
-    axioms.push_back(implies(env, bound_lambda(env, lambda, width), consequent));
+    axioms.push_back(implies(bound_lambda(lambda, width), consequent));
 
   }
   else
@@ -204,7 +202,7 @@ void ArrayAxiomEnumerator::enumerate_store_equalities(TermList & axioms,
                                              msat_make_uf(env, read0, &args0[0]),
                                              msat_make_uf(env, read1, &args1[0])
                                              );
-      axioms.push_back(implies(env, antecedent, consequent));
+      axioms.push_back(implies(antecedent, consequent));
     }
   }
 
@@ -218,13 +216,13 @@ void ArrayAxiomEnumerator::enumerate_store_equalities(TermList & axioms,
 
     msat_term args0[2] = {arr0, lambda};
     msat_term args1[2] = {arr1, lambda};
-    msat_term antecedent = msat_make_and(env, bound_lambda(env, lambda, width),
+    msat_term antecedent = msat_make_and(env, bound_lambda(lambda, width),
                                          msat_make_not(env, msat_make_equal(env, lambda, idx)));
     msat_term consequent = msat_make_equal(env,
                                            msat_make_uf(env, read0, &args0[0]),
                                            msat_make_uf(env, read1, &args1[0])
                                            );
-    axioms.push_back(implies(env, antecedent, consequent));
+    axioms.push_back(implies(antecedent, consequent));
   }
   else
   {
@@ -262,8 +260,7 @@ void ArrayAxiomEnumerator::enumerate_const_array_equalities(TermList & axioms,
 
     msat_term lambda = get_lambda_from_type(_type);
     msat_term args[2] = {arr, lambda};
-    axioms.push_back(implies(env,
-                             bound_lambda(env, lambda, width),
+    axioms.push_back(implies(bound_lambda(lambda, width),
                              msat_make_equal(env,
                                              msat_make_uf(env, read, &args[0]),
                                              val
@@ -302,8 +299,7 @@ void ArrayAxiomEnumerator::enumerate_eq_uf_axioms(ic3ia::TermList & axioms,
   {
     args0[1] = i;
     args1[1] = i;
-    axioms.push_back(implies(env,
-                             eq_uf,
+    axioms.push_back(implies(eq_uf,
                              msat_make_equal(env,
                                              msat_make_uf(env, read0, &args0[0]),
                                              msat_make_uf(env, read1, &args1[0])
@@ -313,8 +309,7 @@ void ArrayAxiomEnumerator::enumerate_eq_uf_axioms(ic3ia::TermList & axioms,
   args0[1] = witness;
   args1[1] = witness;
   msat_term not_eq_uf = msat_make_not(env, eq_uf);
-  axioms.push_back(implies(env,
-                           not_eq_uf,
+  axioms.push_back(implies(not_eq_uf,
                            msat_make_equal(env,
                                            msat_make_uf(env, read0, &args0[0]),
                                            msat_make_uf(env, read1, &args1[0])
