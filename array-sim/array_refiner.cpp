@@ -3,6 +3,8 @@
 
 #include "array_refiner.h"
 
+// TODO: cache the env in the class, and don't pass it to any functions
+
 using namespace ic3ia;
 
 namespace array_utils
@@ -62,6 +64,25 @@ TermList ArrayAxiomEnumerator::init_const_arrays()
   for (auto eq : init_info.const_array_equalities)
   {
     enumerate_const_array_equalities(axioms, eq.arr, eq.val, curr_indices);
+  }
+
+  return axioms;
+}
+
+TermList ArrayAxiomEnumerator::init_eq_uf()
+{
+  ArrayInfo & init_info = ac.init_info;
+  // note: making assumption that curr_indices uses symbol at 0
+  // this should hold for ic3ia
+  TermSet & curr_indices = ac.curr_indices;
+
+  TermList axioms;
+  // this is a lower bound -- might be one more per equality for lambda
+  axioms.reserve(init_info.const_array_equalities.size()*curr_indices.size());
+
+  for (auto elem : init_info.eq_ufs)
+  {
+    enumerate_eq_uf_axioms(axioms, elem.first, elem.second, curr_indices);
   }
 
   return axioms;
@@ -254,6 +275,50 @@ void ArrayAxiomEnumerator::enumerate_const_array_equalities(TermList & axioms,
     // only handling bv and int for now
     assert(msat_is_integer_type(env, _type));
   }
+
+}
+
+void ArrayAxiomEnumerator::enumerate_eq_uf_axioms(ic3ia::TermList & axioms,
+                                                  msat_term eq_uf,
+                                                  msat_term witness,
+                                                  ic3ia::TermSet & indices)
+{
+  msat_env env = ts.get_env();
+  std::unordered_map<msat_term, msat_decl> & read_ufs = ac.read_ufs;
+
+  msat_term arr0 = msat_term_get_arg(eq_uf, 0);
+  msat_term arr1 = msat_term_get_arg(eq_uf, 0);
+
+  msat_decl read0 = read_ufs.at(arr0);
+  msat_decl read1 = read_ufs.at(arr1);
+
+  msat_term args0[2];
+  msat_term args1[2];
+
+  args0[0] = arr0;
+  args1[0] = arr1;
+
+  for (auto i : indices)
+  {
+    args0[1] = i;
+    args1[1] = i;
+    axioms.push_back(implies(env,
+                             eq_uf,
+                             msat_make_equal(env,
+                                             msat_make_uf(env, read0, &args0[0]),
+                                             msat_make_uf(env, read1, &args1[0])
+                                             )));
+  }
+
+  args0[1] = witness;
+  args1[1] = witness;
+  msat_term not_eq_uf = msat_make_not(env, eq_uf);
+  axioms.push_back(implies(env,
+                           not_eq_uf,
+                           msat_make_equal(env,
+                                           msat_make_uf(env, read0, &args0[0]),
+                                           msat_make_uf(env, read1, &args1[0])
+                                           )));
 
 }
 

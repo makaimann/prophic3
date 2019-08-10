@@ -18,7 +18,7 @@ namespace array_utils
     ic3ia::TermList init_equalities();
     ic3ia::TermList init_stores();
     ic3ia::TermList init_const_arrays();
-    /* ic3ia::TermList init_eq_uf(); */
+    ic3ia::TermList init_eq_uf();
   private:
     AbstractionCollateral ac;
     ic3ia::TransitionSystem & ts;
@@ -55,6 +55,15 @@ namespace array_utils
                                           msat_term arr,
                                           msat_term val,
                                           ic3ia::TermSet & indices);
+
+    /* Enumerate equality axioms on all indices:
+     *  forall i . eq(a, b) -> a[i] = b[i] AND
+     *  forall i -eq(a, b) -> a[witness] != b[witness]
+     */
+    void enumerate_eq_uf_axioms(ic3ia::TermList & axioms,
+                                msat_term eq_uf,
+                                msat_term witness,
+                                ic3ia::TermSet & indices);
   };
 }
 
