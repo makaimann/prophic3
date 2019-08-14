@@ -42,7 +42,7 @@ public:
     ///< check whether a property holds for paths of length up to k. Returns
     ///< false if a counterexample is found
 
-    void add_assumptions(TermList assumptions)
+    void add_assumptions(TermList assumptions);
     ///< adds timed assumptions to the underlying solver
     ///< these assumptions cannot be removed
 

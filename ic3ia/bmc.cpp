@@ -181,7 +181,7 @@ void Bmc::add_assumptions(TermList assumptions)
 {
   for(auto a : assumptions)
   {
-    msat_assert_formula(env_, assumptions);
+    msat_assert_formula(env_, a);
   }
 }
 
