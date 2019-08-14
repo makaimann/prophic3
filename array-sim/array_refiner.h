@@ -12,16 +12,16 @@ namespace array_utils
   class ArrayAxiomEnumerator
   {
   public:
-    // TODO: take by reference or copy? Might want to add things to it only temporarily
     ArrayAxiomEnumerator(AbstractionCollateral ac, ic3ia::TransitionSystem & ts, const ic3ia::Options &opts)
       : ac(ac), ts(ts), bmc(ic3ia::Bmc(ts, opts))
     {
       env = ts.get_env();
     }
-    ic3ia::TermList init_equalities();
-    ic3ia::TermList init_stores();
-    ic3ia::TermList init_const_arrays();
-    ic3ia::TermList init_eq_uf();
+
+    ic3ia::TermList init_equalities() { return equality_lemmas(ac.init_info); };
+    ic3ia::TermList init_stores() { return store_lemmas(ac.init_info); };
+    ic3ia::TermList init_const_arrays() { return const_array_lemmas(ac.init_info); };
+    ic3ia::TermList init_eq_uf() { return eq_uf_lemmas(ac.init_info); };
   private:
     AbstractionCollateral ac;
     ic3ia::TransitionSystem & ts;
@@ -39,6 +39,15 @@ namespace array_utils
 
     /* Bound a lambda that's representing a bit-vector */
     msat_term bound_lambda(msat_term lambda, size_t width);
+
+    /* Enumerate the equality lemmas in ArrayInfo ai */
+    ic3ia::TermList equality_lemmas(ArrayInfo & ai);
+    /* Enumerate the store lemmas in ArrayInfo ai */
+    ic3ia::TermList store_lemmas(ArrayInfo & ai);
+    /* Enumerate the const array lemmas in ArrayInfo ai */
+    ic3ia::TermList const_array_lemmas(ArrayInfo & ai);
+    /* Enumerate the equality uninterpreted function lemmas in ArrayInfo ai */
+    ic3ia::TermList eq_uf_lemmas(ArrayInfo & ai);
 
     /* Enumerate extentionality axioms for all indices: arr0 = arr1 -> arr0[i] = arr1[i] for all i */
     void enumerate_read_equalities(ic3ia::TermList & axioms,
