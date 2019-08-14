@@ -177,6 +177,14 @@ bool Bmc::check_until(size_t k)
     return true;
 }
 
+void Bmc::add_assumptions(TermList assumptions)
+{
+  for(auto a : assumptions)
+  {
+    msat_assert_formula(env_, assumptions);
+  }
+}
+
 
 msat_truth_value Bmc::prove()
 {
