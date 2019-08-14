@@ -70,8 +70,8 @@ namespace array_utils
                                           ic3ia::TermSet & indices);
 
     /* Enumerate equality axioms on all indices:
-     *  forall i . eq(a, b) -> a[i] = b[i] AND
-     *  forall i -eq(a, b) -> a[witness] != b[witness]
+     *  forall i .  eq(a, b) -> a[i] = b[i] AND
+     *  forall i . !eq(a, b) -> a[witness] != b[witness]
      */
     void enumerate_eq_uf_axioms(ic3ia::TermList & axioms,
                                 msat_term eq_uf,
