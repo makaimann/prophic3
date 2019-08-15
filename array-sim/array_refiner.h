@@ -18,10 +18,18 @@ namespace array_utils
       env = ts.get_env();
     }
 
-    ic3ia::TermList init_equalities() { return equality_lemmas(ac.init_info); };
-    ic3ia::TermList init_stores() { return store_lemmas(ac.init_info); };
-    ic3ia::TermList init_const_arrays() { return const_array_lemmas(ac.init_info); };
-    ic3ia::TermList init_eq_uf() { return eq_uf_lemmas(ac.init_info); };
+    ic3ia::TermList init_equalities() { return equality_lemmas(ac.init_info, false); };
+    ic3ia::TermList init_stores() { return store_lemmas(ac.init_info, false); };
+    ic3ia::TermList init_const_arrays() { return const_array_lemmas(ac.init_info, false); };
+    ic3ia::TermList init_eq_uf() { return eq_uf_lemmas(ac.init_info, false); };
+    ic3ia::TermList trans_1s_equalities() { return equality_lemmas(ac.trans_1s_info, false); };
+    ic3ia::TermList trans_1s_stores() { return store_lemmas(ac.trans_1s_info, false); };
+    ic3ia::TermList trans_1s_const_arrays() { return const_array_lemmas(ac.trans_1s_info, false); };
+    ic3ia::TermList trans_1s_eq_uf() { return eq_uf_lemmas(ac.trans_1s_info, false); };
+    ic3ia::TermList trans_2s_equalities() { return equality_lemmas(ac.trans_2s_info, true); };
+    ic3ia::TermList trans_2s_stores() { return store_lemmas(ac.trans_2s_info, true); };
+    ic3ia::TermList trans_2s_const_arrays() { return const_array_lemmas(ac.trans_2s_info, true); };
+    ic3ia::TermList trans_2s_eq_uf() { return eq_uf_lemmas(ac.trans_2s_info, true); };
   private:
     AbstractionCollateral ac;
     ic3ia::TransitionSystem & ts;
@@ -40,14 +48,26 @@ namespace array_utils
     /* Bound a lambda that's representing a bit-vector */
     msat_term bound_lambda(msat_term lambda, size_t width);
 
-    /* Enumerate the equality lemmas in ArrayInfo ai */
-    ic3ia::TermList equality_lemmas(ArrayInfo & ai);
-    /* Enumerate the store lemmas in ArrayInfo ai */
-    ic3ia::TermList store_lemmas(ArrayInfo & ai);
-    /* Enumerate the const array lemmas in ArrayInfo ai */
-    ic3ia::TermList const_array_lemmas(ArrayInfo & ai);
-    /* Enumerate the equality uninterpreted function lemmas in ArrayInfo ai */
-    ic3ia::TermList eq_uf_lemmas(ArrayInfo & ai);
+    /* Enumerate the equality lemmas in ArrayInfo ai
+     * @param ai the ArrayInfo to use
+     * @param next whether to include next-state indices
+     */
+    ic3ia::TermList equality_lemmas(ArrayInfo & ai, bool next);
+    /* Enumerate the store lemmas in ArrayInfo ai
+     * @param ai the ArrayInfo to use
+     * @param next whether to include next-state indices
+     */
+    ic3ia::TermList store_lemmas(ArrayInfo & ai, bool next);
+    /* Enumerate the const array lemmas in ArrayInfo ai
+     * @param ai the ArrayInfo to use
+     * @param next whether to include next-state indices
+     */
+    ic3ia::TermList const_array_lemmas(ArrayInfo & ai, bool next);
+    /* Enumerate the equality uninterpreted function lemmas in ArrayInfo ai
+     * @param ai the ArrayInfo to use
+     * @param next whether to include next-state indices
+     */
+    ic3ia::TermList eq_uf_lemmas(ArrayInfo & ai, bool next);
 
     /* Enumerate extentionality axioms for all indices: arr0 = arr1 -> arr0[i] = arr1[i] for all i */
     void enumerate_read_equalities(ic3ia::TermList & axioms,

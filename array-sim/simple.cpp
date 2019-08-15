@@ -58,5 +58,59 @@ int main(int argc, const char **argv)
     cout << "\t" << msat_to_smtlib2_term(env, a) << endl;
   }
 
+  cout << "init eq_uf axioms" << endl;
+  for (auto a : aae.init_eq_uf())
+  {
+    cout << "\t" << msat_to_smtlib2_term(env, a) << endl;
+  }
+
+  cout << "trans_1s equality axioms" << endl;
+  for (auto a : aae.trans_1s_equalities())
+  {
+    cout << "\t" << msat_to_smtlib2_term(env, a) << endl;
+  }
+
+  cout << "trans_1s store axioms" << endl;
+  for (auto a : aae.trans_1s_stores())
+  {
+    cout << "\t" << msat_to_smtlib2_term(env, a) << endl;
+  }
+
+  cout << "trans_1s const_array axioms" << endl;
+  for (auto a : aae.trans_1s_const_arrays())
+  {
+    cout << "\t" << msat_to_smtlib2_term(env, a) << endl;
+  }
+
+  cout << "trans_1s eq_uf axioms" << endl;
+  for (auto a : aae.trans_1s_eq_uf())
+  {
+    cout << "\t" << msat_to_smtlib2_term(env, a) << endl;
+  }
+
+  cout << "trans_2s equality axioms" << endl;
+  for (auto a : aae.trans_2s_equalities())
+  {
+    cout << "\t" << msat_to_smtlib2_term(env, a) << endl;
+  }
+
+  cout << "trans_2s store axioms" << endl;
+  for (auto a : aae.trans_2s_stores())
+  {
+    cout << "\t" << msat_to_smtlib2_term(env, a) << endl;
+  }
+
+  cout << "trans_2s const_array axioms" << endl;
+  for (auto a : aae.trans_2s_const_arrays())
+  {
+    cout << "\t" << msat_to_smtlib2_term(env, a) << endl;
+  }
+
+  cout << "trans_2s eq_uf axioms" << endl;
+  for (auto a : aae.trans_2s_eq_uf())
+  {
+    cout << "\t" << msat_to_smtlib2_term(env, a) << endl;
+  }
+
   return 0;
 }
