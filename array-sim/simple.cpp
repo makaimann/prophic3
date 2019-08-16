@@ -10,6 +10,19 @@ using namespace std;
 using namespace ic3ia;
 using namespace array_utils;
 
+void print_terms(msat_env env, TermList l, const char * msg)
+{
+  if (msg)
+  {
+    std::cout << msg << std::endl;
+  }
+
+  for (auto e : l)
+  {
+    cout << "\t" << msat_to_smtlib2_term(env, e) << endl;
+  }
+}
+
 int main(int argc, const char **argv)
 {
   Options opts = get_options(argc, argv);
@@ -38,79 +51,30 @@ int main(int argc, const char **argv)
   ts = p.first;
   AbstractionCollateral ac = p.second;
 
+  std::cout << "prop: " << msat_to_smtlib2_term(env, ts.prop()) << std::endl;
+
   ArrayAxiomEnumerator aae(ac, ts, opts);
 
-  cout << "init equality axioms" << endl;
-  for (auto a : aae.init_equalities())
-  {
-    cout << "\t" << msat_to_smtlib2_term(env, a) << endl;
-  }
-
-  cout << "init store axioms" << endl;
-  for (auto a : aae.init_stores())
-  {
-    cout << "\t" << msat_to_smtlib2_term(env, a) << endl;
-  }
-
-  cout << "init const_array axioms" << endl;
-  for (auto a : aae.init_const_arrays())
-  {
-    cout << "\t" << msat_to_smtlib2_term(env, a) << endl;
-  }
-
-  cout << "init eq_uf axioms" << endl;
-  for (auto a : aae.init_eq_uf())
-  {
-    cout << "\t" << msat_to_smtlib2_term(env, a) << endl;
-  }
-
-  cout << "trans_1s equality axioms" << endl;
-  for (auto a : aae.trans_1s_equalities())
-  {
-    cout << "\t" << msat_to_smtlib2_term(env, a) << endl;
-  }
-
-  cout << "trans_1s store axioms" << endl;
-  for (auto a : aae.trans_1s_stores())
-  {
-    cout << "\t" << msat_to_smtlib2_term(env, a) << endl;
-  }
-
-  cout << "trans_1s const_array axioms" << endl;
-  for (auto a : aae.trans_1s_const_arrays())
-  {
-    cout << "\t" << msat_to_smtlib2_term(env, a) << endl;
-  }
-
-  cout << "trans_1s eq_uf axioms" << endl;
-  for (auto a : aae.trans_1s_eq_uf())
-  {
-    cout << "\t" << msat_to_smtlib2_term(env, a) << endl;
-  }
-
-  cout << "trans_2s equality axioms" << endl;
-  for (auto a : aae.trans_2s_equalities())
-  {
-    cout << "\t" << msat_to_smtlib2_term(env, a) << endl;
-  }
-
-  cout << "trans_2s store axioms" << endl;
-  for (auto a : aae.trans_2s_stores())
-  {
-    cout << "\t" << msat_to_smtlib2_term(env, a) << endl;
-  }
-
-  cout << "trans_2s const_array axioms" << endl;
-  for (auto a : aae.trans_2s_const_arrays())
-  {
-    cout << "\t" << msat_to_smtlib2_term(env, a) << endl;
-  }
-
-  cout << "trans_2s eq_uf axioms" << endl;
-  for (auto a : aae.trans_2s_eq_uf())
-  {
-    cout << "\t" << msat_to_smtlib2_term(env, a) << endl;
-  }
+  // print_terms(env, aae.init_equalities(), "init equality axioms");
+  // print_terms(env, aae.init_stores(), "init store axioms");
+  // print_terms(env, aae.init_const_arrays(), "init const_array axioms");
+  // print_terms(env, aae.init_eq_uf(), "init eq_uf axioms");
+  // print_terms(env, aae.trans_1s_equalities(), "trans_1s equality axioms");
+  // print_terms(env, aae.trans_1s_stores(), "trans_1s store axioms");
+  // print_terms(env, aae.trans_1s_const_arrays(), "trans_1s const_array axioms");
+  // print_terms(env, aae.trans_1s_eq_uf(), "trans_1s eq_uf axioms");
+  // print_terms(env, aae.trans_2s_equalities(), "trans_2s equality axioms");
+  // print_terms(env, aae.trans_2s_stores(), "trans_2s store axioms");
+  // print_terms(env, aae.trans_2s_const_arrays(), "trans_2s const_array axioms");
+  // print_terms(env, aae.trans_2s_eq_uf(), "trans_2s eq_uf axioms");
+  // print_terms(env, aae.prop_1s_equalities(), "prop_1s equality axioms");
+  // print_terms(env, aae.prop_1s_stores(), "prop_1s store axioms");
+  // print_terms(env, aae.prop_1s_const_arrays(), "prop_1s const_array axioms");
+  print_terms(env, aae.prop_1s_eq_uf(), "prop_1s eq_uf axioms");
+  // print_terms(env, aae.prop_2s_equalities(), "prop_2s equality axioms");
+  // print_terms(env, aae.prop_2s_stores(), "prop_2s store axioms");
+  // print_terms(env, aae.prop_2s_const_arrays(), "prop_2s const_array axioms");
+  //  print_terms(env, aae.prop_2s_eq_uf(), "prop_2s eq_uf axioms");
 
   return 0;
 }

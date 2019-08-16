@@ -30,6 +30,14 @@ namespace array_utils
     ic3ia::TermList trans_2s_stores() { return store_lemmas(ac.trans_2s_info, true); };
     ic3ia::TermList trans_2s_const_arrays() { return const_array_lemmas(ac.trans_2s_info, true); };
     ic3ia::TermList trans_2s_eq_uf() { return eq_uf_lemmas(ac.trans_2s_info, true); };
+    ic3ia::TermList prop_1s_equalities() { return equality_lemmas(ac.prop_1s_info, false); };
+    ic3ia::TermList prop_1s_stores() { return store_lemmas(ac.prop_1s_info, false); };
+    ic3ia::TermList prop_1s_const_arrays() { return const_array_lemmas(ac.prop_1s_info, false); };
+    ic3ia::TermList prop_1s_eq_uf() { return eq_uf_lemmas(ac.prop_1s_info, false); };
+    ic3ia::TermList prop_2s_equalities() { return equality_lemmas(ac.prop_2s_info, true); };
+    ic3ia::TermList prop_2s_stores() { return store_lemmas(ac.prop_2s_info, true); };
+    ic3ia::TermList prop_2s_const_arrays() { return const_array_lemmas(ac.prop_2s_info, true); };
+    ic3ia::TermList prop_2s_eq_uf() { return eq_uf_lemmas(ac.prop_2s_info, true); };
   private:
     AbstractionCollateral ac;
     ic3ia::TransitionSystem & ts;

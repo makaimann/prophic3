@@ -281,7 +281,7 @@ void ArrayAxiomEnumerator::enumerate_eq_uf_axioms(ic3ia::TermList & axioms,
   std::unordered_map<msat_term, msat_decl> & read_ufs = ac.read_ufs;
 
   msat_term arr0 = msat_term_get_arg(eq_uf, 0);
-  msat_term arr1 = msat_term_get_arg(eq_uf, 0);
+  msat_term arr1 = msat_term_get_arg(eq_uf, 1);
 
   msat_decl read0 = read_ufs.at(arr0);
   msat_decl read1 = read_ufs.at(arr1);
