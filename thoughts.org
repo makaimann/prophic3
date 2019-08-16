@@ -54,3 +54,9 @@
 
       Thus, if you've written to all indices, lambda has to be chosen outside of the range and the lemma is disabled
       Otherwise, you still need it
+* TODO Store next indices in orig_sorts, and stop using ts.cur in refiner to get correct sort
+* TODO Just create a UF for everything, including store and const array
+* TODO Have a separate pass that collects top-level UF equalities
+* TODO Refiner just traverses the formula (or maybe we can store the UFs) and then figures out the lemmas to add
+** Might have a first-pass that sorts them into one-step or two-step lemmas
+* TODO Ensure invariants are being added at both current and next to trans
