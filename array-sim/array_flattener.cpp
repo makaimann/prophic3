@@ -2,10 +2,10 @@
 
 using namespace ic3ia;
 
-namespace ic3_array {
+namespace ic3ia_array {
 
-ArrayFlattener::ArrayFlattener(TransitionSystem &ts) :
-    msat_env_(ts.get_env())
+ArrayFlattener::ArrayFlattener(const TransitionSystem &ts) :
+    msat_env_(ts.get_env()),
     orig_ts_(ts),
     flatten_ts_(ts.get_env())
 {
@@ -28,32 +28,32 @@ void ArrayFlattener::do_flattening()
     msat_term new_prop = flatten(orig_ts_.prop());
 
     // create state vars for new variables appearing in init and prop
-    for (msat_term v : new_vars_) {
-        msat_decl v_decl = msat_term_get_decl(v);
-	std::string name(msat_decl_get_name(v_decl));
-	msat_decl vn_decl =
-	    msat_declare_function(msat_env_, (name + ".next").c_str(),
-				  msat_term_get_type(v));
-	msat_term vn = msat_make_constant(msat_env_, vn_decl);
-	new_state_vars[v] = vn;
+    for (auto elem : new_vars_) {
+        msat_decl v_decl = msat_term_get_decl(elem.first);
+        std::string name(msat_decl_get_name(v_decl));
+        msat_decl vn_decl =
+          msat_declare_function(msat_env_, (name + ".next").c_str(),
+                                msat_term_get_type(elem.first));
+        msat_term vn = msat_make_constant(msat_env_, vn_decl);
+        new_state_vars[elem.first] = vn;
     }
 
     // current to next
-    auto subst = [=](msat_term v) -> msat_term { return new_state_vars[v]; };
+    auto subst = [=](msat_term v) -> msat_term { return new_state_vars.at(v); };
     TermMap next_cache;
 
     msat_term new_trans = flatten(orig_ts_.trans());
 
-    for (msat_term v : new_vars_) {
-	msat_term arr_eq = msat_make_equal(msat_env_, v, new_vars_[v]);
-	new_init = msat_make_and(msat_env_, new_init, arr_eq);
-	new_trans = msat_make_and(msat_env_, new_trans, arr_eq);
+    for (auto elem : new_vars_) {
+      msat_term arr_eq = msat_make_equal(msat_env_, elem.first, new_vars_.at(elem.first));
+      new_init = msat_make_and(msat_env_, new_init, arr_eq);
+      new_trans = msat_make_and(msat_env_, new_trans, arr_eq);
 
-	if (new_state_vars.find(v) != new_state_vars.end()) {
-	    msat_term arr_eq_n =
+      if (new_state_vars.find(elem.first) != new_state_vars.end()) {
+        msat_term arr_eq_n =
 	        apply_substitution(msat_env_, arr_eq, next_cache, subst);
-	    new_trans = msat_make_and(msat_env_, new_trans, arr_eq_n);
-	}
+        new_trans = msat_make_and(msat_env_, new_trans, arr_eq_n);
+      }
     }
 
     //TODO: liveness prop handling

@@ -1,9 +1,9 @@
-#pragma once
+#ifndef ARRAY_FLATTENER_H
+#define ARRAY_FLATTENER_H
 
 #include "mathsat.h"
 
 #include "ts.h"
-
 
 namespace ic3ia_array {
 
@@ -20,9 +20,9 @@ public:
 private:
 
     void do_flattening();
-    ic3ia::msat_term flatten(ic3ia::msat_term t);
+    msat_term flatten(msat_term t);
 
-    ic3ia::msat_env msat_env_;
+    msat_env msat_env_;
 
     const ic3ia::TransitionSystem &orig_ts_;
     ic3ia::TransitionSystem flatten_ts_;
@@ -32,3 +32,5 @@ private:
 };
 
 } // namespace ic3ia_array
+
+#endif // ARRAY_FLATTENER_H
