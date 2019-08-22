@@ -49,7 +49,8 @@ void ArrayFlattener::do_flattening()
       new_init = msat_make_and(msat_env_, new_init, arr_eq);
       new_trans = msat_make_and(msat_env_, new_trans, arr_eq);
 
-      if (new_state_vars.find(elem.first) != new_state_vars.end()) {
+      // add next-state version of invariants (only involves current vars)
+      if (only_cur(arr_eq, new_state_vars)) {
         msat_term arr_eq_n =
 	        apply_substitution(msat_env_, arr_eq, next_cache, subst);
         new_trans = msat_make_and(msat_env_, new_trans, arr_eq_n);
@@ -61,7 +62,7 @@ void ArrayFlattener::do_flattening()
 			   orig_ts_.live_prop());
 }
 
-msat_term ArrayFlattener::flatten(msat_term t)
+msat_term ArrayFlattener::flatten(const msat_term t)
 {
     if (cache_.find(t) != cache_.end()) {
         return cache_[t];
@@ -130,6 +131,49 @@ msat_term ArrayFlattener::flatten(msat_term t)
     msat_visit_term(msat_env_, t, visit, &data);
 
     return cache_[t];
+}
+
+bool ArrayFlattener::only_cur(const msat_term term, TermMap & state_vars)
+{
+  // TODO: need to use new state variables for checking
+  //       maybe easier to build the new transition system first
+
+  struct Data
+  {
+    bool * justcur;
+    TermMap & state_vars;
+    Data(bool * j, TermMap & sv) : justcur(j), state_vars(sv) {}
+  };
+  bool justcur = true;
+
+  auto visit =
+    [](msat_env e, msat_term t, int preorder,
+       void *data) -> msat_visit_status
+    {
+      Data * d = static_cast<Data *>(data);
+      if(!preorder)
+      {
+        // only need to check preorder
+        return MSAT_VISIT_ABORT;
+      }
+
+      msat_decl decl = msat_term_get_decl(t);
+      if (!MSAT_ERROR_DECL(decl))
+      {
+        // TODO: if it's a next-variable or an input, change justcur to false and break
+        if (d->state_vars.find(t) == d->state_vars.end())
+        {
+          *d->justcur = false;
+          return MSAT_VISIT_ABORT;
+        }
+      }
+
+      return MSAT_VISIT_PROCESS;
+    };
+
+    Data data(&justcur, state_vars);
+    msat_visit_term(msat_env_, term, visit, &data);
+    return *data.justcur;
 }
 
 } // namespace ic3ia_array

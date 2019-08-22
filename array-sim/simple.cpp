@@ -3,12 +3,14 @@
 #include "mathsat.h"
 #include "utils.h"
 
+#include "array_flattener.h"
 #include "array_abstracter.h"
 #include "array_refiner.h"
 
 using namespace std;
 using namespace ic3ia;
 using namespace array_utils;
+using namespace ic3ia_array;
 
 void print_terms(msat_env env, TermList l, const char * msg)
 {
@@ -45,15 +47,19 @@ int main(int argc, const char **argv)
               << endlog;
   }
 
-  ts = flatten_arrays(env, ts);
+  ArrayFlattener af(ts);
+  ts = af.flatten_transition_system();
+  cout << msat_to_smtlib2_term(env, ts.trans()) << endl;
 
-  pair<TransitionSystem, AbstractionCollateral> p = abstract_arrays(ts);
-  ts = p.first;
-  AbstractionCollateral ac = p.second;
+  // ts = flatten_arrays(env, ts);
 
-  std::cout << "prop: " << msat_to_smtlib2_term(env, ts.prop()) << std::endl;
+  // pair<TransitionSystem, AbstractionCollateral> p = abstract_arrays(ts);
+  // ts = p.first;
+  // AbstractionCollateral ac = p.second;
 
-  ArrayAxiomEnumerator aae(ac, ts, opts);
+  // std::cout << "prop: " << msat_to_smtlib2_term(env, ts.prop()) << std::endl;
+
+  // ArrayAxiomEnumerator aae(ac, ts, opts);
 
   // print_terms(env, aae.init_equalities(), "init equality axioms");
   // print_terms(env, aae.init_stores(), "init store axioms");
@@ -70,7 +76,7 @@ int main(int argc, const char **argv)
   // print_terms(env, aae.prop_1s_equalities(), "prop_1s equality axioms");
   // print_terms(env, aae.prop_1s_stores(), "prop_1s store axioms");
   // print_terms(env, aae.prop_1s_const_arrays(), "prop_1s const_array axioms");
-  print_terms(env, aae.prop_1s_eq_uf(), "prop_1s eq_uf axioms");
+  // print_terms(env, aae.prop_1s_eq_uf(), "prop_1s eq_uf axioms");
   // print_terms(env, aae.prop_2s_equalities(), "prop_2s equality axioms");
   // print_terms(env, aae.prop_2s_stores(), "prop_2s store axioms");
   // print_terms(env, aae.prop_2s_const_arrays(), "prop_2s const_array axioms");
