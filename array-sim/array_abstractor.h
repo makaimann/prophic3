@@ -4,6 +4,11 @@
 
 #include "ts.h"
 
+// for find algorithm support in create_lambdas
+inline bool operator==(msat_type t0, const msat_type t1)
+{
+ return msat_type_equals(t0, t1);
+}
 
 namespace ic3ia_array {
 
@@ -32,8 +37,17 @@ public:
 private:
 
     void do_abstraction();
+
+    /* abstracts a term */
     msat_term abstract(msat_term term);
+
+    /* creates all the necessary state variables
+     *   and inputs and adds them to the cache
+     */
     void cache_states_and_inputs();
+
+    /* creates lambda indices for each sort */
+    void create_lambdas();
 
     msat_env msat_env_;
 
@@ -47,6 +61,8 @@ private:
     ic3ia::TermMap witnesses_;
     TermDeclMap read_ufs_;
     TermTypeMap orig_sorts_;
+
+    ic3ia::TermSet finite_domain_lambdas_;
 };
 
 } // namespace ic3ia_array

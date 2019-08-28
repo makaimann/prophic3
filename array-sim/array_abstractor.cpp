@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "array_abstractor.h"
 
 using namespace ic3ia;
@@ -35,7 +37,8 @@ void ArrayAbstractor::do_abstraction()
 
   abs_ts_.initialize(new_vars_, new_init, new_trans, new_prop, conc_ts_.live_prop());
 
-  // TODO: sort the indices and create lambdas
+  // TODO: sort the indices (or sort them in refiner)
+  create_lambdas();
 }
 
 // msat_term ArrayAbstractor::abstract(msat_term t)
@@ -315,6 +318,67 @@ void ArrayAbstractor::cache_states_and_inputs()
       msat_decl readfun = msat_declare_function(msat_env_, readname.c_str(), funtype);
       read_ufs_[arr_int] = readfun;
       orig_sorts_[arr_int] = arridxtype;
+    }
+  }
+}
+
+void ArrayAbstractor::create_lambdas()
+{
+  // create lambda indices for each index sort
+  // represents an index which hasn't been seen yet
+  std::vector<msat_type> types; // msat_type not hashable
+  TermTypeMap lambdas;
+  for(auto elem : orig_sorts_)
+  {
+    msat_type _type = elem.second;
+    if(std::find(types.begin(), types.end(), _type) == types.end())
+    {
+      types.push_back(_type);
+      std::string name = "__lambda__";
+      name += msat_type_repr(_type);
+      msat_decl lambda_decl = msat_declare_function(msat_env_, name.c_str(), msat_get_integer_type(msat_env_));
+      msat_term lambda = msat_make_constant(msat_env_, lambda_decl);
+      msat_decl lambda_declN = msat_declare_function(msat_env_, (name + "N").c_str(), msat_get_integer_type(msat_env_));
+      msat_term lambdaN = msat_make_constant(msat_env_, lambda_declN);
+      abs_ts_.add_statevar(lambda, lambdaN);
+      abs_ts_.add_trans(msat_make_equal(msat_env_, lambda, lambdaN)); // lambda is a frozen var
+
+      // enforce that it's different from all other indices
+      // TODO: optimization idea -- use strictly less than instead of not equals for unbounded domains
+      //       can always find a value in that case
+      msat_term alldiff = msat_make_true(msat_env_);
+      for(auto i : indices_)
+      {
+        // only if the sorts match
+        if (orig_sorts_[i] == _type)
+        {
+          alldiff = msat_make_and(msat_env_, alldiff,
+                                  msat_make_not(msat_env_,
+                                                msat_make_equal(msat_env_, lambda, i)));
+        }
+      }
+      abs_ts_.add_trans(alldiff);
+
+      // if it's an infinite domain index, can just add it to index sets
+      // otherwise keep it separate
+      // for now, only handle int and bit-vector
+      if (msat_is_integer_type(msat_env_, _type))
+      {
+        indices_.insert(lambda);
+        // TODO: optimization, don't need next(lambda) because lambda is a frozenvar
+        //       in refinement, don't use ever use next(lambda) (currently it would
+        //       because lambda is bundled with other indices)
+      }
+      else if (msat_is_bv_type(msat_env_, _type, nullptr))
+      {
+        finite_domain_lambdas_.insert(lambda);
+        // need to keep track of original type for refinement
+        orig_sorts_[lambda] = _type;
+      }
+      else
+      {
+        throw "UNHANDLED_TYPE";
+      }
     }
   }
 }
