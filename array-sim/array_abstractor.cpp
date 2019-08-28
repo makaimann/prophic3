@@ -132,6 +132,7 @@ msat_term ArrayAbstractor::abstract(msat_term term)
         return MSAT_VISIT_SKIP;
 	    }
 
+
 	    if (!preorder)
       {
         msat_type _type = msat_term_get_type(t);
@@ -147,6 +148,7 @@ msat_term ArrayAbstractor::abstract(msat_term term)
         // sorts but maybe it would be easier for debugging to keep it
         // as-is?
 
+
         // check if it's an array
         if (is_array_equality(e, t)) {
           // replace array equality with uninterpreted functions
@@ -157,27 +159,46 @@ msat_term ArrayAbstractor::abstract(msat_term term)
             return MSAT_VISIT_PROCESS;
           }
 
-          // otherwise create an uninterpreted function for this equality
-
           msat_term lhs = msat_term_get_arg(t, 0);
           msat_term rhs = msat_term_get_arg(t, 1);
 
-          // the version converted into an integer
-          msat_term lhs_cache = d->cache[lhs];
-          msat_term rhs_cache = d->cache[rhs];
+          // original approach used an uninterpreted function
+          // // otherwise create an uninterpreted function for this equality
+          // // the version converted into an integer
+          // msat_term lhs_cache = d->cache.at(lhs);
+          // msat_term rhs_cache = d->cache.at(rhs);
 
-          msat_type param_types[2] = {msat_get_integer_type(e),
-                                      msat_get_integer_type(e)};
-          msat_type funtype =
-            msat_get_function_type(e, &param_types[0], 2,
-                                   msat_get_bool_type(e));
+          // msat_type param_types[2] = {msat_get_integer_type(e),
+          //                             msat_get_integer_type(e)};
+          // msat_type funtype =
+          //   msat_get_function_type(e, &param_types[0], 2,
+          //                          msat_get_bool_type(e));
+          // std::string name = "equal_";
+          // name += std::string(msat_term_repr(lhs)) + "_" + msat_term_repr(rhs);
+          // msat_decl eqfun = msat_declare_function(e, name.c_str(), funtype);
+
+          // msat_term cached_args[2] = {lhs_cache, rhs_cache};
+          // msat_term eq_uf = msat_make_uf(e, eqfun, &cached_args[0]);
+
+          // d->cache[t] = eq_uf;
+
+          // otherwise create a literal for this equality
+          // TODO: use a nicer name -- ugly to look at the printed version
           std::string name = "equal_";
           name += std::string(msat_term_repr(lhs)) + "_" + msat_term_repr(rhs);
-          msat_decl eqfun = msat_declare_function(e, name.c_str(), funtype);
+          std::string next_name = name + ".next";
+          msat_decl decl_eqlit = msat_declare_function(e, name.c_str(), msat_get_bool_type(e));
+          msat_term eqlit = msat_make_constant(e, decl_eqlit);
+          msat_decl decl_eqlitN = msat_declare_function(e, next_name.c_str(), msat_get_bool_type(e));
+          msat_term eqlitN = msat_make_constant(e, decl_eqlit);
+          d->cache[t] = eqlit;
+          // TODO: figure out if we have to make this a state variable
+          //       probably same optimization as in flattener where it only needs to be a state variable
+          //       for trans
+          //       although this is a bit more complicated because the refiner can add it anywhere
+          d->new_vars[eqlit] = eqlitN;
 
-          msat_term cached_args[2] = {lhs_cache, rhs_cache};
-          msat_term eq_uf = msat_make_uf(e, eqfun, &cached_args[0]);
-          d->cache[t] = eq_uf;
+
 
           std::string witness_name = "witness_";
           witness_name += std::string(msat_term_repr(lhs)) + "_" + msat_term_repr(rhs);
@@ -193,7 +214,7 @@ msat_term ArrayAbstractor::abstract(msat_term term)
             msat_declare_function(e, (witness_name + "N").c_str(), idx_type);
           msat_term witnessN =
             idx_to_int(e, msat_make_constant(e, decl_witnessN));
-          d->witnesses[eq_uf] = witness;
+          d->witnesses[eqlit] = witness;
           // update state variables
           d->new_vars[witness] = witnessN;
         } else if (is_array_read(e, t)) {

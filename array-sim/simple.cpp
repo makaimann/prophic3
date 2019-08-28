@@ -54,6 +54,13 @@ int main(int argc, const char **argv)
   cout << "Flattened system:\n\t";
   cout << msat_to_smtlib2_term(env, ts.trans()) << endl;
 
+  ArrayAbstractor aa(ts);
+  ts = aa.abstract_transition_system();
+  cout << "Abstracted system:" << endl;
+  cout << "\tInit: " << msat_to_smtlib2_term(env, ts.init()) << endl;
+  cout << "\tTrans: " << msat_to_smtlib2_term(env, ts.trans()) << endl;
+  cout << "\tProp: " << msat_to_smtlib2_term(env, ts.prop()) << endl;
+
   // ts = flatten_arrays(env, ts);
 
   // pair<TransitionSystem, AbstractionCollateral> p = abstract_arrays(ts);
