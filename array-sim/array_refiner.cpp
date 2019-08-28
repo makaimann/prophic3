@@ -5,7 +5,7 @@
 
 using namespace ic3ia;
 
-namespace array_utils
+namespace ic3ia_array
 {
 
 TermList ArrayAxiomEnumerator::equality_lemmas(ArrayInfo & ai, bool next)

@@ -7,37 +7,27 @@
 
 #include "bmc.h"
 
-namespace array_utils
+namespace ic3ia_arrays
 {
   class ArrayAxiomEnumerator
   {
   public:
-    ArrayAxiomEnumerator(AbstractionCollateral ac, ic3ia::TransitionSystem & ts, const ic3ia::Options &opts)
-      : ac(ac), ts(ts), bmc(ic3ia::Bmc(ts, opts))
+  ArrayAxiomEnumerator(AbstractionCollateral aa, const ic3ia::Options &opts)
+    : ts(aa.abstract_transition_system()),
+      cache_(aa.get_cache()),
+      witnesses_(aa.get_witnesses()),
+      read_ufs_(aa.get_read_ufs()),
+      orig_sorts_(aa.get_orig_sorts()),
+      const_arrs_(aa.get_const_arrs()),
+      stores_
+      bmc(ic3ia::Bmc(ts, opts))
     {
       env = ts.get_env();
     }
 
-    ic3ia::TermList init_equalities() { return equality_lemmas(ac.init_info, false); };
-    ic3ia::TermList init_stores() { return store_lemmas(ac.init_info, false); };
-    ic3ia::TermList init_const_arrays() { return const_array_lemmas(ac.init_info, false); };
-    ic3ia::TermList init_eq_uf() { return eq_uf_lemmas(ac.init_info, false); };
-    ic3ia::TermList trans_1s_equalities() { return equality_lemmas(ac.trans_1s_info, false); };
-    ic3ia::TermList trans_1s_stores() { return store_lemmas(ac.trans_1s_info, false); };
-    ic3ia::TermList trans_1s_const_arrays() { return const_array_lemmas(ac.trans_1s_info, false); };
-    ic3ia::TermList trans_1s_eq_uf() { return eq_uf_lemmas(ac.trans_1s_info, false); };
-    ic3ia::TermList trans_2s_equalities() { return equality_lemmas(ac.trans_2s_info, true); };
-    ic3ia::TermList trans_2s_stores() { return store_lemmas(ac.trans_2s_info, true); };
-    ic3ia::TermList trans_2s_const_arrays() { return const_array_lemmas(ac.trans_2s_info, true); };
-    ic3ia::TermList trans_2s_eq_uf() { return eq_uf_lemmas(ac.trans_2s_info, true); };
-    ic3ia::TermList prop_1s_equalities() { return equality_lemmas(ac.prop_1s_info, false); };
-    ic3ia::TermList prop_1s_stores() { return store_lemmas(ac.prop_1s_info, false); };
-    ic3ia::TermList prop_1s_const_arrays() { return const_array_lemmas(ac.prop_1s_info, false); };
-    ic3ia::TermList prop_1s_eq_uf() { return eq_uf_lemmas(ac.prop_1s_info, false); };
-    ic3ia::TermList prop_2s_equalities() { return equality_lemmas(ac.prop_2s_info, true); };
-    ic3ia::TermList prop_2s_stores() { return store_lemmas(ac.prop_2s_info, true); };
-    ic3ia::TermList prop_2s_const_arrays() { return const_array_lemmas(ac.prop_2s_info, true); };
-    ic3ia::TermList prop_2s_eq_uf() { return eq_uf_lemmas(ac.prop_2s_info, true); };
+    // TODO: adapt the private methods for the new representation (not using structs for each type of equality)
+    // then have methods to enumerate different kinds of axioms
+
   private:
     AbstractionCollateral ac;
     ic3ia::TransitionSystem & ts;
@@ -106,6 +96,16 @@ namespace array_utils
                                 msat_term witness,
                                 ic3ia::TermSet & indices);
   };
+
+  ic3ia::TermMap cache_;
+  ic3ia::TermSet indices_;
+  ic3ia::TermMap witnesses_;
+  TermDeclMap read_ufs_;
+  TermTypeMap orig_sorts_;
+  ic3ia::TermList const_arrs_;
+  ic3ia::TermList stores_;
+  ic3ia::TermSet finite_domain_lambdas_;
+
 }
 
 #endif

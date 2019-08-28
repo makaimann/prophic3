@@ -1,5 +1,7 @@
 #pragma once
 
+#include "structs.h"
+
 #include "mathsat.h"
 
 #include "ts.h"
@@ -11,9 +13,6 @@ inline bool operator==(msat_type t0, const msat_type t1)
 }
 
 namespace ic3ia_array {
-
-using TermTypeMap    = std::unordered_map<msat_term, msat_type>;
-using TermDeclMap    = std::unordered_map<msat_term, msat_decl>;
 
 // helper functions
 // note: need to put these outside of class and
@@ -35,13 +34,13 @@ public:
     }
 
     // getters
-    ic3ia::TermSet & get_cache()   { return cache_; };
-    ic3ia::TermSet & get_indices() { return indices_; };
-    ic3ia::TermSet & get_witnesses() { return witnesses_; };
-    ic3ia::TermSet & get_read_ufs() { return read_ufs_; };
-    ic3ia::TermSet & get_orig_sorts() { return orig_sorts_; };
-    ic3ia::TermSet & get_const_arrs() { return const_arrs_; };
-    ic3ia::TermSet & get_stores() { return stores_; };
+    AbstractionCollateral get_abstraction_collateral()
+    {
+      return AbstractionCollateral(cache_, indices_,
+                                   witnesses_, read_ufs_,
+                                   orig_sorts_, const_arrs_,
+                                   stores_, finite_domain_lambdas_);
+    }
 
 private:
 

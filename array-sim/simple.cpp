@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "mathsat.h"
+#include "structs.h"
 #include "utils.h"
 
 #include "array_flattener.h"
