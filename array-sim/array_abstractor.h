@@ -34,6 +34,15 @@ public:
         return abs_ts_;
     }
 
+    // getters
+    ic3ia::TermSet & get_cache()   { return cache_; };
+    ic3ia::TermSet & get_indices() { return indices_; };
+    ic3ia::TermSet & get_witnesses() { return witnesses_; };
+    ic3ia::TermSet & get_read_ufs() { return read_ufs_; };
+    ic3ia::TermSet & get_orig_sorts() { return orig_sorts_; };
+    ic3ia::TermSet & get_const_arrs() { return const_arrs_; };
+    ic3ia::TermSet & get_stores() { return stores_; };
+
 private:
 
     void do_abstraction();
