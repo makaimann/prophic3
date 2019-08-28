@@ -4,12 +4,11 @@
 #include "utils.h"
 
 #include "array_flattener.h"
-#include "array_abstracter.h"
+#include "array_abstractor.h"
 //#include "array_refiner.h"
 
 using namespace std;
 using namespace ic3ia;
-using namespace array_utils;
 using namespace ic3ia_array;
 
 void print_terms(msat_env env, TermList l, const char * msg)
