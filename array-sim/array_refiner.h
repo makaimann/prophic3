@@ -3,26 +3,30 @@
 
 #include <vector>
 
-#include "array_abstracter.h"
+#include "structs.h"
 
 #include "bmc.h"
 
-namespace ic3ia_arrays
+namespace ic3ia_array
 {
   class ArrayAxiomEnumerator
   {
   public:
-  ArrayAxiomEnumerator(AbstractionCollateral aa, const ic3ia::Options &opts)
-    : ts(aa.abstract_transition_system()),
-      cache_(aa.get_cache()),
-      witnesses_(aa.get_witnesses()),
-      read_ufs_(aa.get_read_ufs()),
-      orig_sorts_(aa.get_orig_sorts()),
-      const_arrs_(aa.get_const_arrs()),
-      stores_
+  ArrayAxiomEnumerator(const ic3ia::TransitionSystem & ts, AbstractionCollateral ac, const ic3ia::Options &opts)
+    : ts(ts),
+      ac(ac),
       bmc(ic3ia::Bmc(ts, opts))
     {
       env = ts.get_env();
+
+      // sort the indices
+      // convenient to store them grouped by current and all for 1-step and 2-step lemmas
+      for(auto idx : ac.indices)
+      {
+        curr_indices_.insert(ts.cur(idx));
+        all_indices_.insert(ts.cur(idx));
+        all_indices_.insert(ts.next(idx));
+      }
     }
 
     // TODO: adapt the private methods for the new representation (not using structs for each type of equality)
@@ -30,9 +34,11 @@ namespace ic3ia_arrays
 
   private:
     AbstractionCollateral ac;
-    ic3ia::TransitionSystem & ts;
+    const ic3ia::TransitionSystem & ts;
     ic3ia::Bmc bmc;
     msat_env env;
+    ic3ia::TermSet curr_indices_;
+    ic3ia::TermSet all_indices_;
 
     /* logical implication */
     msat_term implies(msat_term antecedent, msat_term consequent);
@@ -46,26 +52,27 @@ namespace ic3ia_arrays
     /* Bound a lambda that's representing a bit-vector */
     msat_term bound_lambda(msat_term lambda, size_t width);
 
-    /* Enumerate the equality lemmas in ArrayInfo ai
-     * @param ai the ArrayInfo to use
-     * @param next whether to include next-state indices
-     */
-    ic3ia::TermList equality_lemmas(ArrayInfo & ai, bool next);
-    /* Enumerate the store lemmas in ArrayInfo ai
-     * @param ai the ArrayInfo to use
-     * @param next whether to include next-state indices
-     */
-    ic3ia::TermList store_lemmas(ArrayInfo & ai, bool next);
-    /* Enumerate the const array lemmas in ArrayInfo ai
-     * @param ai the ArrayInfo to use
-     * @param next whether to include next-state indices
-     */
-    ic3ia::TermList const_array_lemmas(ArrayInfo & ai, bool next);
-    /* Enumerate the equality uninterpreted function lemmas in ArrayInfo ai
-     * @param ai the ArrayInfo to use
-     * @param next whether to include next-state indices
-     */
-    ic3ia::TermList eq_uf_lemmas(ArrayInfo & ai, bool next);
+    // old functions using ArrayInfo
+    /* /\* Enumerate the equality lemmas in ArrayInfo ai */
+    /*  * @param ai the ArrayInfo to use */
+    /*  * @param next whether to include next-state indices */
+    /*  *\/ */
+    /* ic3ia::TermList equality_lemmas(ArrayInfo & ai, bool next); */
+    /* /\* Enumerate the store lemmas in ArrayInfo ai */
+    /*  * @param ai the ArrayInfo to use */
+    /*  * @param next whether to include next-state indices */
+    /*  *\/ */
+    /* ic3ia::TermList store_lemmas(ArrayInfo & ai, bool next); */
+    /* /\* Enumerate the const array lemmas in ArrayInfo ai */
+    /*  * @param ai the ArrayInfo to use */
+    /*  * @param next whether to include next-state indices */
+    /*  *\/ */
+    /* ic3ia::TermList const_array_lemmas(ArrayInfo & ai, bool next); */
+    /* /\* Enumerate the equality uninterpreted function lemmas in ArrayInfo ai */
+    /*  * @param ai the ArrayInfo to use */
+    /*  * @param next whether to include next-state indices */
+    /*  *\/ */
+    /* ic3ia::TermList eq_uf_lemmas(ArrayInfo & ai, bool next); */
 
     /* Enumerate extentionality axioms for all indices: arr0 = arr1 -> arr0[i] = arr1[i] for all i */
     void enumerate_read_equalities(ic3ia::TermList & axioms,
@@ -96,16 +103,6 @@ namespace ic3ia_arrays
                                 msat_term witness,
                                 ic3ia::TermSet & indices);
   };
-
-  ic3ia::TermMap cache_;
-  ic3ia::TermSet indices_;
-  ic3ia::TermMap witnesses_;
-  TermDeclMap read_ufs_;
-  TermTypeMap orig_sorts_;
-  ic3ia::TermList const_arrs_;
-  ic3ia::TermList stores_;
-  ic3ia::TermSet finite_domain_lambdas_;
-
 }
 
 #endif

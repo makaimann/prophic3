@@ -6,7 +6,7 @@
 
 #include "array_flattener.h"
 #include "array_abstractor.h"
-//#include "array_refiner.h"
+#include "array_refiner.h"
 
 using namespace std;
 using namespace ic3ia;
@@ -61,6 +61,10 @@ int main(int argc, const char **argv)
   cout << "\tInit: " << msat_to_smtlib2_term(env, ts.init()) << endl;
   cout << "\tTrans: " << msat_to_smtlib2_term(env, ts.trans()) << endl;
   cout << "\tProp: " << msat_to_smtlib2_term(env, ts.prop()) << endl;
+
+
+  // old working version -- above is the cleaned up version
+  // not quite generating axioms yet but the infrastructure is still mostly there
 
   // ts = flatten_arrays(env, ts);
 

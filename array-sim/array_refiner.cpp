@@ -8,79 +8,6 @@ using namespace ic3ia;
 namespace ic3ia_array
 {
 
-TermList ArrayAxiomEnumerator::equality_lemmas(ArrayInfo & ai, bool next)
-{
-
-  // note: making assumption that curr_indices uses symbol at 0
-  // this should hold for ic3ia
-  TermSet & indices = next ? ac.all_indices : ac.curr_indices;
-
-  TermList axioms;
-  // this is a lower-bound -- might be one more per equality for lambda
-  axioms.reserve(ai.equalities.size()*indices.size());
-
-  for (auto eq : ai.equalities)
-  {
-    enumerate_read_equalities(axioms, eq.arr0, eq.arr1, indices);
-  }
-
-  return axioms;
-}
-
-TermList ArrayAxiomEnumerator::store_lemmas(ArrayInfo & ai, bool next)
-{
-  // note: making assumption that curr_indices uses symbol at 0
-  // this should hold for ic3ia
-  TermSet & indices = next ? ac.all_indices : ac.curr_indices;
-
-  TermList axioms;
-  // this is a lower-bound -- might be one more per equality for lambda
-  axioms.reserve(ai.store_equalities.size()*indices.size());
-
-  for (auto eq : ai.store_equalities)
-  {
-    enumerate_store_equalities(axioms, eq.arr0, eq.arr1, eq.idx, eq.val, indices);
-  }
-
-  return axioms;
-}
-
-TermList ArrayAxiomEnumerator::const_array_lemmas(ArrayInfo & ai, bool next)
-{
-  // note: making assumption that curr_indices uses symbol at 0
-  // this should hold for ic3ia
-  TermSet & indices = next ? ac.all_indices : ac.curr_indices;
-
-  TermList axioms;
-  // this is a lower bound -- might be one more per equality for lambda
-  axioms.reserve(ai.const_array_equalities.size()*indices.size());
-
-  for (auto eq : ai.const_array_equalities)
-  {
-    enumerate_const_array_equalities(axioms, eq.arr, eq.val, indices);
-  }
-
-  return axioms;
-}
-
-TermList ArrayAxiomEnumerator::eq_uf_lemmas(ArrayInfo & ai, bool next)
-{
-  // note: making assumption that curr_indices uses symbol at 0
-  // this should hold for ic3ia
-  TermSet & indices = next ? ac.all_indices : ac.curr_indices;
-
-  TermList axioms;
-  // this is a lower bound -- might be one more per equality for lambda
-  axioms.reserve(ai.const_array_equalities.size()*indices.size());
-
-  for (auto elem : ai.eq_ufs)
-  {
-    enumerate_eq_uf_axioms(axioms, elem.first, elem.second, indices);
-  }
-
-  return axioms;
-}
-
 msat_term ArrayAxiomEnumerator::implies(msat_term antecedent, msat_term consequent)
 {
   return msat_make_or(env, msat_make_not(env, antecedent),
@@ -89,12 +16,13 @@ msat_term ArrayAxiomEnumerator::implies(msat_term antecedent, msat_term conseque
 
 msat_term ArrayAxiomEnumerator::get_lambda_from_type(msat_type _type)
 {
+  // have to do this because types aren't hashable
   msat_term lambda;
-  for(auto l : ac.lambdas)
+  for(auto l : ac.finite_domain_lambdas)
   {
-    if (msat_type_equals(l.second, _type))
+    if (msat_type_equals(ac.orig_sorts[l], _type))
     {
-      lambda = l.first;
+      lambda = l;
     }
   }
   assert(!MSAT_ERROR_TERM(lambda));
@@ -313,5 +241,81 @@ void ArrayAxiomEnumerator::enumerate_eq_uf_axioms(ic3ia::TermList & axioms,
                                            )));
 
 }
+
+// old functions using ArrayInfo
+
+// TermList ArrayAxiomEnumerator::equality_lemmas(ArrayInfo & ai, bool next)
+// {
+
+//   // note: making assumption that curr_indices uses symbol at 0
+//   // this should hold for ic3ia
+//   TermSet & indices = next ? ac.all_indices : ac.curr_indices;
+
+//   TermList axioms;
+//   // this is a lower-bound -- might be one more per equality for lambda
+//   axioms.reserve(ai.equalities.size()*indices.size());
+
+//   for (auto eq : ai.equalities)
+//   {
+//     enumerate_read_equalities(axioms, eq.arr0, eq.arr1, indices);
+//   }
+
+//   return axioms;
+// }
+
+// TermList ArrayAxiomEnumerator::store_lemmas(ArrayInfo & ai, bool next)
+// {
+//   // note: making assumption that curr_indices uses symbol at 0
+//   // this should hold for ic3ia
+//   TermSet & indices = next ? ac.all_indices : ac.curr_indices;
+
+//   TermList axioms;
+//   // this is a lower-bound -- might be one more per equality for lambda
+//   axioms.reserve(ai.store_equalities.size()*indices.size());
+
+//   for (auto eq : ai.store_equalities)
+//   {
+//     enumerate_store_equalities(axioms, eq.arr0, eq.arr1, eq.idx, eq.val, indices);
+//   }
+
+//   return axioms;
+// }
+
+// TermList ArrayAxiomEnumerator::const_array_lemmas(ArrayInfo & ai, bool next)
+// {
+//   // note: making assumption that curr_indices uses symbol at 0
+//   // this should hold for ic3ia
+//   TermSet & indices = next ? ac.all_indices : ac.curr_indices;
+
+//   TermList axioms;
+//   // this is a lower bound -- might be one more per equality for lambda
+//   axioms.reserve(ai.const_array_equalities.size()*indices.size());
+
+//   for (auto eq : ai.const_array_equalities)
+//   {
+//     enumerate_const_array_equalities(axioms, eq.arr, eq.val, indices);
+//   }
+
+//   return axioms;
+// }
+
+// TermList ArrayAxiomEnumerator::eq_uf_lemmas(ArrayInfo & ai, bool next)
+// {
+//   // note: making assumption that curr_indices uses symbol at 0
+//   // this should hold for ic3ia
+//   TermSet & indices = next ? ac.all_indices : ac.curr_indices;
+
+//   TermList axioms;
+//   // this is a lower bound -- might be one more per equality for lambda
+//   axioms.reserve(ai.const_array_equalities.size()*indices.size());
+
+//   for (auto elem : ai.eq_ufs)
+//   {
+//     enumerate_eq_uf_axioms(axioms, elem.first, elem.second, indices);
+//   }
+
+//   return axioms;
+// }
+
 
 }
