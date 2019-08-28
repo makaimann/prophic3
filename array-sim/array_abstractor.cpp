@@ -1,4 +1,5 @@
 #include <algorithm>
+#include "assert.h"
 
 #include "array_abstractor.h"
 
@@ -40,13 +41,6 @@ void ArrayAbstractor::do_abstraction()
   // TODO: sort the indices (or sort them in refiner)
   create_lambdas();
 }
-
-// msat_term ArrayAbstractor::abstract(msat_term t)
-// {
-//     if (cache_.find(t) != cache_.end()) {
-//         return cache_[t];
-//     }
-// }
 
 inline bool is_array_equality(msat_env env, msat_term t)
 {
@@ -110,13 +104,20 @@ msat_term ArrayAbstractor::abstract(msat_term term)
     TermMap & witnesses;
     TermDeclMap & read_ufs;
     TermTypeMap & orig_sorts;
+    TermList & const_arrs;
+    TermList & stores;
     TermMap & cache;
+    unsigned int & eq_id;
     AbstractionData(TermSet & i, TermMap & nv,
-                    TermMap & w, TermDeclMap & r, TermTypeMap & o,
-                    TermMap & c)
+                    TermMap & w, TermDeclMap & r,
+                    TermTypeMap & o, TermList & ca,
+                    TermList & s, TermMap & c,
+                    unsigned int & e)
       : indices(i), new_vars(nv),
         witnesses(w), read_ufs(r),
-        orig_sorts(o), cache(c)
+        orig_sorts(o), const_arrs(ca),
+        stores(s), cache(c),
+        eq_id(e)
     {}
 
   };
@@ -149,7 +150,7 @@ msat_term ArrayAbstractor::abstract(msat_term term)
         // as-is?
 
 
-        // check if it's an array
+        // check if it's an array equality
         if (is_array_equality(e, t)) {
           // replace array equality with uninterpreted functions
 
@@ -162,46 +163,63 @@ msat_term ArrayAbstractor::abstract(msat_term term)
           msat_term lhs = msat_term_get_arg(t, 0);
           msat_term rhs = msat_term_get_arg(t, 1);
 
-          // original approach used an uninterpreted function
-          // // otherwise create an uninterpreted function for this equality
-          // // the version converted into an integer
-          // msat_term lhs_cache = d->cache.at(lhs);
-          // msat_term rhs_cache = d->cache.at(rhs);
+          // assuming arrays have already been flattened
+          // thus const array and store equalities are top-level
+          if (is_array_write(e, lhs) || is_array_write(e, rhs))
+          {
+            // remove the store equality and keep it for refinement
+            d->cache[t] = msat_make_true(e);
+            d->stores.push_back(t);
+            return MSAT_VISIT_PROCESS;
+          }
+          else if (is_array_const(e, lhs) || is_array_const(e, rhs))
+          {
+            // remove the const array equality and keep it for refinement
+            d->cache[t] = msat_make_true(e);
+            d->const_arrs.push_back(t);
+            return MSAT_VISIT_PROCESS;
+          }
 
-          // msat_type param_types[2] = {msat_get_integer_type(e),
-          //                             msat_get_integer_type(e)};
-          // msat_type funtype =
-          //   msat_get_function_type(e, &param_types[0], 2,
-          //                          msat_get_bool_type(e));
+          // otherwise create an uninterpreted function for this equality
+          // the version converted into an integer
+          msat_term lhs_cache = d->cache.at(lhs);
+          msat_term rhs_cache = d->cache.at(rhs);
+
+          // TODO: replace unguarded asserts with a macro
+          assert(msat_is_integer_type(e, msat_term_get_type(lhs_cache)));
+          assert(msat_is_integer_type(e, msat_term_get_type(rhs_cache)));
+
+          std::string eqname = "arreq" + std::to_string(d->eq_id);
+          std::string witness_name = "witness_" + std::to_string(d->eq_id++);
+
+          msat_type param_types[2] = {msat_get_integer_type(e),
+                                      msat_get_integer_type(e)};
+          msat_type funtype =
+            msat_get_function_type(e, &param_types[0], 2,
+                                   msat_get_bool_type(e));
+          msat_decl eqfun = msat_declare_function(e, eqname.c_str(), funtype);
+
+          msat_term cached_args[2] = {lhs_cache, rhs_cache};
+          msat_term eq_uf = msat_make_uf(e, eqfun, &cached_args[0]);
+
+          d->cache[t] = eq_uf;
+
+          // alternative is to use a literal
+          // // otherwise create a literal for this equality
+          // // TODO: use a nicer name -- ugly to look at the printed version
           // std::string name = "equal_";
           // name += std::string(msat_term_repr(lhs)) + "_" + msat_term_repr(rhs);
-          // msat_decl eqfun = msat_declare_function(e, name.c_str(), funtype);
-
-          // msat_term cached_args[2] = {lhs_cache, rhs_cache};
-          // msat_term eq_uf = msat_make_uf(e, eqfun, &cached_args[0]);
-
-          // d->cache[t] = eq_uf;
-
-          // otherwise create a literal for this equality
-          // TODO: use a nicer name -- ugly to look at the printed version
-          std::string name = "equal_";
-          name += std::string(msat_term_repr(lhs)) + "_" + msat_term_repr(rhs);
-          std::string next_name = name + ".next";
-          msat_decl decl_eqlit = msat_declare_function(e, name.c_str(), msat_get_bool_type(e));
-          msat_term eqlit = msat_make_constant(e, decl_eqlit);
-          msat_decl decl_eqlitN = msat_declare_function(e, next_name.c_str(), msat_get_bool_type(e));
-          msat_term eqlitN = msat_make_constant(e, decl_eqlit);
-          d->cache[t] = eqlit;
-          // TODO: figure out if we have to make this a state variable
-          //       probably same optimization as in flattener where it only needs to be a state variable
-          //       for trans
-          //       although this is a bit more complicated because the refiner can add it anywhere
-          d->new_vars[eqlit] = eqlitN;
-
-
-
-          std::string witness_name = "witness_";
-          witness_name += std::string(msat_term_repr(lhs)) + "_" + msat_term_repr(rhs);
+          // std::string next_name = name + ".next";
+          // msat_decl decl_eqlit = msat_declare_function(e, name.c_str(), msat_get_bool_type(e));
+          // msat_term eqlit = msat_make_constant(e, decl_eqlit);
+          // msat_decl decl_eqlitN = msat_declare_function(e, next_name.c_str(), msat_get_bool_type(e));
+          // msat_term eqlitN = msat_make_constant(e, decl_eqlit);
+          // d->cache[t] = eqlit;
+          // // TODO: figure out if we have to make this a state variable
+          // //       probably same optimization as in flattener where it only needs to be a state variable
+          // //       for trans
+          // //       although this is a bit more complicated because the refiner can add it anywhere
+          // d->new_vars[eqlit] = eqlitN;
 
           msat_type idx_type;
           msat_is_array_type(e, msat_term_get_type(lhs),
@@ -214,7 +232,7 @@ msat_term ArrayAbstractor::abstract(msat_term term)
             msat_declare_function(e, (witness_name + "N").c_str(), idx_type);
           msat_term witnessN =
             idx_to_int(e, msat_make_constant(e, decl_witnessN));
-          d->witnesses[eqlit] = witness;
+          d->witnesses[eq_uf] = witness;
           // update state variables
           d->new_vars[witness] = witnessN;
         } else if (is_array_read(e, t)) {
@@ -267,7 +285,10 @@ msat_term ArrayAbstractor::abstract(msat_term term)
                                          witnesses_,
                                          read_ufs_,
                                          orig_sorts_,
-                                         cache_);
+                                         const_arrs_,
+                                         stores_,
+                                         cache_,
+                                         eq_id_);
   msat_visit_term(msat_env_, term, visit, &data);
   return data.cache.at(term);
 }
@@ -301,8 +322,7 @@ void ArrayAbstractor::cache_states_and_inputs()
                                   msat_get_integer_type(msat_env_)};
       msat_type funtype =
         msat_get_function_type(msat_env_, &param_types[0], 2, arrelemtype);
-      std::string readname = "read_";
-      readname += msat_term_repr(sv);
+      std::string readname = "read_" + std::to_string(read_id_++);
       msat_decl readfun = msat_declare_function(msat_env_, readname.c_str(), funtype);
       read_ufs_[arr_int] = readfun;
       // use the same read function for the next-state
@@ -355,8 +375,7 @@ void ArrayAbstractor::create_lambdas()
     if(std::find(types.begin(), types.end(), _type) == types.end())
     {
       types.push_back(_type);
-      std::string name = "__lambda__";
-      name += msat_type_repr(_type);
+      std::string name = "arrlambda_" + std::to_string(lambda_id_);
       msat_decl lambda_decl = msat_declare_function(msat_env_, name.c_str(), msat_get_integer_type(msat_env_));
       msat_term lambda = msat_make_constant(msat_env_, lambda_decl);
       msat_decl lambda_declN = msat_declare_function(msat_env_, (name + "N").c_str(), msat_get_integer_type(msat_env_));

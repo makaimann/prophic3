@@ -54,6 +54,10 @@ private:
     const ic3ia::TransitionSystem &conc_ts_;
     ic3ia::TransitionSystem abs_ts_;
 
+    unsigned int eq_id_{0};
+    unsigned int read_id_{0};
+    unsigned int lambda_id_{0};
+
     ic3ia::TermMap cache_;
     ic3ia::TermSet indices_;
     ic3ia::TermMap new_vars_;
@@ -61,6 +65,8 @@ private:
     ic3ia::TermMap witnesses_;
     TermDeclMap read_ufs_;
     TermTypeMap orig_sorts_;
+    ic3ia::TermList const_arrs_;
+    ic3ia::TermList stores_;
 
     ic3ia::TermSet finite_domain_lambdas_;
 };
