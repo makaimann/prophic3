@@ -5,7 +5,7 @@
 
 #include "array_flattener.h"
 #include "array_abstracter.h"
-#include "array_refiner.h"
+//#include "array_refiner.h"
 
 using namespace std;
 using namespace ic3ia;
@@ -47,8 +47,12 @@ int main(int argc, const char **argv)
               << endlog;
   }
 
+  cout << "Original system:\n\t";
+  cout << msat_to_smtlib2_term(env, ts.trans()) << endl;
+
   ArrayFlattener af(ts);
   ts = af.flatten_transition_system();
+  cout << "Flattened system:\n\t";
   cout << msat_to_smtlib2_term(env, ts.trans()) << endl;
 
   // ts = flatten_arrays(env, ts);
