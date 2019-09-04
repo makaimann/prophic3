@@ -1,27 +1,27 @@
 #pragma once
 
-#include "structs.h"
-
 #include "mathsat.h"
 
 #include "ts.h"
 
 // for find algorithm support in create_lambdas
-inline bool operator==(msat_type t0, const msat_type t1)
-{
- return msat_type_equals(t0, t1);
+inline bool operator==(msat_type t0, const msat_type t1) {
+  return msat_type_equals(t0, t1);
 }
 
 namespace ic3ia_array {
 
+using TermTypeMap = std::unordered_map<msat_term, msat_type>;
+using TermDeclMap = std::unordered_map<msat_term, msat_decl>;
+
 // helper functions
 // note: need to put these outside of class and
 // pass msat_env because want to use them in visitor without capturing this
- bool is_array_equality(msat_env env, msat_term term);
- bool is_array_const(msat_env env, msat_term term);
- bool is_array_write(msat_env env, msat_term term);
- bool is_array_read(msat_env env, msat_term term);
- msat_term idx_to_int(msat_env env, msat_term term);
+bool is_array_equality(msat_env env, msat_term term);
+bool is_array_const(msat_env env, msat_term term);
+bool is_array_write(msat_env env, msat_term term);
+bool is_array_read(msat_env env, msat_term term);
+msat_term idx_to_int(msat_env env, msat_term term);
 
 class ArrayAbstractor {
 public:
@@ -34,15 +34,16 @@ public:
     }
 
     // getters
-    AbstractionCollateral get_abstraction_collateral()
-    {
-      return AbstractionCollateral(cache_, indices_,
-                                   witnesses_, read_ufs_,
-                                   orig_sorts_, const_arrs_,
-                                   stores_, finite_domain_lambdas_);
-    }
+    ic3ia::TermMap &cache() { return cache_; };
+    ic3ia::TermSet &indices() { return indices_; };
+    ic3ia::TermMap &witnesses() { return witnesses_; };
+    TermDeclMap &read_ufs() { return read_ufs_; };
+    TermTypeMap &orig_sorts() { return orig_sorts_; };
+    ic3ia::TermList &const_arrs() { return const_arrs_; };
+    ic3ia::TermList &stores() { return stores_; };
+    ic3ia::TermSet &finite_domain_lambdas() { return finite_domain_lambdas_; };
 
-private:
+  private:
 
     void do_abstraction();
 

@@ -1,11 +1,10 @@
 #include <iostream>
 
 #include "mathsat.h"
-#include "structs.h"
 #include "utils.h"
 
-#include "array_flattener.h"
 #include "array_abstractor.h"
+#include "array_flattener.h"
 #include "array_refiner.h"
 
 using namespace std;
@@ -62,9 +61,9 @@ int main(int argc, const char **argv)
   cout << "\tTrans: " << msat_to_smtlib2_term(env, ts.trans()) << endl;
   cout << "\tProp: " << msat_to_smtlib2_term(env, ts.prop()) << endl;
 
-
   // old working version -- above is the cleaned up version
-  // not quite generating axioms yet but the infrastructure is still mostly there
+  // not quite generating axioms yet but the infrastructure is still mostly
+  // there
 
   // ts = flatten_arrays(env, ts);
 
@@ -82,12 +81,12 @@ int main(int argc, const char **argv)
   // print_terms(env, aae.init_eq_uf(), "init eq_uf axioms");
   // print_terms(env, aae.trans_1s_equalities(), "trans_1s equality axioms");
   // print_terms(env, aae.trans_1s_stores(), "trans_1s store axioms");
-  // print_terms(env, aae.trans_1s_const_arrays(), "trans_1s const_array axioms");
-  // print_terms(env, aae.trans_1s_eq_uf(), "trans_1s eq_uf axioms");
+  // print_terms(env, aae.trans_1s_const_arrays(), "trans_1s const_array
+  // axioms"); print_terms(env, aae.trans_1s_eq_uf(), "trans_1s eq_uf axioms");
   // print_terms(env, aae.trans_2s_equalities(), "trans_2s equality axioms");
   // print_terms(env, aae.trans_2s_stores(), "trans_2s store axioms");
-  // print_terms(env, aae.trans_2s_const_arrays(), "trans_2s const_array axioms");
-  // print_terms(env, aae.trans_2s_eq_uf(), "trans_2s eq_uf axioms");
+  // print_terms(env, aae.trans_2s_const_arrays(), "trans_2s const_array
+  // axioms"); print_terms(env, aae.trans_2s_eq_uf(), "trans_2s eq_uf axioms");
   // print_terms(env, aae.prop_1s_equalities(), "prop_1s equality axioms");
   // print_terms(env, aae.prop_1s_stores(), "prop_1s store axioms");
   // print_terms(env, aae.prop_1s_const_arrays(), "prop_1s const_array axioms");
