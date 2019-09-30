@@ -67,15 +67,26 @@ public:
     unsigned int read_id_{0};
     unsigned int lambda_id_{0};
 
+    // the abstraction cache
     ic3ia::TermMap cache_;
+    // set of array indices
     ic3ia::TermSet indices_;
-    ic3ia::TermMap new_vars_;
-    ic3ia::TermSet removed_vars_;
+    // map from equality UF to a witness for disequality
     ic3ia::TermMap witnesses_;
+    // map from abstract arrays to their read UF
     TermDeclMap read_ufs_;
+    // TODO: Figure out if we still even need this
+    // the original sort for terms
     TermTypeMap orig_sorts_;
+    // set of constant array equalities -- note: these have been flattened
     ic3ia::TermSet const_arrs_;
+    // set of store equalities -- note: these have been flattened
     ic3ia::TermSet stores_;
+
+    // new variables for abstract transition system -- internal use only
+    ic3ia::TermMap new_vars_;
+    // removed variables from concrete transition system -- internal use only
+    ic3ia::TermSet removed_vars_;
 
     ic3ia::TermSet finite_domain_lambdas_;
 };

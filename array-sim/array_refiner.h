@@ -69,33 +69,12 @@ private:
   /* Bound a lambda that's representing a bit-vector */
   msat_term bound_lambda(msat_term lambda, size_t width);
 
-  // TODO: remove these
-  // old functions using ArrayInfo
-  /* /\* Enumerate the equality lemmas in ArrayInfo ai */
-  /*  * @param ai the ArrayInfo to use */
-  /*  * @param next whether to include next-state indices */
-  /*  *\/ */
-  /* ic3ia::TermList equality_lemmas(ArrayInfo & ai, bool next); */
-  /* /\* Enumerate the store lemmas in ArrayInfo ai */
-  /*  * @param ai the ArrayInfo to use */
-  /*  * @param next whether to include next-state indices */
-  /*  *\/ */
-  /* ic3ia::TermList store_lemmas(ArrayInfo & ai, bool next); */
-  /* /\* Enumerate the const array lemmas in ArrayInfo ai */
-  /*  * @param ai the ArrayInfo to use */
-  /*  * @param next whether to include next-state indices */
-  /*  *\/ */
-  /* ic3ia::TermList const_array_lemmas(ArrayInfo & ai, bool next); */
-  /* /\* Enumerate the equality uninterpreted function lemmas in ArrayInfo ai */
-  /*  * @param ai the ArrayInfo to use */
-  /*  * @param next whether to include next-state indices */
-  /*  *\/ */
-  /* ic3ia::TermList eq_uf_lemmas(ArrayInfo & ai, bool next); */
-
-  /* Enumerate extentionality axioms for all indices: arr0 = arr1 -> arr0[i] =
-   * arr1[i] for all i */
-  void enumerate_read_equalities(ic3ia::TermList &axioms, msat_term arr0,
-                                 msat_term arr1, ic3ia::TermSet &indices);
+  // this was just in case we pull top-level equalities out and handle them separately
+  // for now, not worrying about it
+  /* /\* Enumerate extentionality axioms for all indices: arr0 = arr1 -> arr0[i] = */
+  /*  * arr1[i] for all i *\/ */
+  /* void enumerate_read_equalities(ic3ia::TermList &axioms, msat_term arr0, */
+  /*                                msat_term arr1, ic3ia::TermSet &indices); */
 
   /* Enumerate store axioms on all indices: arr0[idx] = val, forall i != val.
    * arr0[i] = arr1[i] */

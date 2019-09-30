@@ -141,52 +141,6 @@ ic3ia::TermList ArrayAxiomEnumerator::store_axioms()
 }
 
 // protected helper functions
-
-void ArrayAxiomEnumerator::enumerate_read_equalities(TermList & axioms,
-                                                     msat_term arr0,
-                                                     msat_term arr1,
-                                                     TermSet & indices)
-{
-  TermDeclMap &read_ufs = abstractor_.read_ufs();
-  TermTypeMap &orig_sorts = abstractor_.orig_sorts();
-  msat_decl read0 = read_ufs.at(arr0);
-  msat_decl read1 = read_ufs.at(arr1);
-
-  for (auto i : indices)
-  {
-    // TODO: Add next version of indices to orig_sorts in abstracter (not doing yet to avoid conflicts)
-    // only if the sorts match
-    if (msat_type_equals(orig_sorts.at(arr0), orig_sorts.at(ts_.cur(i)))) {
-      msat_term args0[2] = {arr0, i};
-      msat_term args1[2] = {arr1, i};
-      axioms.push_back(
-          msat_make_equal(msat_env_, msat_make_uf(msat_env_, read0, &args0[0]),
-                          msat_make_uf(msat_env_, read1, &args1[0])));
-    }
-  }
-
-  // special case for finite-domain lambdas
-  msat_type _type = orig_sorts.at(arr0);
-  size_t width;
-  if (msat_is_bv_type(msat_env_, _type, &width)) {
-
-    msat_term lambda = get_lambda_from_type(_type);
-
-    msat_term args0[2] = {arr0, lambda};
-    msat_term args1[2] = {arr1, lambda};
-    msat_term consequent =
-        msat_make_equal(msat_env_, msat_make_uf(msat_env_, read0, &args0[0]),
-                        msat_make_uf(msat_env_, read1, &args1[0]));
-
-    axioms.push_back(implies(bound_lambda(lambda, width), consequent));
-
-  } else {
-    // TODO: Handle other values
-    // only handling bv and int for now
-    assert(msat_is_integer_type(msat_env_, _type));
-  }
-}
-
 void ArrayAxiomEnumerator::enumerate_store_equalities(TermList & axioms,
                                                       msat_term arr0,
                                                       msat_term arr1,
@@ -351,81 +305,52 @@ void ArrayAxiomEnumerator::collect_equalities(msat_term term, ic3ia::TermSet & s
   msat_visit_term(msat_env_, term, visit, &data);
 }
 
-// TODO: remove these
-// old functions using ArrayInfo
-
-// TermList ArrayAxiomEnumerator::equality_lemmas(ArrayInfo & ai, bool next)
+// old code in case we treat top-level equalities specially
+// for now, not worrying about it
+// void ArrayAxiomEnumerator::enumerate_read_equalities(TermList & axioms,
+//                                                      msat_term arr0,
+//                                                      msat_term arr1,
+//                                                      TermSet & indices)
 // {
+//   TermDeclMap &read_ufs = abstractor_.read_ufs();
+//   TermTypeMap &orig_sorts = abstractor_.orig_sorts();
+//   msat_decl read0 = read_ufs.at(arr0);
+//   msat_decl read1 = read_ufs.at(arr1);
 
-//   // note: making assumption that curr_indices uses symbol at 0
-//   // this should hold for ic3ia
-//   TermSet & indices = next ? ac.all_indices : ac.curr_indices;
-
-//   TermList axioms;
-//   // this is a lower-bound -- might be one more per equality for lambda
-//   axioms.reserve(ai.equalities.size()*indices.size());
-
-//   for (auto eq : ai.equalities)
+//   for (auto i : indices)
 //   {
-//     enumerate_read_equalities(axioms, eq.arr0, eq.arr1, indices);
+//     // TODO: Add next version of indices to orig_sorts in abstracter (not doing yet to avoid conflicts)
+//     // only if the sorts match
+//     if (msat_type_equals(orig_sorts.at(arr0), orig_sorts.at(ts_.cur(i)))) {
+//       msat_term args0[2] = {arr0, i};
+//       msat_term args1[2] = {arr1, i};
+//       axioms.push_back(
+//           msat_make_equal(msat_env_, msat_make_uf(msat_env_, read0, &args0[0]),
+//                           msat_make_uf(msat_env_, read1, &args1[0])));
+//     }
 //   }
 
-//   return axioms;
-// }
+//   // special case for finite-domain lambdas
+//   msat_type _type = orig_sorts.at(arr0);
+//   size_t width;
+//   if (msat_is_bv_type(msat_env_, _type, &width)) {
 
-// TermList ArrayAxiomEnumerator::store_lemmas(ArrayInfo & ai, bool next)
-// {
-//   // note: making assumption that curr_indices uses symbol at 0
-//   // this should hold for ic3ia
-//   TermSet & indices = next ? ac.all_indices : ac.curr_indices;
+//     msat_term lambda = get_lambda_from_type(_type);
 
-//   TermList axioms;
-//   // this is a lower-bound -- might be one more per equality for lambda
-//   axioms.reserve(ai.store_equalities.size()*indices.size());
+//     msat_term args0[2] = {arr0, lambda};
+//     msat_term args1[2] = {arr1, lambda};
+//     msat_term consequent =
+//         msat_make_equal(msat_env_, msat_make_uf(msat_env_, read0, &args0[0]),
+//                         msat_make_uf(msat_env_, read1, &args1[0]));
 
-//   for (auto eq : ai.store_equalities)
-//   {
-//     enumerate_store_equalities(axioms, eq.arr0, eq.arr1, eq.idx, eq.val,
-//     indices);
+//     axioms.push_back(implies(bound_lambda(lambda, width), consequent));
+
+//   } else {
+//     // TODO: Handle other values
+//     // only handling bv and int for now
+//     assert(msat_is_integer_type(msat_env_, _type));
 //   }
-
-//   return axioms;
 // }
 
-// TermList ArrayAxiomEnumerator::const_array_lemmas(ArrayInfo & ai, bool next)
-// {
-//   // note: making assumption that curr_indices uses symbol at 0
-//   // this should hold for ic3ia
-//   TermSet & indices = next ? ac.all_indices : ac.curr_indices;
-
-//   TermList axioms;
-//   // this is a lower bound -- might be one more per equality for lambda
-//   axioms.reserve(ai.const_array_equalities.size()*indices.size());
-
-//   for (auto eq : ai.const_array_equalities)
-//   {
-//     enumerate_const_array_equalities(axioms, eq.arr, eq.val, indices);
-//   }
-
-//   return axioms;
-// }
-
-// TermList ArrayAxiomEnumerator::eq_uf_lemmas(ArrayInfo & ai, bool next)
-// {
-//   // note: making assumption that curr_indices uses symbol at 0
-//   // this should hold for ic3ia
-//   TermSet & indices = next ? ac.all_indices : ac.curr_indices;
-
-//   TermList axioms;
-//   // this is a lower bound -- might be one more per equality for lambda
-//   axioms.reserve(ai.const_array_equalities.size()*indices.size());
-
-//   for (auto elem : ai.eq_ufs)
-//   {
-//     enumerate_eq_uf_axioms(axioms, elem.first, elem.second, indices);
-//   }
-
-//   return axioms;
-// }
 
 } // namespace ic3ia_array
