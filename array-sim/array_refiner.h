@@ -49,6 +49,7 @@ private:
   /* Bound a lambda that's representing a bit-vector */
   msat_term bound_lambda(msat_term lambda, size_t width);
 
+  // TODO: remove these
   // old functions using ArrayInfo
   /* /\* Enumerate the equality lemmas in ArrayInfo ai */
   /*  * @param ai the ArrayInfo to use */

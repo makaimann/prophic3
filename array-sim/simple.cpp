@@ -46,13 +46,15 @@ int main(int argc, const char **argv)
               << endlog;
   }
 
-  cout << "Original system:\n\t";
-  cout << msat_to_smtlib2_term(env, ts.trans()) << endl;
+  cout << "Original system:" << endl;
+  cout << "\tInit: " << msat_to_smtlib2_term(env, ts.init()) << endl;
+  cout << "\tTrans: " << msat_to_smtlib2_term(env, ts.trans()) << endl;
 
   ArrayFlattener af(ts);
   ts = af.flatten_transition_system();
-  cout << "Flattened system:\n\t";
-  cout << msat_to_smtlib2_term(env, ts.trans()) << endl;
+  cout << "Flattened system:\n" << endl;;
+  cout << "\tInit: " << msat_to_smtlib2_term(env, ts.init()) << endl;
+  cout << "\tTrans: " << msat_to_smtlib2_term(env, ts.trans()) << endl;
 
   ArrayAbstractor aa(ts);
   ts = aa.abstract_transition_system();
