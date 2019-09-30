@@ -23,11 +23,26 @@ public:
       all_indices_.insert(ts.cur(idx));
       all_indices_.insert(ts.next(idx));
     }
+
+    // Find all the array equalities
+    collect_equalities(ts.init(), init_equalities_);
+    collect_equalities(ts.trans(), trans_equalities_);
+    collect_equalities(ts.prop(), prop_equalities_);
   }
 
   // TODO: adapt the private methods for the new representation (not using
   // structs for each type of equality) then have methods to enumerate different
   // kinds of axioms
+  ic3ia::TermList init_equalities()
+  {
+    ic3ia::TermMap & witnesses = abstractor_.witnesses();
+    ic3ia::TermList axioms;
+    for (auto e : init_equalities_)
+    {
+      enumerate_eq_uf_axioms(axioms, e, witnesses.at(e), curr_indices_);
+    }
+    return axioms;
+  }
 
 private:
   const ic3ia::TransitionSystem &ts_;
@@ -36,6 +51,12 @@ private:
   msat_env msat_env_;
   ic3ia::TermSet curr_indices_;
   ic3ia::TermSet all_indices_;
+  // equality ufs present in init
+  ic3ia::TermSet init_equalities_;
+  // equality ufs present in trans
+  ic3ia::TermSet trans_equalities_;
+  // equality ufs present in prop
+  ic3ia::TermSet prop_equalities_;
 
   /* logical implication */
   msat_term implies(msat_term antecedent, msat_term consequent);
@@ -93,7 +114,11 @@ private:
    */
   void enumerate_eq_uf_axioms(ic3ia::TermList &axioms, msat_term eq_uf,
                               msat_term witness, ic3ia::TermSet &indices);
-  };
+
+  /* Collect all array equality UFs from the given term and add to set s */
+  void collect_equalities(msat_term term, ic3ia::TermSet & s);
+
+};
   } // namespace ic3ia_array
 
 #endif

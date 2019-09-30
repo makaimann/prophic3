@@ -219,6 +219,38 @@ void ArrayAxiomEnumerator::enumerate_eq_uf_axioms(ic3ia::TermList & axioms,
                       msat_make_uf(msat_env_, read1, &args1[0]))));
 }
 
+void ArrayAxiomEnumerator::collect_equalities(msat_term term, ic3ia::TermSet & s)
+{
+  struct Data
+  {
+    TermMap & witnesses;
+    TermSet & termset;
+    Data(TermMap & w, TermSet & s) : witnesses(w), termset(s) {}
+  };
+
+  auto visit = [](msat_env e, msat_term t, int preorder,
+                  void * data) -> msat_visit_status
+               {
+                 Data *d = static_cast<Data *>(data);
+                 if (!preorder)
+                 {
+                   return MSAT_VISIT_SKIP;
+                 }
+                 else
+                 {
+                   if (d->witnesses.find(t) != d->witnesses.end())
+                   {
+                     d->termset.insert(t);
+                   }
+                 }
+                 return MSAT_VISIT_PROCESS;
+               };
+
+  Data data(abstractor_.witnesses(), s);
+  msat_visit_term(msat_env_, term, visit, &data);
+}
+
+// TODO: remove these
 // old functions using ArrayInfo
 
 // TermList ArrayAxiomEnumerator::equality_lemmas(ArrayInfo & ai, bool next)

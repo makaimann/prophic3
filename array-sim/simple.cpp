@@ -63,6 +63,17 @@ int main(int argc, const char **argv)
   cout << "\tTrans: " << msat_to_smtlib2_term(env, ts.trans()) << endl;
   cout << "\tProp: " << msat_to_smtlib2_term(env, ts.prop()) << endl;
 
+  ArrayAxiomEnumerator aae (ts, aa, opts);
+
+  cout << endl;
+  cout << "Axiom enumeration" << endl;
+  cout << "Init equality axioms:" << endl;
+  for (auto a : aae.init_equalities())
+  {
+    cout << "\t" << msat_to_smtlib2_term(env, a) << endl;
+  }
+
+  // TODO: remove this
   // old working version -- above is the cleaned up version
   // not quite generating axioms yet but the infrastructure is still mostly
   // there
