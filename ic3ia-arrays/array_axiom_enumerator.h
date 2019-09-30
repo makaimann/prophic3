@@ -36,12 +36,12 @@ public:
 
   // Note: not differentiating between zero-step and one-step axioms
   //       just enumerating them all together
-  ic3ia::TermList init_eq_axioms();
-  ic3ia::TermList trans_eq_axioms();
-  ic3ia::TermList prop_eq_axioms();
+  ic3ia::TermSet init_eq_axioms();
+  ic3ia::TermSet trans_eq_axioms();
+  ic3ia::TermSet prop_eq_axioms();
 
-  ic3ia::TermList const_array_axioms();
-  ic3ia::TermList store_axioms();
+  ic3ia::TermSet const_array_axioms();
+  ic3ia::TermSet store_axioms();
 
 private:
   const ic3ia::TransitionSystem &ts_;
@@ -56,6 +56,13 @@ private:
   ic3ia::TermSet trans_equalities_;
   // equality ufs present in prop
   ic3ia::TermSet prop_equalities_;
+
+  // cache the various kinds of axioms
+  ic3ia::TermSet init_eq_axioms_;
+  ic3ia::TermSet trans_eq_axioms_;
+  ic3ia::TermSet prop_eq_axioms_;
+  ic3ia::TermSet const_array_axioms_;
+  ic3ia::TermSet store_axioms_;
 
   /* logical implication */
   msat_term implies(msat_term antecedent, msat_term consequent);
@@ -73,24 +80,24 @@ private:
   // for now, not worrying about it
   /* /\* Enumerate extentionality axioms for all indices: arr0 = arr1 -> arr0[i] = */
   /*  * arr1[i] for all i *\/ */
-  /* void enumerate_read_equalities(ic3ia::TermList &axioms, msat_term arr0, */
+  /* void enumerate_read_equalities(ic3ia::TermSet &axioms, msat_term arr0, */
   /*                                msat_term arr1, ic3ia::TermSet &indices); */
 
   /* Enumerate store axioms on all indices: arr0[idx] = val, forall i != val.
    * arr0[i] = arr1[i] */
-  void enumerate_store_equalities(ic3ia::TermList &axioms, msat_term arr0,
+  void enumerate_store_equalities(ic3ia::TermSet &axioms, msat_term arr0,
                                   msat_term arr1, msat_term idx, msat_term val,
                                   ic3ia::TermSet &indices);
 
   /* Enumerate store axioms on all indices: forall i . arr[i] = val */
-  void enumerate_const_array_equalities(ic3ia::TermList &axioms, msat_term arr,
+  void enumerate_const_array_equalities(ic3ia::TermSet &axioms, msat_term arr,
                                         msat_term val, ic3ia::TermSet &indices);
 
   /* Enumerate equality axioms on all indices:
    *  forall i .  eq(a, b) -> a[i] = b[i] AND
    *  forall i . !eq(a, b) -> a[witness] != b[witness]
    */
-  void enumerate_eq_uf_axioms(ic3ia::TermList &axioms, msat_term eq_uf,
+  void enumerate_eq_uf_axioms(ic3ia::TermSet &axioms, msat_term eq_uf,
                               msat_term witness, ic3ia::TermSet &indices);
 
   /* Collect all array equality UFs from the given term and add to set s */
