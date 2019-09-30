@@ -5,7 +5,7 @@ IC3IA_SRC=$(IC3IA_HOME)/ts.cpp $(IC3IA_HOME)/bmc.cpp $(IC3IA_HOME)/utils.cpp $(I
 ARRAY_UTILS_SRC=utils.cpp array_flattener.cpp array_abstractor.cpp array_refiner.cpp
 # array_abstracter.cpp
 
-all: simple.out
+all: tester.out
 # all: array-abstraction-test.out
 # all: array-sim.out
 
@@ -13,8 +13,8 @@ all: simple.out
 debug: _DEBUG=-g
 debug: all
 
-simple.out: simple.cpp $(ARRAY_UTILS_SRC) $(IC3IA_SRC)
-	$(CXX) $(_DEBUG) -std=c++17 -Wl,-rpath,$(MSAT_HOME)/lib -I$(MSAT_HOME)/include -I$(IC3IA_HOME) -L$(MSAT_HOME)/lib -o simple.out simple.cpp $(ARRAY_UTILS_SRC) $(IC3IA_SRC) -lmathsat
+tester.out: tester.cpp $(ARRAY_UTILS_SRC) $(IC3IA_SRC)
+	$(CXX) $(_DEBUG) -std=c++17 -Wl,-rpath,$(MSAT_HOME)/lib -I$(MSAT_HOME)/include -I$(IC3IA_HOME) -L$(MSAT_HOME)/lib -o tester.out tester.cpp $(ARRAY_UTILS_SRC) $(IC3IA_SRC) -lmathsat
 
 array-abstraction-test.out: array-abstraction-test.cpp array_abstracter.cpp $(IC3IA_SRC)
 	$(CXX) $(_DEBUG) -std=c++17 -Wl,-rpath,$(MSAT_HOME)/lib -I$(MSAT_HOME)/include -I$(IC3IA_HOME) -L$(MSAT_HOME)/lib -o array-abstraction-test.out array-abstraction-test.cpp array_abstracter.cpp $(IC3IA_SRC) -lmathsat
