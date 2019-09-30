@@ -13,7 +13,7 @@ all: simple.out
 debug: _DEBUG=-g
 debug: all
 
-simple.out: simple.cpp utils.cpp array_abstracter.cpp $(ARRAY_UTILS_SRC) $(IC3IA_SRC)
+simple.out: simple.cpp $(ARRAY_UTILS_SRC) $(IC3IA_SRC)
 	$(CXX) $(_DEBUG) -std=c++17 -Wl,-rpath,$(MSAT_HOME)/lib -I$(MSAT_HOME)/include -I$(IC3IA_HOME) -L$(MSAT_HOME)/lib -o simple.out simple.cpp $(ARRAY_UTILS_SRC) $(IC3IA_SRC) -lmathsat
 
 array-abstraction-test.out: array-abstraction-test.cpp array_abstracter.cpp $(IC3IA_SRC)
