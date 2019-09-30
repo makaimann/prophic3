@@ -68,10 +68,23 @@ int main(int argc, const char **argv)
   cout << endl;
   cout << "Axiom enumeration" << endl;
   cout << "Init equality axioms:" << endl;
-  for (auto a : aae.init_equalities())
+  for (auto a : aae.init_eq_axioms())
   {
     cout << "\t" << msat_to_smtlib2_term(env, a) << endl;
   }
+
+  cout << "Trans equality axioms:" << endl;
+  for (auto a : aae.trans_eq_axioms())
+  {
+    cout << "\t" << msat_to_smtlib2_term(env, a) << endl;
+  }
+
+  cout << "Prop equality axioms:" << endl;
+  for (auto a : aae.prop_eq_axioms())
+  {
+    cout << "\t" << msat_to_smtlib2_term(env, a) << endl;
+  }
+
 
   // TODO: remove this
   // old working version -- above is the cleaned up version
