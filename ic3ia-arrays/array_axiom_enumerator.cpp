@@ -1,7 +1,7 @@
 #include "assert.h"
 #include <cmath>
 
-#include "array_refiner.h"
+#include "array_axiom_enumerator.h"
 
 using namespace ic3ia;
 

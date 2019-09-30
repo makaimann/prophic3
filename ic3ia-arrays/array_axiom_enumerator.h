@@ -1,5 +1,5 @@
-#ifndef ARRAY_REFINER_H
-#define ARRAY_REFINER_H
+#ifndef ARRAY_AXIOM_ENUMERATOR_H
+#define ARRAY_AXIOM_ENUMERATOR_H
 
 #include <vector>
 

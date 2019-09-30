@@ -5,7 +5,7 @@
 
 #include "array_abstractor.h"
 #include "array_flattener.h"
-#include "array_refiner.h"
+#include "array_axiom_enumerator.h"
 
 using namespace std;
 using namespace ic3ia;
