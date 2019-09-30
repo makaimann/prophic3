@@ -81,7 +81,7 @@ ic3ia::TermList ArrayAxiomEnumerator::const_array_axioms()
 {
   ic3ia::TermList axioms;
   ic3ia::TermMap & cache = abstractor_.cache();
-  ic3ia::TermSet const_arrs = abstractor_.const_arrs();
+  ic3ia::TermSet & const_arrs = abstractor_.const_arrs();
   msat_term arr;
   msat_term const_arr;
   msat_term tmp;
@@ -103,6 +103,42 @@ ic3ia::TermList ArrayAxiomEnumerator::const_array_axioms()
   return axioms;
 }
 
+ic3ia::TermList ArrayAxiomEnumerator::store_axioms()
+{
+  ic3ia::TermList axioms;
+  ic3ia::TermMap & cache = abstractor_.cache();
+  ic3ia::TermSet & stores = abstractor_.stores();
+  msat_term arr0;
+  msat_term store;
+  msat_term arr1;
+  msat_term idx;
+  msat_term val;
+  for (auto e : stores)
+  {
+    arr0 = msat_term_get_arg(e, 0);
+    store = msat_term_get_arg(e, 1);
+    if (is_array_write(msat_env_, arr0))
+    {
+      // using arr1 as a temporary variable
+      arr1 = arr0;
+      arr0 = store;
+      store = arr1;
+    }
+    arr1 = msat_term_get_arg(store, 0);
+    idx = msat_term_get_arg(store, 1);
+    val = msat_term_get_arg(store, 2);
+
+    enumerate_store_equalities(axioms,
+                               cache.at(arr0),
+                               cache.at(arr1),
+                               idx_to_int(msat_env_, cache.at(idx)),
+                               cache.at(val),
+                               all_indices_
+                               );
+
+  }
+  return axioms;
+}
 
 // protected helper functions
 
@@ -165,6 +201,7 @@ void ArrayAxiomEnumerator::enumerate_store_equalities(TermList & axioms,
 
   msat_term args0[2] = {arr0, idx};
   msat_term args1[2] = {arr1, idx};
+
   // equals expected value at the write index
   axioms.push_back(msat_make_equal(
       msat_env_, msat_make_uf(msat_env_, read0, &args0[0]), val));

@@ -85,6 +85,13 @@ int main(int argc, const char **argv)
     cout << "\t" << msat_to_smtlib2_term(env, a) << endl;
   }
 
+  cout << "Store axioms:" << endl;
+  for (auto a : aae.store_axioms())
+  {
+    cout << "\t" << msat_to_smtlib2_term(env, a) << endl;
+  }
+
+
   cout << "Const array axioms:" << endl;
   for (auto a : aae.const_array_axioms())
   {

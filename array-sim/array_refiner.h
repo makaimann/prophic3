@@ -39,8 +39,9 @@ public:
   ic3ia::TermList init_eq_axioms();
   ic3ia::TermList trans_eq_axioms();
   ic3ia::TermList prop_eq_axioms();
-  // TODO: Need to be able to sort these by init/trans/prop
+
   ic3ia::TermList const_array_axioms();
+  ic3ia::TermList store_axioms();
 
 private:
   const ic3ia::TransitionSystem &ts_;
