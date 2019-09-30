@@ -85,6 +85,13 @@ int main(int argc, const char **argv)
     cout << "\t" << msat_to_smtlib2_term(env, a) << endl;
   }
 
+  cout << "Const array axioms:" << endl;
+  for (auto a : aae.const_array_axioms())
+  {
+    cout << "\t" << msat_to_smtlib2_term(env, a) << endl;
+  }
+
+
 
   // TODO: remove this
   // old working version -- above is the cleaned up version

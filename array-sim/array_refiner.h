@@ -34,41 +34,13 @@ public:
   // structs for each type of equality) then have methods to enumerate different
   // kinds of axioms
 
-  ic3ia::TermList init_eq_axioms()
-  {
-    ic3ia::TermMap & witnesses = abstractor_.witnesses();
-    ic3ia::TermList axioms;
-    for (auto e : init_equalities_)
-    {
-      enumerate_eq_uf_axioms(axioms, e, witnesses.at(e), curr_indices_);
-    }
-    return axioms;
-  }
-
   // Note: not differentiating between zero-step and one-step axioms
   //       just enumerating them all together
-
-  ic3ia::TermList trans_eq_axioms()
-  {
-    ic3ia::TermMap & witnesses = abstractor_.witnesses();
-    ic3ia::TermList axioms;
-    for (auto e : trans_equalities_)
-    {
-      enumerate_eq_uf_axioms(axioms, e, witnesses.at(e), all_indices_);
-    }
-    return axioms;
-  }
-
-  ic3ia::TermList prop_eq_axioms()
-  {
-    ic3ia::TermMap & witnesses = abstractor_.witnesses();
-    ic3ia::TermList axioms;
-    for (auto e : prop_equalities_)
-    {
-      enumerate_eq_uf_axioms(axioms, e, witnesses.at(e), all_indices_);
-    }
-    return axioms;
-  }
+  ic3ia::TermList init_eq_axioms();
+  ic3ia::TermList trans_eq_axioms();
+  ic3ia::TermList prop_eq_axioms();
+  // TODO: Need to be able to sort these by init/trans/prop
+  ic3ia::TermList const_array_axioms();
 
 private:
   const ic3ia::TransitionSystem &ts_;

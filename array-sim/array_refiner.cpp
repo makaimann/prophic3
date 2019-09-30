@@ -42,6 +42,70 @@ msat_term ArrayAxiomEnumerator::bound_lambda(msat_term lambda, size_t width)
       msat_make_leq(msat_env_, lambda, max));
 }
 
+// public facing axiom enumeration
+
+ic3ia::TermList ArrayAxiomEnumerator::init_eq_axioms()
+{
+  ic3ia::TermMap & witnesses = abstractor_.witnesses();
+  ic3ia::TermList axioms;
+  for (auto e : init_equalities_)
+  {
+    enumerate_eq_uf_axioms(axioms, e, witnesses.at(e), curr_indices_);
+  }
+  return axioms;
+}
+
+ic3ia::TermList ArrayAxiomEnumerator::trans_eq_axioms()
+{
+  ic3ia::TermMap & witnesses = abstractor_.witnesses();
+  ic3ia::TermList axioms;
+  for (auto e : trans_equalities_)
+  {
+    enumerate_eq_uf_axioms(axioms, e, witnesses.at(e), all_indices_);
+  }
+  return axioms;
+}
+
+ic3ia::TermList ArrayAxiomEnumerator::prop_eq_axioms()
+{
+  ic3ia::TermMap & witnesses = abstractor_.witnesses();
+  ic3ia::TermList axioms;
+  for (auto e : prop_equalities_)
+  {
+    enumerate_eq_uf_axioms(axioms, e, witnesses.at(e), all_indices_);
+  }
+  return axioms;
+}
+
+ic3ia::TermList ArrayAxiomEnumerator::const_array_axioms()
+{
+  ic3ia::TermList axioms;
+  ic3ia::TermMap & cache = abstractor_.cache();
+  ic3ia::TermList const_arrs = abstractor_.const_arrs();
+  msat_term arr;
+  msat_term const_arr;
+  msat_term tmp;
+  for (auto e : const_arrs)
+  {
+    arr = msat_term_get_arg(e, 0);
+    const_arr = msat_term_get_arg(e, 1);
+    if (is_array_const(msat_env_, arr))
+    {
+      tmp = arr;
+      arr = const_arr;
+      const_arr = tmp;
+    }
+    enumerate_const_array_equalities(axioms,
+                                     arr,
+                                     msat_term_get_arg(const_arr, 0),
+                                     curr_indices_);
+  }
+  return axioms;
+}
+
+
+// protected helper functions
+
 void ArrayAxiomEnumerator::enumerate_read_equalities(TermList & axioms,
                                                      msat_term arr0,
                                                      msat_term arr1,
