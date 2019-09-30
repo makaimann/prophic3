@@ -8,10 +8,10 @@
 #include "array_abstractor.h"
 
 namespace ic3ia_array {
-class ArrayAxiomEnumerator {
+class ArraySingleStepAxiomEnumerator {
 public:
-  ArrayAxiomEnumerator(const ic3ia::TransitionSystem &ts,
-                       const ArrayAbstractor &aa, const ic3ia::Options &opts)
+  ArraySingleStepAxiomEnumerator(const ic3ia::TransitionSystem &ts,
+                                 const ArrayAbstractor &aa, const ic3ia::Options &opts)
       : ts_(ts), abstractor_(aa), bmc_(ic3ia::Bmc(ts, opts)) {
     msat_env_ = ts.get_env();
 

@@ -7,13 +7,13 @@ using namespace ic3ia;
 
 namespace ic3ia_array {
 
-msat_term ArrayAxiomEnumerator::implies(msat_term antecedent, msat_term consequent)
+msat_term ArraySingleStepAxiomEnumerator::implies(msat_term antecedent, msat_term consequent)
 {
   return msat_make_or(msat_env_, msat_make_not(msat_env_, antecedent),
                       consequent);
 }
 
-msat_term ArrayAxiomEnumerator::get_lambda_from_type(msat_type _type)
+msat_term ArraySingleStepAxiomEnumerator::get_lambda_from_type(msat_type _type)
 {
   // have to do this because types aren't hashable
   msat_term lambda;
@@ -28,7 +28,7 @@ msat_term ArrayAxiomEnumerator::get_lambda_from_type(msat_type _type)
   return lambda;
 }
 
-msat_term ArrayAxiomEnumerator::bound_lambda(msat_term lambda, size_t width)
+msat_term ArraySingleStepAxiomEnumerator::bound_lambda(msat_term lambda, size_t width)
 {
   // FIXME: Technically not supporting any bit-width here
   //        I think maxint is probably enough though -- I'd hope!
@@ -44,7 +44,7 @@ msat_term ArrayAxiomEnumerator::bound_lambda(msat_term lambda, size_t width)
 
 // public facing axiom enumeration
 
-ic3ia::TermList ArrayAxiomEnumerator::init_eq_axioms()
+ic3ia::TermList ArraySingleStepAxiomEnumerator::init_eq_axioms()
 {
   ic3ia::TermMap & witnesses = abstractor_.witnesses();
   ic3ia::TermList axioms;
@@ -55,7 +55,7 @@ ic3ia::TermList ArrayAxiomEnumerator::init_eq_axioms()
   return axioms;
 }
 
-ic3ia::TermList ArrayAxiomEnumerator::trans_eq_axioms()
+ic3ia::TermList ArraySingleStepAxiomEnumerator::trans_eq_axioms()
 {
   ic3ia::TermMap & witnesses = abstractor_.witnesses();
   ic3ia::TermList axioms;
@@ -66,7 +66,7 @@ ic3ia::TermList ArrayAxiomEnumerator::trans_eq_axioms()
   return axioms;
 }
 
-ic3ia::TermList ArrayAxiomEnumerator::prop_eq_axioms()
+ic3ia::TermList ArraySingleStepAxiomEnumerator::prop_eq_axioms()
 {
   ic3ia::TermMap & witnesses = abstractor_.witnesses();
   ic3ia::TermList axioms;
@@ -77,7 +77,7 @@ ic3ia::TermList ArrayAxiomEnumerator::prop_eq_axioms()
   return axioms;
 }
 
-ic3ia::TermList ArrayAxiomEnumerator::const_array_axioms()
+ic3ia::TermList ArraySingleStepAxiomEnumerator::const_array_axioms()
 {
   ic3ia::TermList axioms;
   ic3ia::TermMap & cache = abstractor_.cache();
@@ -103,7 +103,7 @@ ic3ia::TermList ArrayAxiomEnumerator::const_array_axioms()
   return axioms;
 }
 
-ic3ia::TermList ArrayAxiomEnumerator::store_axioms()
+ic3ia::TermList ArraySingleStepAxiomEnumerator::store_axioms()
 {
   ic3ia::TermList axioms;
   ic3ia::TermMap & cache = abstractor_.cache();
@@ -141,7 +141,7 @@ ic3ia::TermList ArrayAxiomEnumerator::store_axioms()
 }
 
 // protected helper functions
-void ArrayAxiomEnumerator::enumerate_store_equalities(TermList & axioms,
+void ArraySingleStepAxiomEnumerator::enumerate_store_equalities(TermList & axioms,
                                                       msat_term arr0,
                                                       msat_term arr1,
                                                       msat_term idx,
@@ -201,7 +201,7 @@ void ArrayAxiomEnumerator::enumerate_store_equalities(TermList & axioms,
   }
 }
 
-void ArrayAxiomEnumerator::enumerate_const_array_equalities(TermList & axioms,
+void ArraySingleStepAxiomEnumerator::enumerate_const_array_equalities(TermList & axioms,
                                                             msat_term arr,
                                                             msat_term val,
                                                             TermSet & indices)
@@ -236,7 +236,7 @@ void ArrayAxiomEnumerator::enumerate_const_array_equalities(TermList & axioms,
   }
 }
 
-void ArrayAxiomEnumerator::enumerate_eq_uf_axioms(ic3ia::TermList & axioms,
+void ArraySingleStepAxiomEnumerator::enumerate_eq_uf_axioms(ic3ia::TermList & axioms,
                                                   msat_term eq_uf,
                                                   msat_term witness,
                                                   ic3ia::TermSet & indices)
@@ -274,7 +274,7 @@ void ArrayAxiomEnumerator::enumerate_eq_uf_axioms(ic3ia::TermList & axioms,
                       msat_make_uf(msat_env_, read1, &args1[0]))));
 }
 
-void ArrayAxiomEnumerator::collect_equalities(msat_term term, ic3ia::TermSet & s)
+void ArraySingleStepAxiomEnumerator::collect_equalities(msat_term term, ic3ia::TermSet & s)
 {
   struct Data
   {
@@ -307,7 +307,7 @@ void ArrayAxiomEnumerator::collect_equalities(msat_term term, ic3ia::TermSet & s
 
 // old code in case we treat top-level equalities specially
 // for now, not worrying about it
-// void ArrayAxiomEnumerator::enumerate_read_equalities(TermList & axioms,
+// void ArraySingleStepAxiomEnumerator::enumerate_read_equalities(TermList & axioms,
 //                                                      msat_term arr0,
 //                                                      msat_term arr1,
 //                                                      TermSet & indices)
