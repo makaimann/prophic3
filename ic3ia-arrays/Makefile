@@ -30,3 +30,4 @@ test.out: test.cpp
 
 clean:
 	rm -rf *.out
+	rm -f ic3ia-arrays
