@@ -39,8 +39,8 @@ public:
     ic3ia::TermMap &witnesses() { return witnesses_; };
     TermDeclMap &read_ufs() { return read_ufs_; };
     TermTypeMap &orig_sorts() { return orig_sorts_; };
-    ic3ia::TermList &const_arrs() { return const_arrs_; };
-    ic3ia::TermList &stores() { return stores_; };
+    ic3ia::TermSet &const_arrs() { return const_arrs_; };
+    ic3ia::TermSet &stores() { return stores_; };
     ic3ia::TermSet &finite_domain_lambdas() { return finite_domain_lambdas_; };
 
   private:
@@ -74,8 +74,8 @@ public:
     ic3ia::TermMap witnesses_;
     TermDeclMap read_ufs_;
     TermTypeMap orig_sorts_;
-    ic3ia::TermList const_arrs_;
-    ic3ia::TermList stores_;
+    ic3ia::TermSet const_arrs_;
+    ic3ia::TermSet stores_;
 
     ic3ia::TermSet finite_domain_lambdas_;
 };

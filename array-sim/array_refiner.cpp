@@ -81,7 +81,7 @@ ic3ia::TermList ArrayAxiomEnumerator::const_array_axioms()
 {
   ic3ia::TermList axioms;
   ic3ia::TermMap & cache = abstractor_.cache();
-  ic3ia::TermList const_arrs = abstractor_.const_arrs();
+  ic3ia::TermSet const_arrs = abstractor_.const_arrs();
   msat_term arr;
   msat_term const_arr;
   msat_term tmp;

@@ -91,12 +91,12 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
     TermMap &witnesses;
     TermDeclMap &read_ufs;
     TermTypeMap &orig_sorts;
-    TermList &const_arrs;
-    TermList &stores;
+    TermSet &const_arrs;
+    TermSet &stores;
     TermMap &cache;
     unsigned int &eq_id;
     AbstractionData(TermSet &i, TermMap &nv, TermMap &w, TermDeclMap &r,
-                    TermTypeMap &o, TermList &ca, TermList &s, TermMap &c,
+                    TermTypeMap &o, TermSet &ca, TermSet &s, TermMap &c,
                     unsigned int &e)
         : indices(i), new_vars(nv), witnesses(w), read_ufs(r), orig_sorts(o),
           const_arrs(ca), stores(s), cache(c), eq_id(e) {}
@@ -142,12 +142,12 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
         if (is_array_write(e, lhs) || is_array_write(e, rhs)) {
           // remove the store equality and keep it for refinement
           d->cache[t] = msat_make_true(e);
-          d->stores.push_back(t);
+          d->stores.insert(t);
           return MSAT_VISIT_PROCESS;
         } else if (is_array_const(e, lhs) || is_array_const(e, rhs)) {
           // remove the const array equality and keep it for refinement
           d->cache[t] = msat_make_true(e);
-          d->const_arrs.push_back(t);
+          d->const_arrs.insert(t);
           return MSAT_VISIT_PROCESS;
         }
 
