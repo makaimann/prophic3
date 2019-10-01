@@ -39,6 +39,22 @@ int main(int argc, const char **argv)
   // TransitionSystem abs_ts = af.flatten_transition_system();
   // ArrayAbstractor aa(abs_ts);
   // abs_ts = aa.abstract_transition_system();
-  IC3Array icaia_array(ts, opts);
+  IC3Array ic3ia_array(ts, opts);
+
+  // TODO: finish implementing prove an uncomment this
+  // msat_truth_value res = ic3ia_array.prove();
+  // if (res == MSAT_FALSE)
+  // {
+  //   cout << "The property is false" << endl;
+  // }
+  // else if (res == MSAT_TRUE)
+  // {
+  //   cout << "The property is true" << endl;
+  // }
+  // else
+  // {
+  //   throw "Invalid return";
+  // }
+
   return 0;
 }
