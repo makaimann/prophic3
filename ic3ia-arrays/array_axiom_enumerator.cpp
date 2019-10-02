@@ -1,5 +1,5 @@
 #include "assert.h"
-#include <cmath>
+#include "gmpxx.h"
 
 #include "array_axiom_enumerator.h"
 
@@ -30,11 +30,9 @@ msat_term ArraySingleStepAxiomEnumerator::get_lambda_from_type(msat_type _type)
 
 msat_term ArraySingleStepAxiomEnumerator::bound_lambda(msat_term lambda, size_t width)
 {
-  // FIXME: Technically not supporting any bit-width here
-  //        I think maxint is probably enough though -- I'd hope!
   msat_term minus_one = msat_make_int_number(msat_env_, -1);
-  msat_term max =
-      msat_make_int_number(msat_env_, ((int)std::pow(2.0, width)) - 1);
+  mpz_class maxval(std::string(width, '1'), 2);
+  msat_term max = msat_make_number(msat_env_, maxval.get_str(10).c_str());
 
   return msat_make_and(
       msat_env_,
