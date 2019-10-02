@@ -1,3 +1,14 @@
+* Current things to consider
+** Do we actually need a witness for each disequality?
+*** Could just have lemmas like this
+    eq(a, b) -> a[i] = b[i] for all i in index set
+    a[i] != b[i] -> !eq(a, b) for all i in index set
+
+    The index set should be constructed such that this is sound
+** Need to be careful with lambda all different constraint
+*** Could overconstrain if there are too many distinct indices -- especially because lambda is a frozenvar
+*** Need to change this in the implementation somehow
+*** I'm thinking that alldiff should actually just be an antecedent in an implication
 * Identifying Broken Array Axioms
 ** Have Array tracker for every array in the system
 ** Need to examine a bmc trace and find missing axioms
