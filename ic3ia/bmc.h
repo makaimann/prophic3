@@ -54,6 +54,10 @@ public:
 
     Unroller& get_unroller() { return un_; };
 
+    msat_model get_model() { return msat_get_model(env_); }
+
+    int reached_k() { return reached_k_; };
+
 private:
     void initialize();
     ///< initialization of the internal state
