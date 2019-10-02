@@ -35,8 +35,8 @@ namespace ic3ia_array
 
     ArraySingleStepAxiomEnumerator abstract();
 
-    void debug_print_witness(ic3ia::Bmc & bmc,
-                             ArraySingleStepAxiomEnumerator & assae);
+    void debug_print_witness(ic3ia::Bmc &bmc,
+                             ArraySingleStepAxiomEnumerator &assae);
   };
 }
 

@@ -44,8 +44,8 @@ public:
   ic3ia::TermSet store_axioms();
 
   // debugging
-  ArrayAbstractor & get_abstractor() { return abstractor_; };
-  ic3ia::TermSet & all_indices() { return all_indices_; };
+  ArrayAbstractor &get_abstractor() { return abstractor_; };
+  ic3ia::TermSet &all_indices() { return all_indices_; };
 
 private:
   const ic3ia::TransitionSystem &ts_;

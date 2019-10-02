@@ -43,16 +43,11 @@ int main(int argc, const char **argv)
 
   // TODO: finish implementing prove and uncomment this
   msat_truth_value res = ic3ia_array.prove();
-  if (res == MSAT_FALSE)
-  {
+  if (res == MSAT_FALSE) {
     cout << "The property is false" << endl;
-  }
-  else if (res == MSAT_TRUE)
-  {
+  } else if (res == MSAT_TRUE) {
     cout << "The property is true" << endl;
-  }
-  else
-  {
+  } else {
     throw "Invalid return";
   }
 

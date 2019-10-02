@@ -58,7 +58,7 @@ public:
 
     int reached_k() { return reached_k_; };
 
-private:
+  private:
     void initialize();
     ///< initialization of the internal state
     
