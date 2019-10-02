@@ -137,6 +137,17 @@ void IC3Array::debug_print_witness(Bmc &bmc,
   std::cout << msat_to_smtlib2_term(msat_env_, abs_ts_.init()) << std::endl;
   std::cout << "TRANS:" << std::endl;
   std::cout << msat_to_smtlib2_term(msat_env_, abs_ts_.trans()) << std::endl;
+  std::cout << "STORES:" << std::endl;
+  for(auto s : abstractor.stores())
+  {
+    std::cout << msat_to_smtlib2_term(msat_env_, s) << std::endl;
+  }
+  std::cout << "CONSTARRS:" << std::endl;
+  for(auto ca : abstractor.const_arrs())
+  {
+    std::cout << msat_to_smtlib2_term(msat_env_, ca) << std::endl;
+  }
+
 
   std::cout << std::endl;
   std::cout << "+++++++++++++++++++++ UF values ++++++++++++++++++++"
