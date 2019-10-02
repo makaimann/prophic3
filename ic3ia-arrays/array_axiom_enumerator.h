@@ -43,6 +43,10 @@ public:
   ic3ia::TermSet const_array_axioms();
   ic3ia::TermSet store_axioms();
 
+  // debugging
+  ArrayAbstractor & get_abstractor() { return abstractor_; };
+  ic3ia::TermSet & all_indices() { return all_indices_; };
+
 private:
   const ic3ia::TransitionSystem &ts_;
   ArrayAbstractor abstractor_;

@@ -30,7 +30,13 @@ namespace ic3ia_array
     ic3ia::TransitionSystem abs_ts_;
     const ic3ia::Options & opts_;
 
+    // TODO: Look into using unroller's untime feature
+    ic3ia::TermMap untime_cache;
+
     ArraySingleStepAxiomEnumerator abstract();
+
+    void debug_print_witness(ic3ia::Bmc & bmc,
+                             ArraySingleStepAxiomEnumerator & assae);
   };
 }
 
