@@ -1,0 +1,90 @@
+-- IMPORTANT: Using an unsound axiom here -- couldn't figure out a way to get this to work without a witness
+-- a different version of the abstraction refinement loop without using a witness
+MODULE main
+
+IVAR
+  data : unsigned word [8] ;
+
+FUN
+  read : integer * integer -> word[8] ;
+  eq   : integer * integer -> boolean ;
+
+VAR
+  x : unsigned word [4] ;
+  y : unsigned word [4] ;
+  -- arr0 : array word [4] of word [8] ;
+  -- arr1 : array word [4] of word [8] ;
+  -- arr_flatten0 : array word [4] of word [8] ;
+  -- arr_flatten1 : array word [4] of word [8] ;
+  arr0 : integer;
+  arr1 : integer;
+  arr_flatten0 : integer;
+  arr_flatten1 : integer;
+
+FROZENVAR
+  lambda : word[4];
+
+-- INIT arr0 = arr1
+INIT eq(arr0, arr1)
+INIT x = y
+
+TRANS next(x) = x + 0ud4_1
+TRANS next(y) = y + 0ud4_1
+-- TRANS next(arr0) = WRITE(arr0, x, data)
+-- TRANS next(arr1) = WRITE(arr1, y, data)
+-- INVAR arr_flatten0 = WRITE(arr0, x, data)
+-- INVAR arr_flatten1 = WRITE(arr1, y, data)
+TRANS eq(next(arr0), arr_flatten0)
+TRANS eq(next(arr1), arr_flatten1)
+
+INVAR lambda != x & lambda != y
+
+INVAR eq(arr0, arr1) -> (read(arr0, toint(x)) = read(arr1, toint(x)))
+INVAR eq(arr0, arr1) -> (read(arr0, toint(y)) = read(arr1, toint(y)))
+TRANS eq(arr0, arr1) -> (read(arr0, next(toint(x))) = read(arr1, next(toint(x))))
+TRANS eq(arr0, arr1) -> (read(arr0, next(toint(y))) = read(arr1, next(toint(y))))
+INVAR eq(arr0, arr1) -> (read(arr0, toint(lambda)) = read(arr1, toint(lambda)))
+TRANS eq(arr0, arr1) -> (read(arr0, next(toint(lambda))) = read(arr1, next(toint(lambda))))
+
+INVAR read(arr0, toint(x)) != read(arr1, toint(x)) -> !(eq(arr0, arr1))
+INVAR read(arr0, toint(y)) != read(arr1, toint(y)) -> !(eq(arr0, arr1))
+INVAR read(arr0, toint(lambda)) != read(arr1, toint(lambda)) -> !(eq(arr0, arr1))
+TRANS read(arr0, next(toint(x))) != read(arr1, next(toint(x))) -> !(eq(arr0, arr1))
+TRANS read(arr0, next(toint(y))) != read(arr1, next(toint(y))) -> !(eq(arr0, arr1))
+TRANS read(arr0, next(toint(lambda))) != read(arr1, next(toint(lambda))) -> !(eq(arr0, arr1))
+
+-- ugly way to force equality only when you've exhausted all indices
+-- this probably isn't quite right, because there are actually other indices to consider (e.g. next versions), lambda, etc...
+INVAR ((read(arr0, toint(x)) = read(arr1, toint(x))) & (read(arr0, toint(y)) = read(arr1, toint(y))) & (read(arr0, toint(lambda)) = read(arr1, toint(lambda)))) -> eq(arr0, arr1)
+
+-- flattened equalities
+TRANS eq(next(arr0), arr_flatten0) -> (read(next(arr0), toint(x)) = read(arr_flatten0, toint(x)))
+TRANS eq(next(arr0), arr_flatten0) -> (read(next(arr0), toint(y)) = read(arr_flatten0, toint(y)))
+TRANS eq(next(arr0), arr_flatten0) -> (read(next(arr0), next(toint(x))) = read(arr_flatten0, next(toint(x))))
+TRANS eq(next(arr0), arr_flatten0) -> (read(next(arr0), toint(lambda)) = read(arr_flatten0, toint(lambda)))
+TRANS eq(next(arr0), arr_flatten0) -> (read(next(arr0), next(toint(lambda))) = read(arr_flatten0, next(toint(lambda))))
+
+TRANS eq(next(arr1), arr_flatten1) -> (read(next(arr1), toint(x)) = read(arr_flatten1, toint(x)))
+TRANS eq(next(arr1), arr_flatten1) -> (read(next(arr1), toint(y)) = read(arr_flatten1, toint(y)))
+TRANS eq(next(arr1), arr_flatten1) -> (read(next(arr1), next(toint(x))) = read(arr_flatten1, next(toint(x))))
+TRANS eq(next(arr1), arr_flatten1) -> (read(next(arr1), toint(lambda)) = read(arr_flatten1, toint(lambda)))
+TRANS eq(next(arr1), arr_flatten1) -> (read(next(arr1), next(toint(lambda))) = read(arr_flatten1, next(toint(lambda))))
+
+
+-- store equalities
+TRANS read(arr_flatten0, toint(x)) = data
+TRANS read(arr_flatten1, toint(y)) = data
+TRANS next(x) != x -> read(arr_flatten0, next(toint(x))) = read(arr0, next(toint(x)))
+TRANS next(y) != x -> read(arr_flatten0, next(toint(y))) = read(arr0, next(toint(x)))
+
+TRANS next(x) != y -> read(arr_flatten1, next(toint(x))) = read(arr1, next(toint(x)))
+TRANS next(y) != y -> read(arr_flatten1, next(toint(y))) = read(arr1, next(toint(x)))
+
+TRANS lambda != x -> read(arr_flatten0, toint(lambda)) = read(arr0, toint(lambda))
+TRANS next(lambda) != x -> read(arr_flatten0, next(toint(lambda))) = read(arr0, next(toint(lambda)))
+
+TRANS lambda != y -> read(arr_flatten1, toint(lambda)) = read(arr1, toint(lambda))
+TRANS next(lambda) != y -> read(arr_flatten1, next(toint(lambda))) = read(arr1, next(toint(lambda)))
+
+-- INVARSPEC arr0 = arr1
+INVARSPEC eq(arr0, arr1)
