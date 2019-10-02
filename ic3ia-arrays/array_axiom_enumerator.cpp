@@ -290,6 +290,28 @@ void ArraySingleStepAxiomEnumerator::enumerate_eq_uf_axioms(ic3ia::TermSet & axi
                         msat_make_uf(msat_env_, read1, &args1[0]))));
   }
 
+  // special case for finite-domain lambdas
+  msat_type _type = abstractor_.orig_sorts().at(arr0);
+  size_t width;
+  if (msat_is_bv_type(msat_env_, _type, &width)) {
+
+    msat_term lambda = get_lambda_from_type(_type);
+
+    msat_term args0[2] = {arr0, lambda};
+    msat_term args1[2] = {arr1, lambda};
+    msat_term antecedent = msat_make_and(msat_env_, eq_uf,
+                                         bound_lambda(lambda, width));
+    msat_term consequent =
+      msat_make_equal(msat_env_, msat_make_uf(msat_env_, read0, &args0[0]),
+                      msat_make_uf(msat_env_, read1, &args1[0]));
+    axioms.insert(implies(antecedent, consequent));
+  } else {
+    // TODO: Handle other values
+    // only handling bv and int for now
+    assert(msat_is_integer_type(msat_env_, _type));
+  }
+
+  // add witness axiom for disequality
   args0[1] = witness;
   args1[1] = witness;
   msat_term not_eq_uf = msat_make_not(msat_env_, eq_uf);
