@@ -202,6 +202,7 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
         msat_term witnessN =
             idx_to_int(e, msat_make_constant(e, decl_witnessN));
         d->witnesses[eq_uf] = witness;
+        d->orig_sorts[witness] = idx_type;
         // update state variables
         d->new_vars[witness] = witnessN;
       } else if (is_array_read(e, t)) {
