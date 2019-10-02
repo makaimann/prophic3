@@ -226,6 +226,12 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
         msat_term cached_args[2] = {arr_cache, int_idx};
         msat_term read_uf = msat_make_uf(e, readfun, &cached_args[0]);
         d->cache[t] = read_uf;
+      } else if (is_array_write(e, t)) {
+        msat_term idx = msat_term_get_arg(t, 1);
+        msat_term int_idx = idx_to_int(e, d->cache[idx]);
+        msat_type orig_idx_sort = msat_term_get_type(idx);
+        d->indices.insert(int_idx);
+        d->orig_sorts[int_idx] = orig_idx_sort;
       } else {
         // rebuild the term
         size_t arity = msat_term_arity(t);
