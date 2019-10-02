@@ -315,8 +315,9 @@ void ArraySingleStepAxiomEnumerator::enumerate_eq_uf_axioms(ic3ia::TermSet & axi
   msat_term not_eq_uf = msat_make_not(msat_env_, eq_uf);
   axioms.insert(implies(
       not_eq_uf,
-      msat_make_equal(msat_env_, msat_make_uf(msat_env_, read0, &args0[0]),
-                      msat_make_uf(msat_env_, read1, &args1[0]))));
+      msat_make_not(msat_env_,
+                    msat_make_equal(msat_env_, msat_make_uf(msat_env_, read0, &args0[0]),
+                                    msat_make_uf(msat_env_, read1, &args1[0])))));
 }
 
 void ArraySingleStepAxiomEnumerator::collect_equalities(msat_term term, ic3ia::TermSet & s)
