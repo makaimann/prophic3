@@ -9,6 +9,20 @@
 *** Could overconstrain if there are too many distinct indices -- especially because lambda is a frozenvar
 *** Need to change this in the implementation somehow
 *** I'm thinking that alldiff should actually just be an antecedent in an implication
+** Probably better to do some prophecy first
+   Otherwise, need to enumerate lots of redundant axioms before you even get to prophecy
+** How to generate axioms over prophecy variables
+*** Idea 1: just add to index set and rerun axiom enumerator
+*** Idea 2: be more specific and only add certain kinds of axioms (not sure if this make sense) Probably best to start with idea 1
+** How do we identify broken array axioms that cover more than one step?
+*** What if we still only look at one-step axioms, but over all index values
+*** Basic idea is as follows
+**** Get a counter-example
+**** Create a set of all index values, including lambdas and witnesses
+**** Looks for cases where two arrays are supposed to be equal, but it drops one of the values <-- this identifies a broken axiom
+**** However, this axiom cannot be fixed with an untimed assumption because that value does not occur at that time-step (otherwise the previous axiom enumeration would have gotten it)
+**** Thus, do a backward search over all terms starting from the last step to look for terms that have the same value
+**** Create a prophecy/history pipeline to then make sure this value is maintained
 * Identifying Broken Array Axioms
 ** Have Array tracker for every array in the system
 ** Need to examine a bmc trace and find missing axioms
