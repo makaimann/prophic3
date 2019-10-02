@@ -1,0 +1,70 @@
+-- step 1: flatten
+-- step 2: abstract
+
+-- had to use a prophecy variable because witness is free to change in every step
+MODULE main
+
+IVAR
+  data : unsigned word [8] ;
+
+FUN
+  read : integer * integer -> word[8] ;
+  eq   : integer * integer -> boolean ;
+
+VAR
+  x : unsigned word [4] ;
+  y : unsigned word [4] ;
+  -- arr0 : array word [4] of word [8] ;
+  -- arr1 : array word [4] of word [8] ;
+  -- arr_flatten0 : array word [4] of word [8] ;
+  -- arr_flatten1 : array word [4] of word [8] ;
+  arr0 : integer;
+  arr1 : integer;
+  arr_flatten0 : integer;
+  arr_flatten1 : integer;
+  witness : word[4];
+
+FROZENVAR
+  wproph : word[4];
+
+-- INIT arr0 = arr1
+INIT eq(arr0, arr1)
+INIT x = y
+
+TRANS next(x) = x + 0ud4_1
+TRANS next(y) = y + 0ud4_1
+-- TRANS next(arr0) = WRITE(arr0, x, data)
+-- TRANS next(arr1) = WRITE(arr1, y, data)
+-- INVAR arr_flatten0 = WRITE(arr0, x, data)
+-- INVAR arr_flatten1 = WRITE(arr1, y, data)
+TRANS next(arr0) = arr_flatten0
+TRANS next(arr1) = arr_flatten1
+
+TRANS (witness != x) -> read(arr_flatten0, toint(witness)) = read(arr0, toint(witness))
+TRANS (witness != y) -> read(arr_flatten1, toint(witness)) = read(arr1, toint(witness))
+TRANS (next(witness) != x) -> read(arr_flatten0, next(toint(witness))) = read(arr0, next(toint(witness)))
+TRANS (next(witness) != y) -> read(arr_flatten1, next(toint(witness))) = read(arr1, next(toint(witness)))
+
+TRANS (witness = x) -> read(arr_flatten0, toint(witness)) = data
+TRANS (witness = y) -> read(arr_flatten1, toint(witness)) = data
+TRANS (next(witness) = x) -> read(arr_flatten0, next(toint(witness))) = data
+TRANS (next(witness) = y) -> read(arr_flatten1, next(toint(witness))) = data
+
+TRANS (wproph != x) -> read(arr_flatten0, toint(wproph)) = read(arr0, toint(wproph))
+TRANS (wproph != y) -> read(arr_flatten1, toint(wproph)) = read(arr1, toint(wproph))
+TRANS (next(wproph) != x) -> read(arr_flatten0, next(toint(wproph))) = read(arr0, next(toint(wproph)))
+TRANS (next(wproph) != y) -> read(arr_flatten1, next(toint(wproph))) = read(arr1, next(toint(wproph)))
+
+TRANS (wproph = x) -> read(arr_flatten0, toint(wproph)) = data
+TRANS (wproph = y) -> read(arr_flatten1, toint(wproph)) = data
+TRANS (next(wproph) = x) -> read(arr_flatten0, next(toint(wproph))) = data
+TRANS (next(wproph) = y) -> read(arr_flatten1, next(toint(wproph))) = data
+
+INVAR !(eq(arr0, arr1)) -> (read(arr0, toint(witness)) != read(arr1, toint(witness)))
+INVAR eq(arr0, arr1) -> (read(arr0, toint(witness)) = read(arr1, toint(witness)))
+
+INVAR eq(arr0, arr1) -> (read(arr0, toint(wproph)) = read(arr1, toint(wproph)))
+
+-- INVARSPEC arr0 = arr1
+-- INVARSPEC eq(arr0, arr1)
+INVARSPEC wproph=witness -> eq(arr0, arr1)
