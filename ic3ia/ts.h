@@ -80,15 +80,14 @@ public:
 
     // added by Makai -- makes it easier to update property
     // with new prophecy variables
-    void set_prop(msat_term new_prop, bool live_prop)
-    {
+    void set_prop(msat_term new_prop, bool live_prop) {
       prop_ = new_prop;
       live_prop_ = live_prop;
     };
     ///< sets the property to new_prop
     ///< live_prop tells whether the new property is a liveness prop
 
-private:
+  private:
     void reset();
     void collect_inputs();
     
