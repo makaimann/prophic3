@@ -87,7 +87,11 @@ public:
     ///< sets the property to new_prop
     ///< live_prop tells whether the new property is a liveness prop
 
-  private:
+    // added by Makai -- convenience function
+    bool has_next(msat_term t) const;
+    ///< checks if term t has any next state variables
+
+private:
     void reset();
     void collect_inputs();
     

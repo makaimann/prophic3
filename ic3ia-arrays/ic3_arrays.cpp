@@ -39,6 +39,10 @@ msat_truth_value IC3Array::prove()
     bmc.check_until(witness_length);
     assert(bmc.reached_k() + 1 == witness_length);
 
+    // TODO: filter axioms with unsat core
+    TermSet init_axioms_to_add;
+    TermSet trans_axioms_to_add;
+
     while (broken) {
       msat_model model = bmc.get_model();
 
@@ -78,6 +82,15 @@ msat_truth_value IC3Array::prove()
               // std::cout << msat_to_smtlib2_term(msat_env_, timed_axiom) <<
               // std::endl;
               violated_axioms.push_back(timed_axiom);
+              if (i == 0)
+              {
+                // TODO: handle this in a cleaner way (maybe use enums)
+                init_axioms_to_add.insert(ax);
+              }
+              else
+              {
+                trans_axioms_to_add.insert(ax);
+              }
             }
           }
         }
@@ -89,7 +102,8 @@ msat_truth_value IC3Array::prove()
       if (!violated_axioms.size()) {
         debug_print_witness(bmc, assae);
         // TODO: Use real exceptions
-        throw "Giving up!";
+        std::cout << "Giving up! Missing some axioms." << std::endl;
+        throw std::exception();
       }
 
       bmc.add_assumptions(violated_axioms);
@@ -97,8 +111,27 @@ msat_truth_value IC3Array::prove()
       violated_axioms.clear();
     }
 
-    // TODO: add the necessary axioms into the full system
-    return MSAT_FALSE;
+    std::cout << "Adding " << init_axioms_to_add.size() << " axioms to init." << std::endl;
+    for (auto ax : init_axioms_to_add)
+    {
+      abs_ts_.add_init(ax);
+    }
+    init_axioms_to_add.clear();
+
+    std::cout << "Adding " << trans_axioms_to_add.size() << " axioms to trans." << std::endl;
+    for (auto ax : trans_axioms_to_add)
+    {
+      abs_ts_.add_trans(ax);
+      if (!abs_ts_.has_next(ax))
+      {
+        abs_ts_.add_trans(abs_ts_.next(ax));
+
+        // TODO: figure out if this is right
+        //       I think we need to add invariants to init as well
+        abs_ts_.add_init(ax);
+      }
+    }
+    trans_axioms_to_add.clear();
   }
   // TODO: do this correctly
   return MSAT_FALSE;
