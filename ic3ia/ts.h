@@ -91,7 +91,7 @@ public:
     bool has_next(msat_term t) const;
     ///< checks if term t has any next state variables
 
-private:
+  private:
     void reset();
     void collect_inputs();
     

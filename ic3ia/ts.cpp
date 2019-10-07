@@ -177,26 +177,21 @@ void TransitionSystem::add_trans(msat_term t)
 }
 
 // added by Makai
-bool TransitionSystem::has_next(msat_term t) const
-{
-  struct Data
-  {
+bool TransitionSystem::has_next(msat_term t) const {
+  struct Data {
     bool contains_next;
-    const TermSet & nextvars;
-    Data(const TermSet & nv) : contains_next(false), nextvars(nv) {};
+    const TermSet &nextvars;
+    Data(const TermSet &nv) : contains_next(false), nextvars(nv){};
   };
   auto visit = [](msat_env e, msat_term t, int preorder,
-                  void *data) -> msat_visit_status
-               {
-                 Data * d = static_cast<Data *>(data);
-                 if (preorder &&
-                     (d->nextvars.find(t) != d->nextvars.end()))
-                 {
-                   d->contains_next = true;
-                   return MSAT_VISIT_ABORT;
-                 }
-                 return MSAT_VISIT_PROCESS;
-               };
+                  void *data) -> msat_visit_status {
+    Data *d = static_cast<Data *>(data);
+    if (preorder && (d->nextvars.find(t) != d->nextvars.end())) {
+      d->contains_next = true;
+      return MSAT_VISIT_ABORT;
+    }
+    return MSAT_VISIT_PROCESS;
+  };
 
   Data data(nextstatevars_set_);
   msat_visit_term(env_, t, visit, &data);

@@ -82,13 +82,10 @@ msat_truth_value IC3Array::prove()
               // std::cout << msat_to_smtlib2_term(msat_env_, timed_axiom) <<
               // std::endl;
               violated_axioms.push_back(timed_axiom);
-              if (i == 0)
-              {
+              if (i == 0) {
                 // TODO: handle this in a cleaner way (maybe use enums)
                 init_axioms_to_add.insert(ax);
-              }
-              else
-              {
+              } else {
                 trans_axioms_to_add.insert(ax);
               }
             }
@@ -111,19 +108,18 @@ msat_truth_value IC3Array::prove()
       violated_axioms.clear();
     }
 
-    std::cout << "Adding " << init_axioms_to_add.size() << " axioms to init." << std::endl;
-    for (auto ax : init_axioms_to_add)
-    {
+    std::cout << "Adding " << init_axioms_to_add.size() << " axioms to init."
+              << std::endl;
+    for (auto ax : init_axioms_to_add) {
       abs_ts_.add_init(ax);
     }
     init_axioms_to_add.clear();
 
-    std::cout << "Adding " << trans_axioms_to_add.size() << " axioms to trans." << std::endl;
-    for (auto ax : trans_axioms_to_add)
-    {
+    std::cout << "Adding " << trans_axioms_to_add.size() << " axioms to trans."
+              << std::endl;
+    for (auto ax : trans_axioms_to_add) {
       abs_ts_.add_trans(ax);
-      if (!abs_ts_.has_next(ax))
-      {
+      if (!abs_ts_.has_next(ax)) {
         abs_ts_.add_trans(abs_ts_.next(ax));
 
         // TODO: figure out if this is right
