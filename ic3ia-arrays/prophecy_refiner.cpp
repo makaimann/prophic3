@@ -19,9 +19,10 @@ void ProphecyRefiner::compute_prophecy_prop() {
   auto visit = [](msat_env e, msat_term t, int preorder,
                   void *data) -> msat_visit_status {
     Data *d = static_cast<Data *>(data);
-    if (preorder && ((d->indices.find(t) != d->indices.end()) ||
-                     (d->witnesses.find(t) != d->witnesses.end()))) {
+    if (preorder && (d->indices.find(t) != d->indices.end())) {
       d->prophecy_targets.insert(t);
+    } else if (d->witnesses.find(t) != d->witnesses.end()) {
+      d->prophecy_targets.insert(d->witnesses.at(t));
     }
     return MSAT_VISIT_PROCESS;
   };
@@ -45,7 +46,6 @@ void ProphecyRefiner::compute_prophecy_prop() {
 
       // make the equality for the property
       prophecy_equalities.insert(msat_make_equal(msat_env_, proph, t));
-
       num_prophs++;
     }
 
