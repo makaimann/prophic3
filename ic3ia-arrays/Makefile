@@ -2,7 +2,7 @@ MSAT_HOME=../mathsat
 IC3IA_HOME=../ic3ia
 
 IC3IA_SRC=$(IC3IA_HOME)/ts.cpp $(IC3IA_HOME)/bmc.cpp $(IC3IA_HOME)/utils.cpp $(IC3IA_HOME)/unroll.cpp $(IC3IA_HOME)/ic3.cpp $(IC3IA_HOME)/ia.cpp $(IC3IA_HOME)/solver.cpp $(IC3IA_HOME)/ltl.cpp
-ARRAY_UTILS_SRC=utils.cpp array_flattener.cpp array_abstractor.cpp array_axiom_enumerator.cpp ic3_arrays.cpp
+ARRAY_UTILS_SRC=utils.cpp array_flattener.cpp array_abstractor.cpp array_axiom_enumerator.cpp ic3_arrays.cpp prophecy_refiner.cpp
 # array_abstracter.cpp
 
 all: ic3ia-arrays
