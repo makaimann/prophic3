@@ -278,14 +278,22 @@ void ArraySingleStepAxiomEnumerator::enumerate_eq_uf_axioms(ic3ia::TermSet & axi
   args0[0] = arr0;
   args1[0] = arr1;
 
+  msat_term eq_reads;
+
   for (auto i : indices)
   {
     args0[1] = i;
     args1[1] = i;
-    axioms.insert(implies(
-        eq_uf,
-        msat_make_equal(msat_env_, msat_make_uf(msat_env_, read0, &args0[0]),
-                        msat_make_uf(msat_env_, read1, &args1[0]))));
+    eq_reads = msat_make_equal(msat_env_, msat_make_uf(msat_env_, read0, &args0[0]),
+                               msat_make_uf(msat_env_, read1, &args1[0]));
+    // eq(arr0, arr1) -> arr0[i] = arr1[i]
+    axioms.insert(implies(eq_uf,
+                          eq_reads));
+
+    // arr0[i] != arr1[i] -> !eq(arr0, arr1)
+    axioms.insert(implies(msat_make_not(msat_env_,
+                                        eq_reads),
+                          msat_make_not(msat_env_, eq_uf)));
   }
 
   // special case for finite-domain lambdas
@@ -297,38 +305,32 @@ void ArraySingleStepAxiomEnumerator::enumerate_eq_uf_axioms(ic3ia::TermSet & axi
 
     msat_term args0[2] = {arr0, lambda};
     msat_term args1[2] = {arr1, lambda};
-    msat_term antecedent =
+    eq_reads = msat_make_equal(msat_env_, msat_make_uf(msat_env_, read0, &args0[0]),
+                               msat_make_uf(msat_env_, read1, &args1[0]));
+    msat_term antecedent1 =
         msat_make_and(msat_env_, eq_uf, bound_lambda(lambda, width));
-    msat_term consequent =
-        msat_make_equal(msat_env_, msat_make_uf(msat_env_, read0, &args0[0]),
-                        msat_make_uf(msat_env_, read1, &args1[0]));
-    axioms.insert(implies(antecedent, consequent));
+    axioms.insert(implies(antecedent1, eq_reads));
+    msat_term antecedent2 =
+      msat_make_and(msat_env_,
+                    bound_lambda(lambda, width),
+                    msat_make_not(msat_env_, eq_reads)
+                    );
+    msat_term consequent2 = msat_make_not(msat_env_, eq_uf);
+    axioms.insert(implies(antecedent2, consequent2));
   } else {
     // TODO: Handle other values
     // only handling bv and int for now
     assert(msat_is_integer_type(msat_env_, _type));
   }
 
-  // TODO: WITNESS SHOULD BE FOR EQUALITY
+  // add skolemized witness axiom for equality
   //       skolemized from (forall i. a[i] = b[i]) -> a = b
-  //       e.g. a[w] = b[w] -> a = b
-  //       ALSO WANT TO ADD OTHER LEMMAS
-  //       a = b -> a[i] = b[i] for all i
-  //       a[i] != b[i] -> a != b for all i
-
-  //       There might be a clever way to avoid some of these lemmas
-  //       but we can worry about that later
-
-  // add witness axiom for disequality
+  //       e.g. a[witness] = b[witness] -> a = b
   args0[1] = witness;
   args1[1] = witness;
-  msat_term not_eq_uf = msat_make_not(msat_env_, eq_uf);
-  axioms.insert(implies(
-      not_eq_uf,
-      msat_make_not(
-          msat_env_,
-          msat_make_equal(msat_env_, msat_make_uf(msat_env_, read0, &args0[0]),
-                          msat_make_uf(msat_env_, read1, &args1[0])))));
+  eq_reads = msat_make_equal(msat_env_, msat_make_uf(msat_env_, read0, &args0[0]),
+                             msat_make_uf(msat_env_, read1, &args1[0]));
+  axioms.insert(implies(eq_reads, eq_uf));
 }
 
 void ArraySingleStepAxiomEnumerator::collect_equalities(msat_term term, ic3ia::TermSet & s)

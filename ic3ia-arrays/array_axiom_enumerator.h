@@ -96,9 +96,19 @@ private:
   void enumerate_const_array_equalities(ic3ia::TermSet &axioms, msat_term arr,
                                         msat_term val, ic3ia::TermSet &indices);
 
+  // TODO: Figure out if we can remove some of these lemmas
+  //       probably don't need them all
   /* Enumerate equality axioms on all indices:
    *  forall i .  eq(a, b) -> a[i] = b[i] AND
-   *  forall i . !eq(a, b) -> a[witness] != b[witness]
+   *  forall i .  a[i] != b[i] -> !eq(a, b) AND
+   *  a[witness] = b[witness] -> eq(a, b)
+   *    Last one is very important because it's the only one that forces the
+   *    arrays to be equal. Formally it's obtained from this lemma:
+   *    (forall i . a[i] = b[i]) -> a = b
+   *    !(forall i . a[i] = b[i]) | a = b
+   *    (exists i . a[i] != b[i]) | a = b
+   *    a[witness] != b[witness] | a = b
+   *    a[witness] = b[witness] -> a =b
    */
   void enumerate_eq_uf_axioms(ic3ia::TermSet &axioms, msat_term eq_uf,
                               msat_term witness, ic3ia::TermSet &indices);
