@@ -32,21 +32,16 @@ void ProphecyRefiner::compute_prophecy_prop() {
   unsigned int num_prophs = 0;
   if (data.prophecy_targets.size()) {
     TermSet prophecy_equalities;
+    TermTypeMap &orig_sorts = abstractor_.orig_sorts();
     for (auto t : data.prophecy_targets) {
       msat_type t_type = msat_term_get_type(t);
       std::string name = "proph" + to_string(num_prophs);
       // create a prophecy variable
       msat_decl proph_decl =
           msat_declare_function(msat_env_, name.c_str(), t_type);
-      msat_decl proph_declN =
-          msat_declare_function(msat_env_, (name + "N").c_str(), t_type);
       msat_term proph = msat_make_constant(msat_env_, proph_decl);
-      msat_term prophN = msat_make_constant(msat_env_, proph_declN);
 
-      // add the prophecy variable to the transition system
-      // and make it frozen
-      abs_ts_.add_statevar(proph, prophN);
-      abs_ts_.add_trans(msat_make_equal(msat_env_, prophN, proph));
+      prophecy_vars_[proph] = t;
 
       // make the equality for the property
       prophecy_equalities.insert(msat_make_equal(msat_env_, proph, t));

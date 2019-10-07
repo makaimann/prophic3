@@ -13,9 +13,49 @@ namespace ic3ia_array
 
 msat_truth_value IC3Array::prove()
 {
-  ArraySingleStepAxiomEnumerator assae = abstract();
+  ArrayFlattener af(conc_ts_);
+  abs_ts_ = af.flatten_transition_system();
+  ArrayAbstractor aa(abs_ts_);
+  abs_ts_ = aa.abstract_transition_system();
+  ArraySingleStepAxiomEnumerator assae =
+      ArraySingleStepAxiomEnumerator(abs_ts_, aa);
 
   msat_truth_value res = MSAT_UNDEF;
+
+  // TODO: figure out when the best place to "prophesize" the property is
+  //       I have this intuition that we should just do it immediately
+  //       because it shouldn't make proving too much harder if it's not needed
+  //       but if it is needed and we wait, we'll have to enumerate a lot axioms
+  //       before we even get to prophecy vars
+  ProphecyRefiner pr(abs_ts_, aa);
+
+  // create state variables for prophecy vars and ass as indices
+  TermTypeMap &orig_sorts = aa.orig_sorts();
+  for (auto elem : pr.prophecy_vars()) {
+    msat_term proph = elem.first;
+    msat_decl proph_declN = msat_declare_function(
+        msat_env_, (std::string(msat_term_repr(proph)) + "N").c_str(),
+        msat_term_get_type(proph));
+    msat_term prophN = msat_make_constant(msat_env_, proph_declN);
+    // add the prophecy variable to the transition system
+    // and make it frozen
+    abs_ts_.add_statevar(proph, prophN);
+    abs_ts_.add_trans(msat_make_equal(msat_env_, prophN, proph));
+    // save the original sort of the variable -- for the axiom enumerator
+    orig_sorts[proph] = orig_sorts.at(elem.second);
+  }
+
+  // treat each of these prophecy variables as an index
+  // want to generate lemmas over them
+  for (auto elem : pr.prophecy_vars()) {
+    assae.add_index(elem.first);
+  }
+
+  // set the new property
+  abs_ts_.set_prop(pr.prophecy_prop(), false); // always safety property for now
+
+  std::cout << "Created " << pr.prophecy_vars().size();
+  std::cout << " prophecy variables for the property" << std::endl;
 
   IC3 ic3(abs_ts_, opts_);
 
@@ -136,15 +176,6 @@ msat_truth_value IC3Array::prove()
 int IC3Array::witness(std::vector<TermList> & out)
 {
   throw "Not implemented";
-}
-
-ArraySingleStepAxiomEnumerator IC3Array::abstract()
-{
-  ArrayFlattener af(conc_ts_);
-  abs_ts_ = af.flatten_transition_system();
-  ArrayAbstractor aa(abs_ts_);
-  abs_ts_ = aa.abstract_transition_system();
-  return ArraySingleStepAxiomEnumerator(abs_ts_, aa);
 }
 
 void IC3Array::debug_print_witness(Bmc &bmc,

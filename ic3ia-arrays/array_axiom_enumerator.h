@@ -11,7 +11,7 @@ namespace ic3ia_array {
 class ArraySingleStepAxiomEnumerator {
 public:
   ArraySingleStepAxiomEnumerator(const ic3ia::TransitionSystem &ts,
-                                 const ArrayAbstractor &aa)
+                                 ArrayAbstractor &aa)
       : ts_(ts), abstractor_(aa) {
     msat_env_ = ts.get_env();
 
@@ -19,6 +19,7 @@ public:
     // convenient to store them grouped by current and all for 1-step and 2-step
     // lemmas
     for (auto idx : abstractor_.indices()) {
+      // TODO: what if the index is an input -- could happen
       curr_indices_.insert(ts.cur(idx));
       all_indices_.insert(ts.cur(idx));
       all_indices_.insert(ts.next(idx));
@@ -43,13 +44,15 @@ public:
   ic3ia::TermSet const_array_axioms();
   ic3ia::TermSet store_axioms();
 
+  void add_index(msat_term i);
+
   // debugging
   ArrayAbstractor &get_abstractor() { return abstractor_; };
   ic3ia::TermSet &all_indices() { return all_indices_; };
 
 private:
   const ic3ia::TransitionSystem &ts_;
-  ArrayAbstractor abstractor_;
+  ArrayAbstractor &abstractor_;
   msat_env msat_env_;
   ic3ia::TermSet curr_indices_;
   ic3ia::TermSet all_indices_;

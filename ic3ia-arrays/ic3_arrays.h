@@ -34,8 +34,6 @@ namespace ic3ia_array
     // TODO: Look into using unroller's untime feature
     ic3ia::TermMap untime_cache;
 
-    ArraySingleStepAxiomEnumerator abstract();
-
     void debug_print_witness(ic3ia::Bmc &bmc,
                              ArraySingleStepAxiomEnumerator &assae);
   };

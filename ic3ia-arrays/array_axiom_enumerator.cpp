@@ -163,6 +163,13 @@ ic3ia::TermSet ArraySingleStepAxiomEnumerator::store_axioms()
   return axioms;
 }
 
+void ArraySingleStepAxiomEnumerator::add_index(msat_term i) {
+  // TODO: what if the index is an input -- could happen
+  curr_indices_.insert(ts_.cur(i));
+  all_indices_.insert(ts_.cur(i));
+  all_indices_.insert(ts_.next(i));
+}
+
 // protected helper functions
 void ArraySingleStepAxiomEnumerator::enumerate_store_equalities(TermSet & axioms,
                                                       msat_term arr0,
