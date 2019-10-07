@@ -1,5 +1,11 @@
 -- step 1: flatten
 -- step 2: abstract
+-- step 3: lazily add lemmas
+-- step 4: add prophecy variable for witness
+
+-- IMPORTANT: notice that prophecy variable is only involved in regular array lemmas
+--            we don't actually need to know that it's a prophecy var for the witness
+--            hopefully that's true in general
 
 -- had to use a prophecy variable because witness is free to change in every step
 MODULE main
