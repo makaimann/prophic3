@@ -109,7 +109,10 @@ msat_truth_value IC3Array::prove()
         } else {
           max_k = witness_length;
         }
-        for (size_t k = 0; k < max_k; ++k) {
+
+        // Need to check up to (and include) max_k for single-time
+        // e.g. if it has no next, then need to include last time step
+        for (size_t k = 0; k <= max_k; ++k) {
           for (auto ax : axiom_sets[i]) {
             timed_axiom = u.at_time(ax, k);
             // TODO: See if it's faster to just overwrite or to check the cache
@@ -117,6 +120,7 @@ msat_truth_value IC3Array::prove()
             untime_cache[timed_axiom] = ax;
 
             val = msat_model_eval(model, timed_axiom);
+
             if (val == f) {
               // std::cout << "violated axiom ";
               // std::cout << msat_to_smtlib2_term(msat_env_, timed_axiom) <<
