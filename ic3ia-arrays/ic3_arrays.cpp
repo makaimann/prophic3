@@ -114,7 +114,7 @@ ArraySingleStepAxiomEnumerator IC3Array::abstract()
   abs_ts_ = af.flatten_transition_system();
   ArrayAbstractor aa(abs_ts_);
   abs_ts_ = aa.abstract_transition_system();
-  return ArraySingleStepAxiomEnumerator(abs_ts_, aa, opts_);
+  return ArraySingleStepAxiomEnumerator(abs_ts_, aa);
 }
 
 void IC3Array::debug_print_witness(Bmc &bmc,

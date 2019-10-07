@@ -11,8 +11,8 @@ namespace ic3ia_array {
 class ArraySingleStepAxiomEnumerator {
 public:
   ArraySingleStepAxiomEnumerator(const ic3ia::TransitionSystem &ts,
-                                 const ArrayAbstractor &aa, const ic3ia::Options &opts)
-      : ts_(ts), abstractor_(aa), bmc_(ic3ia::Bmc(ts, opts)) {
+                                 const ArrayAbstractor &aa)
+      : ts_(ts), abstractor_(aa) {
     msat_env_ = ts.get_env();
 
     // sort the indices
@@ -50,7 +50,6 @@ public:
 private:
   const ic3ia::TransitionSystem &ts_;
   ArrayAbstractor abstractor_;
-  ic3ia::Bmc bmc_;
   msat_env msat_env_;
   ic3ia::TermSet curr_indices_;
   ic3ia::TermSet all_indices_;
