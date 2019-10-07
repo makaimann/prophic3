@@ -1,10 +1,26 @@
 * Current things to consider
 ** Do we actually need a witness for each disequality?
-*** Could just have lemmas like this
+*** Probably do. Because these lemmas are not enough
     eq(a, b) -> a[i] = b[i] for all i in index set
     a[i] != b[i] -> !eq(a, b) for all i in index set
 
     The index set should be constructed such that this is sound
+
+    IMPORTANT: Nothing forces eq(a, b). e.g. could be equal at all indices
+    but it still chooses !eq(a, b) and satisfies all the above lemmas
+*** I think we actually do need them
+    Convert the quantified assertion into NNF and you get a skolemized existential
+
+    (forall i. a[i] = b[i]) -> a = b
+
+    becomes
+
+    -(forall i. a[i] = b[i]) | a = b
+     (exists i . a[i] != b[i]) | a = b
+     (a[w] != b[w]) | a = b   for some fresh w
+     (a[w] = b[w]) -> a = b
+
+     So the witness is actually a witness for *equality* not *dis*equality
 ** Need to be careful with lambda all different constraint
 *** Could overconstrain if there are too many distinct indices -- especially because lambda is a frozenvar
 *** Need to change this in the implementation somehow
@@ -15,7 +31,7 @@
 *** Idea 1: just add to index set and rerun axiom enumerator
 *** Idea 2: be more specific and only add certain kinds of axioms (not sure if this make sense) Probably best to start with idea 1
 ** How do we identify broken array axioms that cover more than one step?
-*** What if we still only look at one-step axioms, but over all index values
+*** What if we still only look at one-step axioms, but over all index values (actual values from a model)
 *** Basic idea is as follows
 **** Get a counter-example
 **** Create a set of all index values, including lambdas and witnesses
