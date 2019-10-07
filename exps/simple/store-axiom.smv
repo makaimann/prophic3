@@ -1,0 +1,11 @@
+MODULE main
+
+VAR
+  arrbase : array word[4] of word[8];
+  arrstore : array word[4] of word[8];
+  x : unsigned word[4];
+  data : unsigned word[8];
+
+INVAR arrstore = WRITE(arrbase, x, data)
+
+INVARSPEC READ(arrstore, x) = data
