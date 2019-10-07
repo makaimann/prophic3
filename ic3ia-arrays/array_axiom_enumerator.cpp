@@ -309,6 +309,16 @@ void ArraySingleStepAxiomEnumerator::enumerate_eq_uf_axioms(ic3ia::TermSet & axi
     assert(msat_is_integer_type(msat_env_, _type));
   }
 
+  // TODO: WITNESS SHOULD BE FOR EQUALITY
+  //       skolemized from (forall i. a[i] = b[i]) -> a = b
+  //       e.g. a[w] = b[w] -> a = b
+  //       ALSO WANT TO ADD OTHER LEMMAS
+  //       a = b -> a[i] = b[i] for all i
+  //       a[i] != b[i] -> a != b for all i
+
+  //       There might be a clever way to avoid some of these lemmas
+  //       but we can worry about that later
+
   // add witness axiom for disequality
   args0[1] = witness;
   args1[1] = witness;
