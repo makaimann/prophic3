@@ -36,11 +36,11 @@ msat_truth_value IC3Array::prove()
     // Run bmc
     Bmc bmc(abs_ts_, opts_);
     Unroller &u = bmc.get_unroller();
+    bmc.check_until(witness_length);
+    assert(bmc.reached_k() + 1 == witness_length);
 
     while (broken) {
-      bool broken = !bmc.check_until(witness_length);
       msat_model model = bmc.get_model();
-      assert(bmc.reached_k() + 1 == witness_length);
 
       // Run refinements
       msat_term timed_axiom;
@@ -93,6 +93,7 @@ msat_truth_value IC3Array::prove()
       }
 
       bmc.add_assumptions(violated_axioms);
+      broken = !bmc.check_until(witness_length);
       violated_axioms.clear();
     }
 
