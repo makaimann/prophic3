@@ -60,12 +60,14 @@ msat_truth_value IC3Array::prove()
   std::cout << "Created " << pr.prophecy_vars().size();
   std::cout << " prophecy variables for the property" << std::endl;
 
-  IC3 ic3(abs_ts_, opts_);
-
   // TODO: Figure out how to handle False cases someday
   while (res != MSAT_TRUE)
   {
     // Run IC3
+    // NOTE: It is very IMPORTANT that ic3 is instantiated here
+    //       at one point, I had it instantiated outside of the loop
+    //       then it always returned true the second time prove was called...
+    IC3 ic3(abs_ts_, opts_);
     res = ic3.prove();
     std::vector<TermList> witness;
     ic3.witness(witness);
