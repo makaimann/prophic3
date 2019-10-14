@@ -114,7 +114,7 @@ ic3ia::TermSet ArraySingleStepAxiomEnumerator::const_array_axioms()
       const_arr = tmp;
     }
     enumerate_const_array_equalities(axioms,
-                                     arr,
+                                     cache.at(arr), // need to convert to abstracted array
                                      msat_term_get_arg(const_arr, 0),
                                      curr_indices_);
   }
@@ -152,6 +152,7 @@ ic3ia::TermSet ArraySingleStepAxiomEnumerator::store_axioms()
     val = msat_term_get_arg(store, 2);
 
     enumerate_store_equalities(axioms,
+                               // convert to abstract arrays
                                cache.at(arr0),
                                cache.at(arr1),
                                idx_to_int(msat_env_, cache.at(idx)),
