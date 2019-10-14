@@ -39,7 +39,7 @@ int main(int argc, const char **argv)
   // TransitionSystem abs_ts = af.flatten_transition_system();
   // ArrayAbstractor aa(abs_ts);
   // abs_ts = aa.abstract_transition_system();
-  IC3Array ic3ia_array(ts, opts);
+  IC3Array ic3ia_array(ts, opts, 0);
 
   // TODO: finish implementing prove and uncomment this
   msat_truth_value res = ic3ia_array.prove();

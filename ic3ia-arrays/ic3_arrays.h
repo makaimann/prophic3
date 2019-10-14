@@ -10,15 +10,20 @@
 #include "prophecy_refiner.h"
 
 #include "ic3.h"
+#include "utils.h"
 
 namespace ic3ia_array
 {
   class IC3Array : public ic3ia::Prover
   {
   public:
-   IC3Array(const ic3ia::TransitionSystem & ts, const ic3ia::Options & opts)
+    IC3Array(const ic3ia::TransitionSystem & ts, const ic3ia::Options & opts, unsigned int verbosity)
      : msat_env_(ts.get_env()), conc_ts_(ts),
-       abs_ts_(msat_env_), opts_(opts) {}
+      abs_ts_(msat_env_), opts_(opts)
+    {
+      ic3ia::Logger & l = ic3ia::Logger::get();
+      l.set_verbosity(verbosity);
+    }
 
     // TODO: Implement these
     msat_truth_value prove();
