@@ -93,7 +93,6 @@ msat_truth_value IC3Array::prove()
     Bmc bmc(abs_ts_, opts_);
     Unroller &u = bmc.get_unroller();
     bool broken = !bmc.check_until(reached_k);
-    std::cout << (res == MSAT_FALSE) << " " << broken << std::endl;
     assert((res != MSAT_FALSE) || broken);
 
     // TODO: filter axioms with unsat core
@@ -122,7 +121,7 @@ msat_truth_value IC3Array::prove()
       for (size_t i = 0; i < axiom_sets.size(); ++i) {
         int max_k;
         if (i == 0) {
-          max_k = 1;
+          max_k = 0;
         } else {
           max_k =reached_k;
         }
