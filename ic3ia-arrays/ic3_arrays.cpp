@@ -123,7 +123,7 @@ msat_truth_value IC3Array::prove()
         if (i == 0) {
           max_k = 0;
         } else {
-          max_k =reached_k;
+          max_k = reached_k;
         }
 
         // Need to check up to (and include) max_k for single-time
