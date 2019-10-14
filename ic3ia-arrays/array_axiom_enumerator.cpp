@@ -49,7 +49,7 @@ ic3ia::TermSet ArraySingleStepAxiomEnumerator::init_eq_axioms()
     return init_eq_axioms_;
   }
 
-  ic3ia::TermMap & witnesses = abstractor_.witnesses();
+  const ic3ia::TermMap & witnesses = abstractor_.witnesses();
   ic3ia::TermSet axioms;
   for (auto e : init_equalities_)
   {
@@ -65,7 +65,7 @@ ic3ia::TermSet ArraySingleStepAxiomEnumerator::trans_eq_axioms()
     return trans_eq_axioms_;
   }
 
-  ic3ia::TermMap & witnesses = abstractor_.witnesses();
+  const ic3ia::TermMap & witnesses = abstractor_.witnesses();
   ic3ia::TermSet axioms;
   for (auto e : trans_equalities_)
   {
@@ -81,7 +81,7 @@ ic3ia::TermSet ArraySingleStepAxiomEnumerator::prop_eq_axioms()
     return prop_eq_axioms_;
   }
 
-  ic3ia::TermMap & witnesses = abstractor_.witnesses();
+  const ic3ia::TermMap & witnesses = abstractor_.witnesses();
   ic3ia::TermSet axioms;
   for (auto e : prop_equalities_)
   {
@@ -345,9 +345,9 @@ void ArraySingleStepAxiomEnumerator::collect_equalities(msat_term term, ic3ia::T
 {
   struct Data
   {
-    TermMap & witnesses;
+    const TermMap & witnesses;
     TermSet & termset;
-    Data(TermMap & w, TermSet & s) : witnesses(w), termset(s) {}
+    Data(const TermMap & w, TermSet & s) : witnesses(w), termset(s) {}
   };
 
   auto visit = [](msat_env e, msat_term t, int preorder,

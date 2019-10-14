@@ -7,11 +7,12 @@
 namespace ic3ia_array {
 class ProphecyRefiner {
 public:
-  ProphecyRefiner(ic3ia::TransitionSystem &abs_ts_, ArrayAbstractor &aa)
-      : abs_ts_(abs_ts_), abstractor_(aa) {
+  ProphecyRefiner(msat_env e, const msat_term p, const ic3ia::TermSet i, const ic3ia::TermMap w)
+     : existing_prop_(p), existing_indices_(i), existing_witnesses_(w) {
 
-    msat_env_ = abs_ts_.get_env();
+    msat_env_ = e;
     compute_prophecy_prop();
+
   }
 
   /* Returns the property with prophecy variables added */
@@ -21,12 +22,13 @@ public:
   ic3ia::TermMap &prophecy_vars() { return prophecy_vars_; };
 
 protected:
-  ic3ia::TransitionSystem
-      &abs_ts_; // not const because will add state vars (prophecy vars)
-  ArrayAbstractor &abstractor_;
   msat_env msat_env_;
   msat_term prophecy_prop_;
   ic3ia::TermMap prophecy_vars_;
+
+  const msat_term existing_prop_;
+  const ic3ia::TermSet & existing_indices_;
+  const ic3ia::TermMap & existing_witnesses_;
 
   /*
    * Creates a new version of property with prophecy variables

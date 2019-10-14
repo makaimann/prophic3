@@ -35,8 +35,8 @@ public:
 
     // getters
     ic3ia::TermMap &cache() { return cache_; };
-    ic3ia::TermSet &indices() { return indices_; };
-    ic3ia::TermMap &witnesses() { return witnesses_; };
+    const ic3ia::TermSet &indices() { return indices_; };
+    const ic3ia::TermMap &witnesses() { return witnesses_; };
     TermDeclMap &read_ufs() { return read_ufs_; };
     TermTypeMap &orig_sorts() { return orig_sorts_; };
     ic3ia::TermSet &const_arrs() { return const_arrs_; };

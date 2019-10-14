@@ -27,7 +27,10 @@ msat_truth_value IC3Array::prove()
   //       because it shouldn't make proving too much harder if it's not needed
   //       but if it is needed and we wait, we'll have to enumerate a lot axioms
   //       before we even get to prophecy vars
-  ProphecyRefiner pr(abs_ts_, aa);
+  ProphecyRefiner pr(abs_ts_.get_env(),
+                     abs_ts_.prop(),
+                     aa.indices(),
+                     aa.witnesses());
 
   // create state variables for prophecy vars and ass as indices
   TermTypeMap &orig_sorts = aa.orig_sorts();

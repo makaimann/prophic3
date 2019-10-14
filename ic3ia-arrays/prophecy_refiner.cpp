@@ -6,8 +6,7 @@ using namespace ic3ia;
 namespace ic3ia_array {
 
 void ProphecyRefiner::compute_prophecy_prop() {
-  msat_term prop = abs_ts_.prop();
-  prophecy_prop_ = prop;
+  prophecy_prop_ = existing_prop_;
 
   struct Data {
     const TermSet &indices;
@@ -27,13 +26,12 @@ void ProphecyRefiner::compute_prophecy_prop() {
     return MSAT_VISIT_PROCESS;
   };
 
-  Data data(abstractor_.indices(), abstractor_.witnesses());
-  msat_visit_term(msat_env_, prop, visit, &data);
+  Data data(existing_indices_, existing_witnesses_);
+  msat_visit_term(msat_env_, prophecy_prop_, visit, &data);
 
   unsigned int num_prophs = 0;
   if (data.prophecy_targets.size()) {
     TermSet prophecy_equalities;
-    TermTypeMap &orig_sorts = abstractor_.orig_sorts();
     for (auto t : data.prophecy_targets) {
       msat_type t_type = msat_term_get_type(t);
       std::string name = "proph" + to_string(num_prophs);
