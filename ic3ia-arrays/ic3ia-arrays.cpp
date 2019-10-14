@@ -48,7 +48,7 @@ int main(int argc, const char **argv)
   } else if (res == MSAT_TRUE) {
     cout << "The property is true" << endl;
   } else {
-    throw "Invalid return";
+    cout << "Failed to prove or disprove the property..." << endl;
   }
 
   return 0;

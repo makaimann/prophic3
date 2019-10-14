@@ -76,6 +76,11 @@ msat_truth_value IC3Array::prove()
     if (res == MSAT_TRUE) {
       return res;
     }
+    else if (res == MSAT_UNDEF)
+    {
+      std::cout << "IC3 returned undefined..." << std::endl;
+      return res;
+    }
 
     bool broken = true;
     // Run bmc
