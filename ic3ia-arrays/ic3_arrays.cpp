@@ -60,34 +60,41 @@ msat_truth_value IC3Array::prove()
   std::cout << "Created " << pr.prophecy_vars().size();
   std::cout << " prophecy variables for the property" << std::endl;
 
+  unsigned int reached_k = 0;
+
   // TODO: Figure out how to handle False cases someday
   while (res != MSAT_TRUE)
   {
+    std::cout << "Running IC3" << std::endl;
     // Run IC3
     // NOTE: It is very IMPORTANT that ic3 is instantiated here
     //       at one point, I had it instantiated outside of the loop
     //       then it always returned true the second time prove was called...
     IC3 ic3(abs_ts_, opts_);
     res = ic3.prove();
-    std::vector<TermList> witness;
-    ic3.witness(witness);
-    int witness_length = witness.size();
 
     if (res == MSAT_TRUE) {
       return res;
     }
-    else if (res == MSAT_UNDEF)
+    else if (res == MSAT_FALSE)
     {
-      std::cout << "IC3 returned undefined..." << std::endl;
-      return res;
+      std::vector<TermList> witness;
+      ic3.witness(witness);
+      reached_k = witness.size();
+    }
+    else
+    {
+      std::cout << "IC3 returned undefined...trying BMC again" << std::endl;
+      // try a deeper k
+      reached_k++;
     }
 
-    bool broken = true;
     // Run bmc
     Bmc bmc(abs_ts_, opts_);
     Unroller &u = bmc.get_unroller();
-    bmc.check_until(witness_length);
-    assert(bmc.reached_k() + 1 == witness_length);
+    bool broken = !bmc.check_until(reached_k);
+    std::cout << (res == MSAT_FALSE) << " " << broken << std::endl;
+    assert((res != MSAT_FALSE) || broken);
 
     // TODO: filter axioms with unsat core
     TermSet init_axioms_to_add;
@@ -117,7 +124,7 @@ msat_truth_value IC3Array::prove()
         if (i == 0) {
           max_k = 1;
         } else {
-          max_k = witness_length;
+          max_k =reached_k;
         }
 
         // Need to check up to (and include) max_k for single-time
@@ -158,7 +165,7 @@ msat_truth_value IC3Array::prove()
       }
 
       bmc.add_assumptions(violated_axioms);
-      broken = !bmc.check_until(witness_length);
+      broken = !bmc.check_until(reached_k);
       violated_axioms.clear();
     }
 
@@ -182,6 +189,9 @@ msat_truth_value IC3Array::prove()
       }
     }
     trans_axioms_to_add.clear();
+
+    // increment reached_k
+    reached_k++;
   }
   // TODO: do this correctly
   return MSAT_FALSE;
