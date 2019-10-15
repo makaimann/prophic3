@@ -84,7 +84,8 @@ msat_truth_value IC3Array::prove()
     }
     else
     {
-      std::cout << "IC3 returned undefined...trying BMC again" << std::endl;
+      std::cout << "IC3 returned undefined...by construction this should not happen! oops..." << std::endl;
+      throw std::exception();
       // try a deeper k
       reached_k++;
     }
