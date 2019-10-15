@@ -92,10 +92,13 @@ public:
     Refiner(const TransitionSystem &ts, const Options &opts, Abstractor &abs);
     ~Refiner();
 
-    bool refine(const std::vector<TermList> &cex);
+  bool refine(const std::vector<TermList> &cex, bool all_preds=false);
     ///< try to refine the given counterexample trace. If successful, computes
     ///< a sequence interpolant for the trace. Otherwise, a concrete
     ///< counterexample trace is generated
+    ///< if all_preds is true, don't minimize or disallow boolean variables.
+    ///< this is used as a fallback procedure when no new predicates were found
+    ///< with the regular heuristics
     
     const TermSet &used_predicates() { return preds_; }
     ///< return the set of atomic predicates occurring in the sequence
@@ -110,7 +113,7 @@ public:
     ///< abstraction
 
 private:
-    void extract_predicates(msat_env env);
+  void extract_predicates(msat_env env, bool include_bool_vars=false);
     void minimize_predicates(const std::vector<TermList> &cex);
     
     const TransitionSystem &ts_;

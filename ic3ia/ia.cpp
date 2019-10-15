@@ -119,7 +119,7 @@ Refiner::~Refiner()
 }
 
 
-bool Refiner::refine(const std::vector<TermList> &cex)
+bool Refiner::refine(const std::vector<TermList> &cex, bool all_preds)
 {
     // reset the interpolating solver
     msat_reset_env(solver_);
@@ -154,8 +154,8 @@ bool Refiner::refine(const std::vector<TermList> &cex)
         // compute a sequence interpolant for the spurious cex trace, and
         // extract the atomic predicates occurring in each element of the
         // sequence (after proper untiming -- see Unroller::untime())
-        extract_predicates(solver_);
-        if (minpreds_) {
+        extract_predicates(solver_, all_preds);
+        if (minpreds_ && !all_preds) {
             minimize_predicates(cex);
         }
     } else {
@@ -166,7 +166,7 @@ bool Refiner::refine(const std::vector<TermList> &cex)
 }
 
 
-void Refiner::extract_predicates(msat_env env)
+void Refiner::extract_predicates(msat_env env, bool include_bool_vars)
 {
     preds_.clear();
 
@@ -174,12 +174,11 @@ void Refiner::extract_predicates(msat_env env)
         msat_term t = msat_get_interpolant(env, &groups_[0], i);
         if (MSAT_ERROR_TERM(t))
         {
-          std::cout << "Failed when computing interpolant." << std::endl;
           throw std::exception();
         }
         logger(3) << "got interpolant " << i << ": " << logterm(env, t)
                   << endlog;
-        get_predicates(env, un_.untime(t), preds_);
+        get_predicates(env, un_.untime(t), preds_, include_bool_vars);
     }
 }
 

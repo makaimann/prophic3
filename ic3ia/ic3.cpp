@@ -589,9 +589,24 @@ msat_truth_value IC3::refine_abstraction(std::vector<TermList> &cex)
             }
         }
         if (c == 0) {
+          // try again, this time looking for any predicates (boolean variables and don't try to minimize)
+          logger(1) << "refinement failed to find new predicates."
+                    << " Trying again but allowing boolean variables." << endlog;
+          ref_.refine(cex, true);
+          for (msat_term p : ref_.used_predicates())
+          {
+            if (preds_.insert(p).second)
+            {
+              ++c;
+              add_pred(p);
+            }
+          }
+          if (c == 0)
+          {
             logger(1) << "refinement failure (no new predicate found)"
                       << endlog;
             return MSAT_UNDEF;
+          }
         }
         logger(1) << "refinement added " << c << " new predicates" << endlog;
         return MSAT_TRUE;
