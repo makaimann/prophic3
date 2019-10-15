@@ -172,6 +172,11 @@ void Refiner::extract_predicates(msat_env env)
 
     for (size_t i = 1; i < groups_.size(); ++i) {
         msat_term t = msat_get_interpolant(env, &groups_[0], i);
+        if (MSAT_ERROR_TERM(t))
+        {
+          std::cout << "Failed when computing interpolant." << std::endl;
+          throw std::exception();
+        }
         logger(3) << "got interpolant " << i << ": " << logterm(env, t)
                   << endlog;
         get_predicates(env, un_.untime(t), preds_);
