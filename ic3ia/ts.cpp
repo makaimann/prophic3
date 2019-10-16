@@ -177,25 +177,36 @@ void TransitionSystem::add_trans(msat_term t)
 }
 
 // added by Makai
-bool TransitionSystem::has_next(msat_term t) const {
+bool TransitionSystem::only_cur(msat_term t) const {
   struct Data {
-    bool contains_next;
-    const TermSet &nextvars;
-    Data(const TermSet &nv) : contains_next(false), nextvars(nv){};
+    bool only_cur;
+    const TermSet &curvars;
+    Data(const TermSet &nv) : only_cur(true), curvars(nv){};
   };
   auto visit = [](msat_env e, msat_term t, int preorder,
                   void *data) -> msat_visit_status {
     Data *d = static_cast<Data *>(data);
-    if (preorder && (d->nextvars.find(t) != d->nextvars.end())) {
-      d->contains_next = true;
-      return MSAT_VISIT_ABORT;
+    // a variable is a term with no children and no built-in
+    // interpretation
+    if (preorder &&
+        msat_term_arity(t) == 0 &&
+        msat_decl_get_tag(
+                          e, msat_term_get_decl(t)) == MSAT_TAG_UNKNOWN &&
+        !msat_term_is_number(e, t)) {
+
+      // check if it's not a current variable
+      if (d->curvars.find(t) == d->curvars.end())
+      {
+        d->only_cur = false;
+        return MSAT_VISIT_ABORT;
+      }
     }
     return MSAT_VISIT_PROCESS;
   };
 
-  Data data(nextstatevars_set_);
+  Data data(statevars_set_);
   msat_visit_term(env_, t, visit, &data);
-  return data.contains_next;
+  return data.only_cur;
 }
 
 } // namespace ic3ia

@@ -180,7 +180,7 @@ msat_truth_value IC3Array::prove()
               << std::endl;
     for (auto ax : trans_axioms_to_add) {
       abs_ts_.add_trans(ax);
-      if (!abs_ts_.has_next(ax)) {
+      if (abs_ts_.only_cur(ax)) {
         abs_ts_.add_trans(abs_ts_.next(ax));
 
         // TODO: figure out if this is right

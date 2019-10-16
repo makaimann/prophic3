@@ -88,8 +88,8 @@ public:
     ///< live_prop tells whether the new property is a liveness prop
 
     // added by Makai -- convenience function
-    bool has_next(msat_term t) const;
-    ///< checks if term t has any next state variables
+    bool only_cur(msat_term t) const;
+    ///< checks if term t has only current state variables (no next or inputs)
 
   private:
     void reset();
