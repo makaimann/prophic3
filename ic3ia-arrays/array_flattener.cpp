@@ -25,6 +25,7 @@ void ArrayFlattener::do_flattening()
 
     // first do init and property
     msat_term new_init = flatten(orig_ts_.init());
+    msat_term new_trans = flatten(orig_ts_.trans());
     msat_term new_prop = flatten(orig_ts_.prop());
 
     // create state vars for new variables appearing in init and prop
@@ -41,8 +42,6 @@ void ArrayFlattener::do_flattening()
     // current to next
     auto subst = [=](msat_term v) -> msat_term { return new_state_vars.at(v); };
     TermMap next_cache;
-
-    msat_term new_trans = flatten(orig_ts_.trans());
 
     for (auto elem : new_vars_) {
       msat_term arr_eq = msat_make_equal(msat_env_, elem.first, new_vars_.at(elem.first));
