@@ -160,7 +160,7 @@ msat_truth_value IC3Array::prove()
       if (!violated_axioms.size()) {
         debug_print_witness(bmc, assae);
         // TODO: Use real exceptions
-        std::cout << "Giving up! Missing some axioms." << std::endl;
+        std::cout << "It looks like there's a concrete counter-example (or some axioms are missing)" << std::endl;
         throw std::exception();
       }
 
