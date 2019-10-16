@@ -183,8 +183,10 @@ msat_truth_value IC3Array::prove()
       if (abs_ts_.only_cur(ax)) {
         abs_ts_.add_trans(abs_ts_.next(ax));
 
-        // TODO: figure out if this is right
-        //       I think we need to add invariants to init as well
+        // TODO: figure out if this makes sense
+        //       all the init axioms should take care of k=0 counterexamples
+        //       but if we remove this line, it fails to find an interpolant
+        //       for hard-array.vmt and hard-array-false.vmt
         abs_ts_.add_init(ax);
       }
     }
