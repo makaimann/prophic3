@@ -39,6 +39,29 @@
 **** However, this axiom cannot be fixed with an untimed assumption because that value does not occur at that time-step (otherwise the previous axiom enumeration would have gotten it)
 **** Thus, do a backward search over all terms starting from the last step to look for terms that have the same value
 **** Create a prophecy/history pipeline to then make sure this value is maintained
+** Should we make introduced variables state elements
+*** We had some concerns about making them inputs
+    Simple example
+
+    IVAR
+      rst : boolean;
+
+    INIT  initstate;
+    TRANS !initstate';
+
+    TRANS initstate <-> rst;
+
+    // The last TRANS element has no next
+    // It seems like we're missing something, so should we add it to next?
+    // Issue is that if we do, we get:
+    TRANS initstate' <-> rst // because rst is an input
+
+    // this makes the system trivially unsat
+*** Temporarily, I made all introduced variables state elements
+**** This seems to work but is significantly slower
+**** Also, if I get a lemma that only contains current state variables (no inputs or next state) then I add it to trans and init
+***** If I don't do this, it fails to prove some thing
+** IC3IA sometimes fails to compute a new interpolant (even without any arrays)
 * Identifying Broken Array Axioms
 ** Have Array tracker for every array in the system
 ** Need to examine a bmc trace and find missing axioms
