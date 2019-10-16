@@ -34,7 +34,6 @@ void ArrayAbstractor::do_abstraction()
   abs_ts_.initialize(new_vars_, new_init, new_trans, new_prop,
                      conc_ts_.live_prop());
 
-  // TODO: sort the indices (or sort them in refiner)
   create_lambdas();
 }
 
@@ -196,14 +195,16 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
         msat_is_array_type(e, msat_term_get_type(lhs), &idx_type, nullptr);
         msat_decl decl_witness =
             msat_declare_function(e, witness_name.c_str(), idx_type);
-        msat_term witness = idx_to_int(e, msat_make_constant(e, decl_witness));
+        msat_term witness = msat_make_constant(e, decl_witness);
         msat_decl decl_witnessN =
             msat_declare_function(e, (witness_name + "N").c_str(), idx_type);
-        msat_term witnessN =
-            idx_to_int(e, msat_make_constant(e, decl_witnessN));
-        d->witnesses[eq_uf] = witness;
-        d->orig_sorts[witness] = idx_type;
-        d->indices.insert(witness);
+        msat_term witnessN = msat_make_constant(e, decl_witnessN);
+        d->witnesses[eq_uf] = idx_to_int(e, witness);
+        d->orig_sorts[idx_to_int(e, witness)] = idx_type;
+        d->indices.insert(idx_to_int(e, witness));
+        // TODO: figure out cleanest way to get next-state version of lemmas as well
+        // e.g. equal(next(arr), next(arr2)) -> ...
+
         // update state variables
         d->new_vars[witness] = witnessN;
       } else if (is_array_read(e, t)) {
