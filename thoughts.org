@@ -118,6 +118,16 @@
 
       Thus, if you've written to all indices, lambda has to be chosen outside of the range and the lemma is disabled
       Otherwise, you still need it
+* Conversation with Alberto
+** Leverage Array solver as much as possible
+*** Get array lemmas from proof
+**** Scan the proof for interesting predicates etc..
+**** Better to rely on optimized array solver
+*** Interpolants *can* fail over QF_UFIA (but not over reals)
+*** Need to show that it works 
+*** Ideally want to prove some kind of relative completeness (eventually)
+**** This could maybe be a journal version contribution, like Ahmed's work
+*** Look at QUIC3
 * TODO Store next indices in orig_sorts, and stop using ts.cur in refiner to get correct sort
 * TODO Just create a UF for everything, including store and const array
 * TODO Have a separate pass that collects top-level UF equalities
