@@ -1,0 +1,32 @@
+-- very simple example that can be solved without any prophecy variables
+-- intended as the very first test-case for the implementation
+
+-- handwritten abstraction refinement loop
+
+-- step 1 : abstract
+-- step 2 : add a single lemma about writing to mem and it converges
+
+MODULE main
+
+IVAR
+  data : unsigned word[8];
+
+VAR
+  x : unsigned word[4] ;
+  y : unsigned word[4] ;
+  -- mem : array word[4] of word[8] ;
+  mem : integer ;
+
+FUN
+  read : integer * integer -> unsigned word[8] ;
+
+INIT x = 0ud4_0 ;
+INIT y = 0ud4_1 ;
+
+TRANS next(y) = y + 0ud4_1 ;
+TRANS next(x) = y ;
+-- TRANS next(mem) = WRITE(mem, y, data) ;
+TRANS read(next(mem), toint(y)) = data ;
+
+-- INVARSPEC READ(next(mem), next(x)) = data
+INVARSPEC read(next(mem), next(toint(x))) = data

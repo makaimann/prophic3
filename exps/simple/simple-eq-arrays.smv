@@ -1,0 +1,20 @@
+MODULE main
+
+IVAR
+  data : unsigned word [8] ;
+
+VAR
+  x : unsigned word [4] ;
+  y : unsigned word [4] ;
+  arr0 : array word [4] of word [8] ;
+  arr1 : array word [4] of word [8] ;
+
+INIT arr0 = arr1
+INIT x = y
+
+TRANS next(x) = x + 0ud4_1
+TRANS next(y) = y + 0ud4_1
+TRANS next(arr0) = WRITE(arr0, x, data)
+TRANS next(arr1) = WRITE(arr1, y, data)
+
+INVARSPEC arr0 = arr1

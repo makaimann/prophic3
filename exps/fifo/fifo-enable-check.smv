@@ -1,0 +1,61 @@
+-- check that push can't disable pop
+-- easy for IC3
+
+MODULE main
+
+IVAR
+  data_in : unsigned word[1];
+  
+VAR
+  fifo : array 0..7 of word[1];
+  wptr : unsigned word[4];
+  rptr : unsigned word[4];
+  en : boolean;
+  cnt : unsigned word[4];
+  push : boolean;
+  pop : boolean;
+  packet : unsigned word[1];
+
+INIT cnt = 0ud4_0
+
+INIT wptr = 0ud4_0
+
+INIT rptr = 0ud4_0
+
+INIT !en
+
+TRANS (!push & !en) -> !next(en)
+
+TRANS en -> next(en)
+
+INVAR !(push & pop)
+
+TRANS (push & !en) -> next(cnt) = cnt + 0ud4_1
+
+TRANS (pop & cnt != 0ud4_0) -> next(cnt) = cnt - 0ud4_1
+TRANS (pop & cnt = 0ud4_0) -> next(cnt) = cnt
+
+TRANS (!(push & !en) & !(pop)) -> next(cnt) = cnt
+
+TRANS !en & next(en) -> next(packet) = data_in
+
+TRANS en -> next(packet) = packet
+
+TRANS push -> next(wptr) = wptr + 0ud4_1
+
+TRANS !push -> next(wptr) = wptr
+
+TRANS pop -> next(rptr) = rptr + 0ud4_1
+
+TRANS !pop -> next(rptr) = rptr
+
+TRANS push -> next(fifo) = WRITE(fifo, wptr[2:0], data_in)
+
+TRANS !push -> next(fifo) = fifo
+
+INVAR wptr = rptr -> !pop
+
+INVAR (wptr[3:3] != rptr[3:3] & wptr[2:0] = rptr[2:0]) -> !push
+
+-- INVARSPEC (en & cnt = 0ud4_1 & next(cnt) = 0ud4_0) -> packet = READ(fifo, rptr[2:0])
+INVARSPEC (wptr != rptr) & push -> (next(wptr) != next(rptr))

@@ -1,0 +1,126 @@
+* Current things to consider
+** Do we actually need a witness for each disequality?
+*** Probably do. Because these lemmas are not enough
+    eq(a, b) -> a[i] = b[i] for all i in index set
+    a[i] != b[i] -> !eq(a, b) for all i in index set
+
+    The index set should be constructed such that this is sound
+
+    IMPORTANT: Nothing forces eq(a, b). e.g. could be equal at all indices
+    but it still chooses !eq(a, b) and satisfies all the above lemmas
+*** I think we actually do need them
+    Convert the quantified assertion into NNF and you get a skolemized existential
+
+    (forall i. a[i] = b[i]) -> a = b
+
+    becomes
+
+    -(forall i. a[i] = b[i]) | a = b
+     (exists i . a[i] != b[i]) | a = b
+     (a[w] != b[w]) | a = b   for some fresh w
+     (a[w] = b[w]) -> a = b
+
+     So the witness is actually a witness for *equality* not *dis*equality
+** Need to be careful with lambda all different constraint
+*** Could overconstrain if there are too many distinct indices -- especially because lambda is a frozenvar
+*** Need to change this in the implementation somehow
+*** I'm thinking that alldiff should actually just be an antecedent in an implication
+** Probably better to do some prophecy first
+   Otherwise, need to enumerate lots of redundant axioms before you even get to prophecy
+** How to generate axioms over prophecy variables
+*** Idea 1: just add to index set and rerun axiom enumerator
+*** Idea 2: be more specific and only add certain kinds of axioms (not sure if this make sense) Probably best to start with idea 1
+** How do we identify broken array axioms that cover more than one step?
+*** What if we still only look at one-step axioms, but over all index values (actual values from a model)
+*** Basic idea is as follows
+**** Get a counter-example
+**** Create a set of all index values, including lambdas and witnesses
+**** Looks for cases where two arrays are supposed to be equal, but it drops one of the values <-- this identifies a broken axiom
+**** However, this axiom cannot be fixed with an untimed assumption because that value does not occur at that time-step (otherwise the previous axiom enumeration would have gotten it)
+**** Thus, do a backward search over all terms starting from the last step to look for terms that have the same value
+**** Create a prophecy/history pipeline to then make sure this value is maintained
+** Should we make introduced variables state elements
+*** We had some concerns about making them inputs
+    Simple example
+
+    IVAR
+      rst : boolean;
+
+    INIT  initstate;
+    TRANS !initstate';
+
+    TRANS initstate <-> rst;
+
+    // The last TRANS element has no next
+    // It seems like we're missing something, so should we add it to next?
+    // Issue is that if we do, we get:
+    TRANS initstate' <-> rst // because rst is an input
+
+    // this makes the system trivially unsat
+*** Temporarily, I made all introduced variables state elements
+**** This seems to work but is significantly slower
+**** Also, if I get a lemma that only contains current state variables (no inputs or next state) then I add it to trans and init
+***** If I don't do this, it fails to prove some thing
+** IC3IA sometimes fails to compute a new interpolant (even without any arrays)
+* Identifying Broken Array Axioms
+** Have Array tracker for every array in the system
+** Need to examine a bmc trace and find missing axioms
+*** Plan is to enumerate axioms
+**** 3 kinds
+***** one-step
+***** two-step
+***** multi-time
+*** 3 kinds of refinements
+**** Regular bmc to k <-- probably going to use this one
+**** bmc to k with predicate assignments
+**** bmc to k with concrete model
+*** abstraction procedure we currently have:
+**** flatten arrays to remove writes
+**** replace all arrays with integers
+**** use to_int on all indices, and keep track of them
+**** replace array equality with uf and keep a list of them to use for axioms
+**** replace reads with uf and keep a list of them to use for axioms
+** Flatten arrays
+*** when you flatten, create a new TS and populate it
+*** as you're flattening need to decide if fresh symbols are state variables or inputs
+**** if it's only in trans, it can be an input
+**** if it's in init or prop, it has to be a state variable (because init and prop are only over state vars)
+*** for modularity, it should include all the stores at the top-level
+** Abstract
+*** create a new TS and populate it
+*** top-level array equalities should just be removed from formula (but kept somewhere for enumerating axioms)
+**** use them for generating lemmas
+**** an optimization is to have a top-level propagator in case there are any equalities without stores
+** Always use integer indices, and use lambda as an int
+*** we have a general idea why this is sound
+*** Say the original universal instantiation is a conjunction over indices, Fi, and then there's Fl over lambda
+**** if Fi is unsat, then Fl can't make it sat
+**** if Fi is sat, then lambda can always be chosen to be some other integer to make Fl sat as well
+***** need to think on this a bit more and be completely sure: gets tricky with universal quantifiers (e.g. constant arrays) being compared
+**** lambda is constrained to be different from all other indices (which is why it should be an integer)
+*** lambda might not need to be different from all other indices in the transition system version
+**** hand-wavey idea: because it's an overapproximation, it can always find a way to violate the system by setting it to the wrong value
+**** although it's difficult for constant arrays
+**** IMPORTANT: Lambda can produce incorrect example even if we use integers for everything (but there's a solution)
+***** If the index domain is finite, then lambda could make a formula unsat when it should be sat
+***** Think about comparing two sequences of stores on different const arrays for equality
+      This will always being unsat for infinite domains (e.g. with lambda) because there's always
+      another index that hasn't been written to.
+
+      But for finite domain indices, you can exhaust the domain.
+
+      Proposed solution:
+      Prefix all lemmas including lambda with:
+      (lambda in range) -> lemma
+
+      e.g. for a BV{2}
+      (0 <= lambda <= 3) -> lemma
+
+      Thus, if you've written to all indices, lambda has to be chosen outside of the range and the lemma is disabled
+      Otherwise, you still need it
+* TODO Store next indices in orig_sorts, and stop using ts.cur in refiner to get correct sort
+* TODO Just create a UF for everything, including store and const array
+* TODO Have a separate pass that collects top-level UF equalities
+* TODO Refiner just traverses the formula (or maybe we can store the UFs) and then figures out the lemmas to add
+** Might have a first-pass that sorts them into one-step or two-step lemmas
+* TODO Ensure invariants are being added at both current and next to trans

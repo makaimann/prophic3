@@ -1,0 +1,40 @@
+MODULE main
+
+VAR
+  mem : unsigned word[4];
+--  mem : array integer of integer;
+  x : unsigned word[4];
+  y : unsigned word[4];
+  inc_x : boolean;
+  inc_y : boolean;
+
+FUN
+  read : unsigned word[4] * unsigned word[4] -> unsigned word[4];
+  
+FROZENVAR
+  xproph : unsigned word[4];
+  data0 : unsigned word[4];
+  data1 : unsigned word[4];
+
+INIT x = 0ud4_0
+
+INIT y = 0ud4_1
+
+--INIT mem = CONSTARRAY(typeof(mem), 0)
+INIT read(mem, x) = 0ud4_0
+INIT read(mem, y) = 0ud4_0
+INIT read(mem, xproph) = 0ud4_0
+
+TRANS next(x) = (inc_x ? x + 0ud4_1 : x)
+
+TRANS next(y) = (inc_y ? y + 0ud4_1 : y)
+
+INVAR x=y -> !inc_x
+
+-- TRANS next(mem) = WRITE(mem, y, y[0:0] = 0ud1_1 ? data1 : data0);
+
+TRANS y = xproph -> read(next(mem), xproph) = (y[0:0] = 0ud1_1 ? data1 : data0)
+TRANS y != xproph -> read(next(mem), xproph) = read(mem, xproph)
+
+-- INVARSPEC x[0:0] = 0ud1_1 -> READ(mem, x) = data1
+INVARSPEC xproph=x -> (x[0:0] = 0ud1_1 -> read(mem, x) = data1)

@@ -1,0 +1,67 @@
+-- This is an example with an array that is not directly involved in the property
+-- but the array semantics are crucial to learn the invariant
+
+-- this is similar to array-int-trans-abstract.smv, but it only includes the minimal number of refinement steps
+--    minimal from the set included in the other file (there's no proof of minimality)
+
+-- -------------- abstraction steps ---------------
+-- replace mem with an integer
+-- remove writes
+-- replace all READs with the uninterpreted function, read
+
+-- -------------- refinement steps ----------------
+-- refinement 1: add the constant 0 for the mem initial state
+-- refinement 2: introduce a ghost variable for x, xghost (just a trailing value)
+-- refinement 3: introduce a prophecy variable for xghost
+
+MODULE main
+
+VAR
+  --mem : array integer of integer;
+  mem : integer;
+  res : integer;
+  x : integer;
+  y : integer;
+  inc_x : boolean;
+  inc_y : boolean;
+  xghost : integer;
+
+FUN
+  read : integer * integer -> integer;
+
+FROZENVAR
+  xghost_proph : integer;
+
+-- just for simpler debugging
+INIT mem = 0
+TRANS next(mem) = mem + 1
+
+INIT x = 2
+
+INIT y = 3
+
+INIT res = 0 
+
+-- INIT mem = CONSTARRAY(typeof(mem), 0)
+
+TRANS next(x) = (inc_x ? x + 1 : x)
+
+TRANS next(y) = (inc_y ? y + 1 : y)
+
+-- BUG removed this invariant so that x can pass y
+-- INVAR x = y -> !inc_x
+
+-- ---------------- ghost vars --------------
+TRANS next(xghost) = x
+
+-- ---------------- refinement --------------
+INIT read(mem, x) = 0
+TRANS xghost_proph = y -> read(next(mem), xghost_proph) = y - 3
+TRANS xghost_proph != y -> read(next(mem), xghost_proph) = read(mem, xghost_proph)
+
+-- TRANS next(mem) = WRITE(mem, y, y - 3)
+
+-- TRANS next(res) = READ(mem, x)
+TRANS next(res) = read(mem, x)
+
+INVARSPEC (xghost_proph = xghost) -> res + 1 < x

@@ -1,0 +1,29 @@
+#
+# MathSAT5 configuration file for the application track of SMT-COMP 2015
+#
+
+# default settings for all divisions
+
+theory.la.pure_equality_filtering = true
+dpll.ghost_filtering = true
+preprocessor.simplification = 1
+dpll.branching_random_frequency = 0
+theory.la.split_rat_eq = false
+
+[QF_LRA]
+theory.euf.enabled = false
+
+[QF_ALIA, QF_AUFLIA]
+theory.la.pure_equality_filtering = true 
+theory.arr.enable_nonlinear = true 
+theory.la.delay_alien = true
+theory.euf.dyn_ack = 0
+theory.euf.dyn_ack_threshold = 3
+theory.bv.enabled = false 
+theory.arr.permanent_lemma_inst = true
+theory.arr.enable_witness = true
+dpll.ghost_filtering = true
+dpll.branching_random_frequency = 0
+preprocessor.simplification = 4
+preprocessor.toplevel_propagation = true
+theory.arr.auto_wr_lemma = true

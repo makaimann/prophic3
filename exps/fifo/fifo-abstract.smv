@@ -1,0 +1,104 @@
+-- abstraction refinement loop run manually
+-- status: got it to a point that seems sufficiently precise, but it just plugs away without converging
+
+-- step 1: abstract
+-- step 2: refinement 1
+--         data value was not written correctly, add two-step axiom
+-- step 3: refinement 2
+--         doesn't maintain the value at index 0 between 1.2 and 1.3
+--         rptr has value 0 at 1.2, add necessary axiom
+-- step 4: refinement 3
+--         loses the value at index 1 between State 1.2 and 1.3
+--         but there are no other terms in that window with that value
+--         i.e. there's no one-step or two-step axiom to be added
+--         introduce a prophecy variable, because rptr[2:0] is 1 in the last state
+
+-- Note:
+--      The property has a next in it, so need to look at the second to last step
+
+MODULE main
+
+IVAR
+  data_in : unsigned word[1];
+  
+  
+VAR
+  -- step 1: abstract
+  -- fifo : array word[3] of word[1];
+  fifo : integer;
+  wptr : unsigned word[4];
+  rptr : unsigned word[4];
+  en : boolean;
+  cnt : unsigned word[4];
+  push : boolean;
+  pop : boolean;
+  packet : unsigned word[1];
+
+-- step 1: abstract
+FUN
+  read : integer * unsigned word[3] -> word[1];
+
+-- step 4: refinement 3
+FROZENVAR
+  rptr_2_0_proph : unsigned word[3];
+
+INIT cnt = 0ud4_0
+
+INIT wptr = 0ud4_0
+
+INIT rptr = 0ud4_0
+
+INIT !en
+
+TRANS (!push & !en) -> !next(en)
+
+TRANS en -> next(en)
+
+INVAR !(push & pop)
+
+TRANS (push & !en) -> next(cnt) = cnt + 0ud4_1
+
+TRANS (pop & cnt != 0ud4_0) -> next(cnt) = cnt - 0ud4_1
+TRANS (pop & cnt = 0ud4_0) -> next(cnt) = cnt
+
+TRANS (!(push & !en) & !(pop)) -> next(cnt) = cnt
+
+TRANS !en & next(en) -> next(packet) = data_in
+
+TRANS en -> next(packet) = packet
+
+TRANS push -> next(wptr) = wptr + 0ud4_1
+
+TRANS !push -> next(wptr) = wptr
+
+TRANS pop -> next(rptr) = rptr + 0ud4_1
+
+TRANS !pop -> next(rptr) = rptr
+
+-- step 1: abstract
+-- TRANS push -> next(fifo) = WRITE(fifo, wptr[2:0], data_in)
+
+-- step 2: refinement 1
+TRANS push -> read(next(fifo), wptr[2:0]) = data_in
+
+-- step 3: refinement 2
+TRANS rptr[2:0] != wptr[2:0] -> read(next(fifo), rptr[2:0]) = read(fifo, rptr[2:0])
+
+TRANS !push -> next(fifo) = fifo
+
+INVAR wptr = rptr -> !pop
+
+INVAR (wptr[3:3] != rptr[3:3] & wptr[2:0] = rptr[2:0]) -> !push
+
+-- step 1: abstract
+-- INVARSPEC (en & cnt = 0ud4_1 & next(cnt) = 0ud4_0) -> packet = READ(fifo, rptr[2:0])
+
+-- step 4: refinement 3
+-- INVARSPEC (en & cnt = 0ud4_1 & next(cnt) = 0ud4_0) -> packet = read(fifo, rptr[2:0])
+
+-- transitions at rptr_2_0_proph
+TRANS rptr_2_0_proph = wptr[2:0] -> (push -> read(next(fifo), rptr_2_0_proph) = data_in)
+TRANS rptr_2_0_proph != wptr[2:0] -> (push -> read(next(fifo), rptr_2_0_proph) = read(fifo, rptr_2_0_proph))
+
+-- new property
+INVARSPEC rptr_2_0_proph = rptr[2:0] -> ((en & cnt = 0ud4_1 & next(cnt) = 0ud4_0) -> packet = read(fifo, rptr[2:0]))
