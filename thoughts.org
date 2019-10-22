@@ -128,6 +128,13 @@
 *** Ideally want to prove some kind of relative completeness (eventually)
 **** This could maybe be a journal version contribution, like Ahmed's work
 *** Look at QUIC3
+* Z3 Horn to VMT Translator (copied from an email)
+Here's a script for translating the old syntax to the new one (you need
+to adjust the sys.path at the beginning to point to your installation of
+z3). Use it like that:
+
+    $ python z3horntranslate.py array_init_const.smt2 | ./horn2vmt
+
 * TODO Store next indices in orig_sorts, and stop using ts.cur in refiner to get correct sort
 * TODO Just create a UF for everything, including store and const array
 * TODO Have a separate pass that collects top-level UF equalities
