@@ -7,7 +7,7 @@
 namespace ic3ia_array {
 class ProphecyRefiner {
 public:
-  ProphecyRefiner(msat_env e, const msat_term p, const ic3ia::TermSet i, const ic3ia::TermMap w)
+  ProphecyRefiner(msat_env e, const msat_term p, const ic3ia::TermSet & i, const ic3ia::TermMap & w)
      : existing_prop_(p), existing_indices_(i), existing_witnesses_(w) {
 
     msat_env_ = e;
