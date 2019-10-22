@@ -366,6 +366,9 @@ void ArrayAbstractor::create_lambdas() {
       }
       abs_ts_.add_trans(alldiff);
 
+      // store original sort (might be the same if it's already an integer)
+      orig_sorts_[lambda] = _type;
+
       // if it's an infinite domain index, can just add it to index sets
       // otherwise keep it separate
       // for now, only handle int and bit-vector
@@ -377,8 +380,6 @@ void ArrayAbstractor::create_lambdas() {
         //       would because lambda is bundled with other indices)
       } else if (msat_is_bv_type(msat_env_, _type, nullptr)) {
         finite_domain_lambdas_.insert(lambda);
-        // need to keep track of original type for refinement
-        orig_sorts_[lambda] = _type;
       } else {
         throw "UNHANDLED_TYPE";
       }
