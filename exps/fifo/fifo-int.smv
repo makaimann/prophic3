@@ -1,0 +1,59 @@
+MODULE main
+
+IVAR
+  data_in : integer;
+  
+VAR
+  fifo : array integer of integer;
+  wptr : integer;
+  rptr : integer;
+  en : boolean;
+  cnt : integer;
+  push : boolean;
+  pop : boolean;
+  packet : integer;
+
+DEFINE depth := 8;
+
+INIT cnt = 0
+
+INIT wptr = 0
+
+INIT rptr = 0
+
+INIT !en
+
+TRANS (!push & !en) -> !next(en)
+
+TRANS en -> next(en)
+
+INVAR !(push & pop)
+
+TRANS (push & !en) -> next(cnt) = cnt + 1
+
+TRANS (pop & cnt != 0) -> next(cnt) = cnt - 1
+TRANS (pop & cnt = 0) -> next(cnt) = cnt
+
+TRANS (!(push & !en) & !(pop)) -> next(cnt) = cnt
+
+TRANS !en & next(en) -> next(packet) = data_in
+
+TRANS en -> next(packet) = packet
+
+TRANS push -> next(wptr) = wptr + 1
+
+TRANS !push -> next(wptr) = wptr
+
+TRANS pop -> next(rptr) = rptr + 1
+
+TRANS !pop -> next(rptr) = rptr
+
+TRANS push -> next(fifo) = WRITE(fifo, wptr, data_in)
+
+TRANS !push -> next(fifo) = fifo
+
+INVAR wptr = rptr -> !pop
+
+INVAR (wptr >= rptr + depth) -> !push
+
+INVARSPEC (en & cnt = 1 & pop) -> packet = READ(fifo, rptr)
