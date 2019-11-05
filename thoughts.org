@@ -68,6 +68,8 @@
 *** Flattening arrays is too conservative
 **** Ending up with multiple array symbols referring to the same array even though that's not necessary
 **** Probably not good for performance
+**** I think this happens for const-arrays -- e.g. the CONSTARRAY gets a fresh symbol, when we could just add axioms over the array it's equal to
+**** The current approach is more general, but maybe we should follow it up with a top-level propagator that's also aware of the axioms to be generated
 * Identifying Broken Array Axioms
 ** Have Array tracker for every array in the system
 ** Need to examine a bmc trace and find missing axioms
