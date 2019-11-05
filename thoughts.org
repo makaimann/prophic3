@@ -62,6 +62,12 @@
 **** Also, if I get a lemma that only contains current state variables (no inputs or next state) then I add it to trans and init
 ***** If I don't do this, it fails to prove some thing
 ** IC3IA sometimes fails to compute a new interpolant (even without any arrays)
+** Optimizations
+*** Pruning lemmas
+*** Inputs vs state
+*** Flattening arrays is too conservative
+**** Ending up with multiple array symbols referring to the same array even though that's not necessary
+**** Probably not good for performance
 * Identifying Broken Array Axioms
 ** Have Array tracker for every array in the system
 ** Need to examine a bmc trace and find missing axioms
