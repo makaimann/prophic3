@@ -149,3 +149,9 @@ z3). Use it like that:
 * TODO Refiner just traverses the formula (or maybe we can store the UFs) and then figures out the lemmas to add
 ** Might have a first-pass that sorts them into one-step or two-step lemmas
 * TODO Ensure invariants are being added at both current and next to trans
+* Benchmark sources
+** QUIC3 benchmarks
+** Smart contract verification (Solidify -- Dejan's project)
+** MCMT benchmarks
+** FIFO benchmarks
+** HWMCC array benchmarks
