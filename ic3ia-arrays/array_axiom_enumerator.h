@@ -21,6 +21,7 @@ public:
     for (auto idx : abstractor_.indices()) {
       // TODO: what if the index is an input -- could happen
       curr_indices_.insert(ts.cur(idx));
+      orig_indices_.insert(ts.cur(idx));
       all_indices_.insert(ts.cur(idx));
       all_indices_.insert(ts.next(idx));
     }
@@ -54,6 +55,7 @@ private:
   const ic3ia::TransitionSystem &ts_;
   ArrayAbstractor &abstractor_;
   msat_env msat_env_;
+  ic3ia::TermSet orig_indices_;
   ic3ia::TermSet curr_indices_;
   ic3ia::TermSet all_indices_;
   // equality ufs present in init
