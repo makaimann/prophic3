@@ -40,7 +40,7 @@ namespace ic3ia_array
     ic3ia::TermMap untime_cache;
 
     void debug_print_witness(ic3ia::Bmc &bmc,
-                             ArraySingleStepAxiomEnumerator &assae);
+                             ArrayAxiomEnumerator &aae);
   };
 }
 

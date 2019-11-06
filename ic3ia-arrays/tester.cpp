@@ -63,7 +63,7 @@ int main(int argc, const char **argv)
   cout << "\tTrans: " << msat_to_smtlib2_term(env, ts.trans()) << endl;
   cout << "\tProp: " << msat_to_smtlib2_term(env, ts.prop()) << endl;
 
-  ArraySingleStepAxiomEnumerator aae (ts, aa, opts);
+  ArrayAxiomEnumerator aae (ts, aa, opts);
 
   cout << endl;
   cout << "Axiom enumeration" << endl;

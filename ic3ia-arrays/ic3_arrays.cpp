@@ -17,8 +17,8 @@ msat_truth_value IC3Array::prove()
   abs_ts_ = af.flatten_transition_system();
   ArrayAbstractor aa(abs_ts_);
   abs_ts_ = aa.abstract_transition_system();
-  ArraySingleStepAxiomEnumerator assae =
-      ArraySingleStepAxiomEnumerator(abs_ts_, aa);
+  ArrayAxiomEnumerator aae =
+      ArrayAxiomEnumerator(abs_ts_, aa);
 
   msat_truth_value res = MSAT_UNDEF;
 
@@ -51,7 +51,7 @@ msat_truth_value IC3Array::prove()
   // treat each of these prophecy variables as an index
   // want to generate lemmas over them
   for (auto elem : pr.prophecy_vars()) {
-    assae.add_index(elem.first);
+    aae.add_index(elem.first);
   }
 
   // set the new property
@@ -107,9 +107,9 @@ msat_truth_value IC3Array::prove()
       msat_term timed_axiom;
       msat_term val;
       std::vector<TermSet> axiom_sets = {
-          assae.init_eq_axioms(), assae.trans_eq_axioms(),
-          assae.prop_eq_axioms(), assae.const_array_axioms(),
-          assae.store_axioms()};
+          aae.init_eq_axioms(), aae.trans_eq_axioms(),
+          aae.prop_eq_axioms(), aae.const_array_axioms(),
+          aae.store_axioms()};
       // std::vector<std::string> axiom_names = {"Init Eq",
       //                                         "Trans Eq",
       //                                         "Prop Eq",
@@ -158,7 +158,7 @@ msat_truth_value IC3Array::prove()
                 << std::endl;
 
       if (!violated_axioms.size()) {
-        debug_print_witness(bmc, assae);
+        debug_print_witness(bmc, aae);
         // TODO: Use real exceptions
         std::cout << "It looks like there's a concrete counter-example (or some axioms are missing)" << std::endl;
         throw std::exception();
@@ -205,9 +205,9 @@ int IC3Array::witness(std::vector<TermList> & out)
 }
 
 void IC3Array::debug_print_witness(Bmc &bmc,
-                                   ArraySingleStepAxiomEnumerator &assae) {
+                                   ArrayAxiomEnumerator &aae) {
   Unroller &u = bmc.get_unroller();
-  ArrayAbstractor &abstractor = assae.get_abstractor();
+  ArrayAbstractor &abstractor = aae.get_abstractor();
   TermTypeMap &orig_sorts = abstractor.orig_sorts();
   std::vector<TermList> witness;
   bmc.witness(witness);
@@ -244,7 +244,7 @@ void IC3Array::debug_print_witness(Bmc &bmc,
     msat_decl fun = elem.second;
 
     TermSet indices;
-    for (auto i : assae.all_indices()) {
+    for (auto i : aae.all_indices()) {
       if (!msat_type_equals(orig_sorts.at(arr),
                             orig_sorts.at(abs_ts_.cur(i)))) {
         continue;
