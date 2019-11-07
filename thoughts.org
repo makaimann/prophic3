@@ -61,6 +61,31 @@
 **** This seems to work but is significantly slower
 **** Also, if I get a lemma that only contains current state variables (no inputs or next state) then I add it to trans and init
 ***** If I don't do this, it fails to prove some thing
+** Related to previous: How to handle inputs and initial state constraints
+*** Just had a discussion that was very eye-opening
+*** IC3IA performs better if there are less things in INIT (so we don't want to add too many things there)
+*** Furthermore, up until now I was doing something conceptually wrong -- I was adding axioms that were "context-dependent"
+**** e.g. they were not true for all time
+*** Example + Explanation
+    INIT arr = CONSTARRAY(typeof(arr), 0)
+    TRANS ...
+
+    Then, I would add an axioms like
+    arr[i] = 0
+    to the initial state constraints
+
+    Ahmed said I could add it to TRANS, which seemed really strange
+    The difference, is that I should be adding this
+    eq(arr, constarr) -> read(arr, i) = 0
+
+    Because that axiom is actually valid, whereas my other "axiom" only held in state 0
+    So this real axiom can actually be added to TRANS
+    // one thing to figure out is if we should add it only for current vars
+    // I think because it's for the INIT state, we only need it over current vars (not next vars)
+    // other things might have to be over both, because they're "invariants"
+
+    The only catch here is if the counter-example is length 1 (no TRANS)
+    Then, you have to add it to INIT as well
 ** IC3IA sometimes fails to compute a new interpolant (even without any arrays)
 ** Optimizations
 *** Pruning lemmas
@@ -132,7 +157,7 @@
 **** Scan the proof for interesting predicates etc..
 **** Better to rely on optimized array solver
 *** Interpolants *can* fail over QF_UFIA (but not over reals)
-*** Need to show that it works 
+*** Need to show that it works
 *** Ideally want to prove some kind of relative completeness (eventually)
 **** This could maybe be a journal version contribution, like Ahmed's work
 *** Look at QUIC3
