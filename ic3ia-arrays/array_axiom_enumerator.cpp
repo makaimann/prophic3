@@ -122,8 +122,7 @@ ic3ia::TermSet ArrayAxiomEnumerator::const_array_axioms()
   {
     arr = msat_term_get_arg(e, 0);
     const_arr = msat_term_get_arg(e, 1);
-    if (is_array_const(msat_env_, arr))
-    {
+    if (msat_term_is_array_const(msat_env_, arr)) {
       tmp = arr;
       arr = const_arr;
       const_arr = tmp;
@@ -155,8 +154,7 @@ ic3ia::TermSet ArrayAxiomEnumerator::store_axioms()
   {
     arr0 = msat_term_get_arg(e, 0);
     store = msat_term_get_arg(e, 1);
-    if (is_array_write(msat_env_, arr0))
-    {
+    if (msat_term_is_array_write(msat_env_, arr0)) {
       // using arr1 as a temporary variable
       arr1 = arr0;
       arr0 = store;
@@ -221,7 +219,10 @@ void ArrayAxiomEnumerator::enumerate_store_equalities(
 
   if (!MSAT_ERROR_TERM(lambda)) {
     size_t width;
-    assert(msat_is_bv_type(msat_env_, _type, &width));
+    if (!msat_is_bv_type(msat_env_, _type, &width)) {
+      // expecting a bitvector type (because finite)
+      assert(false);
+    }
     msat_term lambda = get_lambda_from_type(_type);
 
     msat_term args0[2] = {arr0, lambda};
@@ -318,7 +319,9 @@ void ArrayAxiomEnumerator::enumerate_eq_uf_axioms(ic3ia::TermSet &axioms,
     // get width -- only need to check one array
     size_t width;
     // expecting a bit-vector because there's a finite domain lambda
-    assert(msat_is_bv_type(msat_env_, _type, &width));
+    if (!msat_is_bv_type(msat_env_, _type, &width)) {
+      assert(false);
+    }
 
     msat_term args0[2] = {arr0, lambda};
     msat_term args1[2] = {arr1, lambda};

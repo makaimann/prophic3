@@ -18,9 +18,6 @@ using TermDeclMap = std::unordered_map<msat_term, msat_decl>;
 // note: need to put these outside of class and
 // pass msat_env because want to use them in visitor without capturing this
 bool is_array_equality(msat_env env, msat_term term);
-bool is_array_const(msat_env env, msat_term term);
-bool is_array_write(msat_env env, msat_term term);
-bool is_array_read(msat_env env, msat_term term);
 msat_term idx_to_int(msat_env env, msat_term term);
 
 class ArrayAbstractor {

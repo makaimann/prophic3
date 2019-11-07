@@ -47,18 +47,6 @@ inline bool is_array_equality(msat_env env, msat_term t) {
   }
 }
 
-inline bool is_array_const(msat_env env, msat_term t) {
-  return msat_term_is_array_const(env, t);
-}
-
-inline bool is_array_write(msat_env env, msat_term t) {
-  return msat_term_is_array_write(env, t);
-}
-
-inline bool is_array_read(msat_env env, msat_term t) {
-  return msat_term_is_array_read(env, t);
-}
-
 msat_term idx_to_int(msat_env env, msat_term t) {
   msat_type _type = msat_term_get_type(t);
   msat_term res;
@@ -138,12 +126,14 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
 
         // assuming arrays have already been flattened
         // thus const array and store equalities are top-level
-        if (is_array_write(e, lhs) || is_array_write(e, rhs)) {
+        if (msat_term_is_array_write(e, lhs) ||
+            msat_term_is_array_write(e, rhs)) {
           // remove the store equality and keep it for refinement
           d->cache[t] = msat_make_true(e);
           d->stores.insert(t);
           return MSAT_VISIT_PROCESS;
-        } else if (is_array_const(e, lhs) || is_array_const(e, rhs)) {
+        } else if (msat_term_is_array_const(e, lhs) ||
+                   msat_term_is_array_const(e, rhs)) {
           // remove the const array equality and keep it for refinement
           d->cache[t] = msat_make_true(e);
           d->const_arrs.insert(t);
@@ -207,7 +197,7 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
 
         // update state variables
         d->new_vars[witness] = witnessN;
-      } else if (is_array_read(e, t)) {
+      } else if (msat_term_is_array_read(e, t)) {
         // replace array reads with uninterpreted functions
         msat_term arr = msat_term_get_arg(t, 0);
         msat_term arr_cache = d->cache[arr];
@@ -229,7 +219,7 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
         msat_term cached_args[2] = {arr_cache, int_idx};
         msat_term read_uf = msat_make_uf(e, readfun, &cached_args[0]);
         d->cache[t] = read_uf;
-      } else if (is_array_write(e, t)) {
+      } else if (msat_term_is_array_write(e, t)) {
         msat_term idx = msat_term_get_arg(t, 1);
         msat_term int_idx = idx_to_int(e, d->cache[idx]);
         msat_type orig_idx_sort = msat_term_get_type(idx);
