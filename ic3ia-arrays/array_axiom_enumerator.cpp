@@ -13,6 +13,19 @@ msat_term ArrayAxiomEnumerator::implies(msat_term antecedent, msat_term conseque
                       consequent);
 }
 
+msat_term ArrayAxiomEnumerator::get_finite_domain_lambda(msat_term eq_uf) {
+  // only need to check one of the arrays
+  msat_term arr = msat_term_get_arg(eq_uf, 0);
+  msat_type _type = abstractor_.orig_sorts().at(arr);
+  size_t width;
+  msat_term lambda;
+  MSAT_MAKE_ERROR_TERM(lambda);
+  if (msat_is_bv_type(msat_env_, _type, &width)) {
+    lambda = get_lambda_from_type(_type);
+  }
+  return lambda;
+}
+
 msat_term ArrayAxiomEnumerator::get_lambda_from_type(msat_type _type)
 {
   // have to do this because types aren't hashable
@@ -53,7 +66,8 @@ ic3ia::TermSet ArrayAxiomEnumerator::init_eq_axioms()
   ic3ia::TermSet axioms;
   for (auto e : init_equalities_)
   {
-    enumerate_eq_uf_axioms(axioms, e, witnesses.at(e), curr_indices_);
+    enumerate_eq_uf_axioms(axioms, e, witnesses.at(e), curr_indices_,
+                           get_finite_domain_lambda(e));
   }
   return axioms;
 }
@@ -69,7 +83,8 @@ ic3ia::TermSet ArrayAxiomEnumerator::trans_eq_axioms()
   ic3ia::TermSet axioms;
   for (auto e : trans_equalities_)
   {
-    enumerate_eq_uf_axioms(axioms, e, witnesses.at(e), all_indices_);
+    enumerate_eq_uf_axioms(axioms, e, witnesses.at(e), all_indices_,
+                           get_finite_domain_lambda(e));
   }
   return axioms;
 }
@@ -85,7 +100,8 @@ ic3ia::TermSet ArrayAxiomEnumerator::prop_eq_axioms()
   ic3ia::TermSet axioms;
   for (auto e : prop_equalities_)
   {
-    enumerate_eq_uf_axioms(axioms, e, witnesses.at(e), all_indices_);
+    enumerate_eq_uf_axioms(axioms, e, witnesses.at(e), all_indices_,
+                           get_finite_domain_lambda(e));
   }
   return axioms;
 }
@@ -267,11 +283,11 @@ void ArrayAxiomEnumerator::enumerate_const_array_equalities(TermSet & axioms,
   }
 }
 
-void ArrayAxiomEnumerator::enumerate_eq_uf_axioms(ic3ia::TermSet & axioms,
+void ArrayAxiomEnumerator::enumerate_eq_uf_axioms(ic3ia::TermSet &axioms,
                                                   msat_term eq_uf,
                                                   msat_term witness,
-                                                  ic3ia::TermSet & indices)
-{
+                                                  ic3ia::TermSet &indices,
+                                                  msat_term lambda) {
   TermDeclMap &read_ufs = abstractor_.read_ufs();
 
   msat_term arr0 = msat_term_get_arg(eq_uf, 0);
@@ -304,12 +320,13 @@ void ArrayAxiomEnumerator::enumerate_eq_uf_axioms(ic3ia::TermSet & axioms,
                           msat_make_not(msat_env_, eq_uf)));
   }
 
-  // special case for finite-domain lambdas
   msat_type _type = abstractor_.orig_sorts().at(arr0);
-  size_t width;
-  if (msat_is_bv_type(msat_env_, _type, &width)) {
 
-    msat_term lambda = get_lambda_from_type(_type);
+  if (!MSAT_ERROR_TERM(lambda)) {
+    // get width -- only need to check one array
+    size_t width;
+    // expecting a bit-vector because there's a finite domain lambda
+    assert(msat_is_bv_type(msat_env_, _type, &width));
 
     msat_term args0[2] = {arr0, lambda};
     msat_term args1[2] = {arr1, lambda};

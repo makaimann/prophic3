@@ -75,6 +75,10 @@ private:
   /* logical implication */
   msat_term implies(msat_term antecedent, msat_term consequent);
 
+  /* Get a finite domain lambda for this eq_uf -- if there isn't one, returns
+   * error term */
+  msat_term get_finite_domain_lambda(msat_term eq_uf);
+
   /* Looks up the corresponding lambda index for a type
    * Only for finite-domain types (bv only at this point)
    * msat_type is not hashable, so has to check all elements
@@ -114,9 +118,13 @@ private:
    *    (exists i . a[i] != b[i]) | a = b
    *    a[witness] != b[witness] | a = b
    *    a[witness] = b[witness] -> a =b
+   *
+   * Important Note: lambda argument can be an error term (if there is no finite
+   * domain lambda)
    */
   void enumerate_eq_uf_axioms(ic3ia::TermSet &axioms, msat_term eq_uf,
-                              msat_term witness, ic3ia::TermSet &indices);
+                              msat_term witness, ic3ia::TermSet &indices,
+                              msat_term lambda);
 
   /* Collect all array equality UFs from the given term and add to set s */
   void collect_equalities(msat_term term, ic3ia::TermSet & s);
