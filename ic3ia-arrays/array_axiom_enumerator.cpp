@@ -1,5 +1,6 @@
 #include "assert.h"
 #include "gmpxx.h"
+#include <cstdlib> // for abs
 
 #include "array_axiom_enumerator.h"
 
@@ -160,6 +161,113 @@ ic3ia::TermSet ArrayAxiomEnumerator::store_axioms()
         // convert to abstract arrays
         cache.at(arr0), cache.at(arr1), idx_to_int(msat_env_, cache.at(idx)),
         cache.at(val), all_indices_, get_finite_domain_lambda(cache.at(arr0)));
+  }
+  return axioms;
+}
+
+TermSet ArrayAxiomEnumerator::equality_axioms_all_indices(Unroller &un,
+                                                          int32_t k) {
+  const ic3ia::TermMap &witnesses = abstractor_.witnesses();
+  ic3ia::TermSet axioms;
+
+  // create all the timed indices and lambdas
+  std::vector<TermSet> timed_indices;
+  timed_indices.reserve(k);
+  for (int j = 0; j < k; j++) {
+    timed_indices.push_back(TermSet());
+    for (auto i : orig_indices_) {
+      timed_indices[j].insert(un.at_time(i, j));
+    }
+  }
+
+  // TODO - check if this is sufficient
+  //        I think that we only need to look at equalities in trans
+  //        because at this point init/prop equalities should already be handled
+  for (auto e : trans_equalities_) {
+    for (int32_t i = 0; i < k; i++) {
+      msat_term e_i = un.at_time(e, i);
+      msat_term witness_i = un.at_time(witnesses.at(e), i);
+
+      for (int32_t j = 0; j < k; j++) {
+        if (abs(i - j) <= 1) {
+          // This is an optimization
+          // All single-step axioms should have already been checked
+          continue;
+        }
+
+        // TODO: If this is too expensive, cache by e beforehand
+        msat_term lambda_j = get_finite_domain_lambda(msat_term_get_arg(e, 0));
+        if (!MSAT_ERROR_TERM(lambda_j)) {
+          lambda_j = un.at_time(lambda_j, j);
+        }
+
+        enumerate_eq_uf_axioms(axioms, e_i, witness_i, timed_indices[j],
+                               lambda_j);
+      }
+    }
+  }
+  return axioms;
+}
+
+TermSet ArrayAxiomEnumerator::store_axioms_all_indices(Unroller &un,
+                                                       int32_t k) {
+  ic3ia::TermSet axioms;
+
+  // create all the timed indices and lambdas
+  std::vector<TermSet> timed_indices;
+  timed_indices.reserve(k);
+  for (int j = 0; j < k; j++) {
+    timed_indices.push_back(TermSet());
+    for (auto i : orig_indices_) {
+      timed_indices[j].insert(un.at_time(i, j));
+    }
+  }
+
+  ic3ia::TermMap &cache = abstractor_.cache();
+  ic3ia::TermSet &stores = abstractor_.stores();
+  msat_term arr0;
+  msat_term store;
+  msat_term arr1;
+  msat_term idx;
+  msat_term val;
+
+  for (auto e : stores) {
+    arr0 = msat_term_get_arg(e, 0);
+    store = msat_term_get_arg(e, 1);
+    if (msat_term_is_array_write(msat_env_, arr0)) {
+      // using arr1 as a temporary variable
+      arr1 = arr0;
+      arr0 = store;
+      store = arr1;
+    }
+    arr1 = msat_term_get_arg(store, 0);
+    idx = msat_term_get_arg(store, 1);
+    val = msat_term_get_arg(store, 2);
+
+    for (int32_t i = 0; i < k; i++) {
+      msat_term arr0_i = un.at_time(cache.at(arr0), i);
+      msat_term arr1_i = un.at_time(cache.at(arr1), i);
+      msat_term idx_i = un.at_time(idx_to_int(msat_env_, cache.at(idx)), i);
+      msat_term val_i = un.at_time(cache.at(val), i);
+
+      for (int32_t j = 0; j < k; j++) {
+
+        if (abs(i - j) <= 1) {
+          // This is an optimization
+          // All single-step axioms should have already been checked
+          continue;
+        }
+
+        // TODO: If this is too expensive, cache by e beforehand
+        msat_term lambda_j = get_finite_domain_lambda(arr0);
+        if (!MSAT_ERROR_TERM(lambda_j)) {
+          lambda_j = un.at_time(lambda_j, j);
+        }
+
+        enumerate_store_equalities(axioms, arr0_i, arr1_i, idx_i, val_i,
+                                   timed_indices[j], lambda_j);
+      }
+    }
   }
   return axioms;
 }
