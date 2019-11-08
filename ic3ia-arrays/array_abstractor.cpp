@@ -23,6 +23,7 @@ void ArrayAbstractor::do_abstraction()
   msat_term new_prop = abstract(conc_ts_.prop());
 
   // add all old state elements unless they've been removed
+  // new_vars_ already contains state mapping for new state vars
   for (auto sv : conc_ts_.statevars()) {
     if (removed_vars_.find(sv) == removed_vars_.end()) {
       new_vars_[sv] = conc_ts_.next(sv);
@@ -31,6 +32,14 @@ void ArrayAbstractor::do_abstraction()
 
   abs_ts_.initialize(new_vars_, new_init, new_trans, new_prop,
                      conc_ts_.live_prop());
+
+  // make const arrays frozenvars
+  msat_term abs_ca;
+  for (auto ca : const_arrs_)
+  {
+    abs_ca = cache_.at(ca);
+    abs_ts_.add_trans(msat_make_eq(msat_env_, abs_ts_.next(abs_ca), abs_ca));
+  }
 
   create_lambdas();
 }
@@ -139,9 +148,13 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
             e, (name + "N").c_str(), msat_get_integer_type(e));
         msat_term arr_intN = msat_make_constant(e, decl_arrintN);
         d->cache[t] = arr_int;
-        d->cache[d->conc_ts.next(t)] = arr_intN;
         d->new_vars[arr_int] = arr_intN;
         d->removed_vars.insert(t);
+
+        if (d->conc_ts.is_statevar(t))
+        {
+          d->cache[d->conc_ts.next(t)] = arr_intN;
+        }
 
         // create a read function for these arrays
         msat_type param_types[2] = {msat_get_integer_type(e),
