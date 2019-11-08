@@ -35,6 +35,8 @@ struct Options {
     int seed;
     bool stack;
     bool minpreds;
+    bool generalize_pre;
+    int solver_reset_interval;
     int live_ref_maxiter;
     bool live_ref_eager;
     bool live_ref_ranking;
@@ -42,16 +44,24 @@ struct Options {
     bool live_no_cex;
     bool live_bmc_cex;
     bool live_klive_progress;
+    bool live_klive_only;
     int live_klive_start;
+    bool live_klive_nondet;
+    bool live_klive_counter;
     int prop_index;
     bool bmc;
     int bmc_max_k;
+    bool check_witness;
+    std::string witness_check_script;
+    bool ltl_single_fairness_sorted;
 
     Options()
     {
         verbosity = 0;
         witness = false;
         nopreds = false;
+        generalize_pre = false;
+        solver_reset_interval = 5000;
         filename = "";
         trace = "";
         seed = 0;
@@ -64,10 +74,16 @@ struct Options {
         live_no_cex = true;
         live_bmc_cex = true;
         live_klive_progress = true;
+        live_klive_only = false;
         live_klive_start = 0;
+        live_klive_nondet = false;
+        live_klive_counter = true;
         prop_index = 0;
         bmc = false;
         bmc_max_k = -1;
+        check_witness = false;
+        witness_check_script = "";
+        ltl_single_fairness_sorted = true;
     }
 };
 

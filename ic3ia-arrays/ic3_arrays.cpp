@@ -70,7 +70,7 @@ msat_truth_value IC3Array::prove()
     // NOTE: It is very IMPORTANT that ic3 is instantiated here
     //       at one point, I had it instantiated outside of the loop
     //       then it always returned true the second time prove was called...
-    IC3 ic3(abs_ts_, opts_);
+    IC3 ic3(abs_ts_, opts_, l2s_);
     res = ic3.prove();
 
     if (res == MSAT_TRUE) {

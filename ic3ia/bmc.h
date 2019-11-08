@@ -42,10 +42,6 @@ public:
     ///< check whether a property holds for paths of length up to k. Returns
     ///< false if a counterexample is found
 
-    void add_assumptions(TermList assumptions);
-    ///< adds timed assumptions to the underlying solver
-    ///< these assumptions cannot be removed
-
     msat_truth_value prove();
     ///< check whether the property holds. Can never return MSAT_TRUE
     
@@ -53,10 +49,18 @@ public:
     ///< generate a counterexample trace for falsified properties
 
     Unroller& get_unroller() { return un_; };
+    ///< added by Makai -- returns the unroller
 
     msat_model get_model() { return msat_get_model(env_); }
+    ///< added by Makai -- returns the latest model
 
     int reached_k() { return reached_k_; };
+    ///< added by Makai
+
+    void add_assumptions(TermList assumptions);
+    ///< added by Makai
+    ///< adds timed assumptions to the underlying solver
+    ///< these assumptions cannot be removed
 
   private:
     void initialize();
@@ -110,7 +114,7 @@ public:
     msat_term loop_prop_violation_;
     ///< for liveness properties, whether the live signal is false inside the
     ///< loop
-    
+
     int reached_k_;
     ///< reached BMC depth
 };
