@@ -19,6 +19,13 @@ using TermDeclMap = std::unordered_map<msat_term, msat_decl>;
 // pass msat_env because want to use them in visitor without capturing this
 bool is_array_equality(msat_env env, msat_term term);
 msat_term idx_to_int(msat_env env, msat_term term);
+inline bool is_variable(msat_env env, msat_term term) {
+  // variable is a term with no children and no built-in interpretation
+  return (msat_term_arity(term) == 0 &&
+          msat_decl_get_tag(env, msat_term_get_decl(term)) ==
+              MSAT_TAG_UNKNOWN &&
+          !msat_term_is_number(env, term));
+}
 
 class ArrayAbstractor {
 public:
@@ -47,11 +54,6 @@ public:
     /* abstracts a term */
     msat_term abstract(msat_term term);
 
-    /* creates all the necessary state variables
-     *   and inputs and adds them to the cache
-     */
-    void cache_states_and_inputs();
-
     /* creates lambda indices for each sort */
     void create_lambdas();
 
@@ -75,7 +77,7 @@ public:
     // TODO: Figure out if we still even need this
     // the original sort for terms
     TermTypeMap orig_sorts_;
-    // set of constant array equalities -- note: these have been flattened
+    // set of constant arrays
     ic3ia::TermSet const_arrs_;
     // set of store equalities -- note: these have been flattened
     ic3ia::TermSet stores_;

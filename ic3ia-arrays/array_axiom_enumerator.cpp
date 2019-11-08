@@ -115,22 +115,13 @@ ic3ia::TermSet ArrayAxiomEnumerator::const_array_axioms()
   ic3ia::TermSet axioms;
   ic3ia::TermMap & cache = abstractor_.cache();
   ic3ia::TermSet & const_arrs = abstractor_.const_arrs();
-  msat_term arr;
-  msat_term const_arr;
-  msat_term tmp;
-  for (auto e : const_arrs)
-  {
-    arr = msat_term_get_arg(e, 0);
-    const_arr = msat_term_get_arg(e, 1);
-    if (msat_term_is_array_const(msat_env_, arr)) {
-      tmp = arr;
-      arr = const_arr;
-      const_arr = tmp;
-    }
-    enumerate_const_array_equalities(axioms,
-                                     cache.at(arr), // need to convert to abstracted array
-                                     msat_term_get_arg(const_arr, 0),
-                                     curr_indices_);
+
+  for (msat_term ca : const_arrs) {
+    enumerate_const_array_equalities(
+        axioms,
+        cache.at(ca),             // need to convert to abstracted array
+        msat_term_get_arg(ca, 0), // the value
+        curr_indices_);
   }
   return axioms;
 }
