@@ -120,9 +120,18 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
       // replace array variables or const arrays with an abstract array
       if (msat_is_array_type(e, _type, &arridxtype, &arrelemtype) &&
           (is_variable(e, t) || msat_term_is_array_const(e, t))) {
-        // turn arrays to integers
+
+        // turn arrays to integers (but use slightly nicer name for const arrays)
+
         std::string name = msat_term_repr(t);
         name += "_int";
+
+        if (msat_term_is_array_const(e, t)) {
+          d->const_arrs.insert(t);
+          name = "constarr";
+          name += msat_to_smtlib2_term(e, msat_term_get_arg(t, 0));
+        }
+
         msat_decl decl_arrint =
             msat_declare_function(e, name.c_str(), msat_get_integer_type(e));
         msat_term arr_int = msat_make_constant(e, decl_arrint);
@@ -150,9 +159,6 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
         d->orig_sorts[arr_int] = arridxtype;
         d->orig_sorts[arr_intN] = arridxtype;
 
-        if (msat_term_is_array_const(e, t)) {
-          d->const_arrs.insert(t);
-        }
       }
       // check if it's an array equality
       else if (is_array_equality(e, t)) {
