@@ -100,8 +100,7 @@ msat_truth_value IC3Array::prove()
     assert((res != MSAT_FALSE) || broken);
 
     // TODO: filter axioms with unsat core
-    TermSet init_axioms_to_add;
-    TermSet trans_axioms_to_add;
+    TermSet axioms_to_add;
 
     while (broken) {
       msat_model model = bmc.get_model();
@@ -146,12 +145,7 @@ msat_truth_value IC3Array::prove()
               // std::cout << msat_to_smtlib2_term(msat_env_, timed_axiom) <<
               // std::endl;
               violated_axioms.push_back(timed_axiom);
-              if (i == 0) {
-                // TODO: handle this in a cleaner way (maybe use enums)
-                init_axioms_to_add.insert(ax);
-              } else {
-                trans_axioms_to_add.insert(ax);
-              }
+              axioms_to_add.insert(ax);
             }
           }
         }
@@ -172,23 +166,10 @@ msat_truth_value IC3Array::prove()
       violated_axioms.clear();
     }
 
-    // only add axioms to init if the counterexample is length 1
-    if (reached_k == 1) {
-      std::cout << "Adding " << init_axioms_to_add.size() << " axioms to init."
-                << std::endl;
-      for (auto ax : init_axioms_to_add) {
-        abs_ts_.add_init(ax);
-      }
-    } else {
-      for (auto ax : init_axioms_to_add) {
-        trans_axioms_to_add.insert(ax);
-      }
-    }
-    init_axioms_to_add.clear();
-
-    std::cout << "Adding " << trans_axioms_to_add.size() << " axioms to trans."
+    std::cout << "Adding " << axioms_to_add.size() << " axioms to trans."
               << std::endl;
-    for (auto ax : trans_axioms_to_add) {
+    size_t cnt = 0;
+    for (auto ax : axioms_to_add) {
       abs_ts_.add_trans(ax);
       if (abs_ts_.only_cur(ax)) {
         abs_ts_.add_trans(abs_ts_.next(ax));
@@ -198,11 +179,15 @@ msat_truth_value IC3Array::prove()
         //       but without it, it fails to find an interpolant
         //       for hard-array.vmt and hard-array-false.vmt
         if (reached_k == 1 || contains_vars(ax, proph_vars)) {
+          // only add axioms to init if the counterexample is length 1
+          // or it involves prophecy variables
           abs_ts_.add_init(ax);
+          cnt++;
         }
       }
     }
-    trans_axioms_to_add.clear();
+    std::cout << "Added " << cnt << " axioms to init." << std::endl;
+    axioms_to_add.clear();
 
     // increment reached_k
     reached_k++;
