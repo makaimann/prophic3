@@ -197,7 +197,7 @@ msat_truth_value IC3Array::prove()
         //       Not even sure if this is right or why we need it
         //       but without it, it fails to find an interpolant
         //       for hard-array.vmt and hard-array-false.vmt
-        if (contains_vars(ax, proph_vars)) {
+        if (reached_k == 1 || contains_vars(ax, proph_vars)) {
           abs_ts_.add_init(ax);
         }
       }
