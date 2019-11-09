@@ -88,10 +88,6 @@
     Then, you have to add it to INIT as well
 ** IC3IA sometimes fails to compute a new interpolant (even without any arrays)
 *** Can happen for integers
-** Is witness part of index set?
-*** In our current code, no
-*** In Aaron Bradley formulation it would be I think
-*** For us, I'm not sure it needs to be -- only used for comparisons between arrays
 ** Optimizations
 *** Pruning lemmas
 *** Inputs vs state
