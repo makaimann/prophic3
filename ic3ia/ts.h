@@ -92,6 +92,11 @@ public:
     bool only_cur(msat_term t) const;
     ///< checks if term t has only current state variables (no next or inputs)
 
+    // added by Makai -- convenience function
+    bool contains_next(msat_term t) const;
+    ///< checks if term t has any next state variables
+
+
   private:
     void reset();
     void collect_inputs();
