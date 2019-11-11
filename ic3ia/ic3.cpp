@@ -278,7 +278,8 @@ msat_truth_value IC3::rec_block(const Cube &bad)
             return s;
         }
 
-        assert(!is_initial(p->cube));
+        bool is_init = is_initial(p->cube);
+        assert(!is_init);
 
         if (!is_blocked(p->cube, p->idx)) {
             Cube c;
