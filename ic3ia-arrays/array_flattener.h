@@ -21,7 +21,7 @@ private:
 
     void do_flattening();
     msat_term flatten(const msat_term t);
-    bool only_cur(const msat_term t, ic3ia::TermMap &state_vars);
+    bool contains_next(const msat_term t, ic3ia::TermSet &next_vars);
 
     msat_env msat_env_;
 

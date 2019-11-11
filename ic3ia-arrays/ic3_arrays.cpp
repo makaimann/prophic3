@@ -171,20 +171,25 @@ msat_truth_value IC3Array::prove()
     size_t cnt = 0;
     for (auto ax : axioms_to_add) {
       abs_ts_.add_trans(ax);
-      if (abs_ts_.only_cur(ax)) {
-        abs_ts_.add_trans(abs_ts_.next(ax));
 
-        // TODO: Understand this better
-        //       Not even sure if this is right or why we need it
-        //       but without it, it fails to find an interpolant
-        //       for hard-array.vmt and hard-array-false.vmt
-        if (reached_k == 1 || contains_vars(ax, proph_vars)) {
-          // only add axioms to init if the counterexample is length 1
-          // or it involves prophecy variables
-          abs_ts_.add_init(ax);
-          cnt++;
-        }
+      // if there's no next-state variables, add next version to trans
+      if (!abs_ts_.contains_next(ax)) {
+        abs_ts_.add_trans(abs_ts_.next(ax));
       }
+
+      // add to init if there's only current variables (no inputs or next)
+      // + a couple other conditions
+      // TODO: Understand this better
+      //       Not even sure if this is right or why we need it
+      //       but without it, it fails to find an interpolant
+      //       for hard-array.vmt and hard-array-false.vmt
+      if (abs_ts_.only_cur(ax) && (reached_k == 1 || contains_vars(ax, proph_vars))) {
+        // only add axioms to init if the counterexample is length 1
+        // or it involves prophecy variables
+        abs_ts_.add_init(ax);
+        cnt++;
+      }
+
     }
     std::cout << "Added " << cnt << " axioms to init." << std::endl;
     axioms_to_add.clear();
