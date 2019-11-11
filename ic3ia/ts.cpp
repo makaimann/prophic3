@@ -252,7 +252,7 @@ bool TransitionSystem::contains_next(msat_term t) const {
                      msat_decl_get_tag(e, msat_term_get_decl(t)) == MSAT_TAG_UNKNOWN &&
                      !msat_term_is_number(e, t)) {
 
-                   // check if it's not a current variable
+                   // check if it contains a next variable
                    if (d->nextvars.find(t) != d->nextvars.end()) {
                      d->has_next = true;
                      return MSAT_VISIT_ABORT;
