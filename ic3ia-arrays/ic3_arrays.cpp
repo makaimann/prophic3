@@ -35,7 +35,7 @@ msat_truth_value IC3Array::prove()
   TermSet proph_vars;
 
   // create state variables for prophecy vars and ass as indices
-  TermTypeMap &orig_sorts = aa.orig_sorts();
+  TermTypeMap &orig_types = aa.orig_types();
   for (auto elem : pr.prophecy_vars()) {
     msat_term proph = elem.first;
     proph_vars.insert(proph);
@@ -48,13 +48,13 @@ msat_truth_value IC3Array::prove()
     abs_ts_.add_statevar(proph, prophN);
     abs_ts_.add_trans(msat_make_equal(msat_env_, prophN, proph));
     // save the original sort of the variable -- for the axiom enumerator
-    orig_sorts[proph] = orig_sorts.at(elem.second);
+    orig_types[proph] = orig_types.at(elem.second);
   }
 
   // treat each of these prophecy variables as an index
   // want to generate lemmas over them
   for (auto elem : pr.prophecy_vars()) {
-    aae.add_index(orig_sorts.at(elem.first), elem.first);
+    aae.add_index(orig_types.at(elem.first), elem.first);
   }
 
   // set the new property
@@ -210,7 +210,7 @@ void IC3Array::debug_print_witness(Bmc &bmc,
                                    ArrayAxiomEnumerator &aae) {
   Unroller &u = bmc.get_unroller();
   ArrayAbstractor &abstractor = aae.get_abstractor();
-  TermTypeMap &orig_sorts = abstractor.orig_sorts();
+  TermTypeMap &orig_types = abstractor.orig_types();
   std::vector<TermList> witness;
   bmc.witness(witness);
   msat_model model = bmc.get_model();
@@ -246,7 +246,7 @@ void IC3Array::debug_print_witness(Bmc &bmc,
     msat_decl fun = elem.second;
 
     TermSet indices;
-    string typestr = msat_type_repr(orig_sorts.at(arr));
+    string typestr = msat_type_repr(orig_types.at(arr));
     for (auto i : aae.all_indices().at(typestr)) {
       for (size_t k = 0; k < witness.size(); ++k) {
         indices.insert(msat_model_eval(model, u.at_time(i, k)));
@@ -254,7 +254,7 @@ void IC3Array::debug_print_witness(Bmc &bmc,
     }
 
     for (auto w : abstractor.witnesses()) {
-      if (!msat_type_equals(orig_sorts.at(arr), orig_sorts.at(w.second))) {
+      if (!msat_type_equals(orig_types.at(arr), orig_types.at(w.second))) {
         continue;
       }
       for (size_t k = 0; k < witness.size(); ++k) {

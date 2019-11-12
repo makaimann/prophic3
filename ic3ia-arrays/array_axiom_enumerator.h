@@ -20,10 +20,10 @@ public:
     // convenient to store them grouped by current and all for 1-step and 2-step
     // lemmas
     std::string typestr;
-    TermTypeMap & orig_sorts = abstractor_.orig_sorts();
+    TermTypeMap & orig_types = abstractor_.orig_types();
     for (auto idx : abstractor_.indices()) {
       // TODO: what if the index is an input -- could happen
-      typestr = msat_type_repr(orig_sorts.at(idx));
+      typestr = msat_type_repr(orig_types.at(idx));
       curr_indices_[typestr].insert(ts.cur(idx));
       orig_indices_[typestr].insert(ts.cur(idx));
       all_indices_[typestr].insert(ts.cur(idx));
