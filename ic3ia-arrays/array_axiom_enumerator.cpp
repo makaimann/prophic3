@@ -368,8 +368,7 @@ void ArrayAxiomEnumerator::enumerate_store_equalities(
   {
     // TODO: Add next version of indices to orig_types in abstracter (not doing yet to avoid conflicts)
     // optimization: don't put in the trivial (i != i) case
-    if ((i != idx) &&
-        msat_type_equals(orig_types.at(arr0), orig_types.at(ts_.cur(i)))) {
+    if (i != idx) {
       args0[1] = i;
       args1[1] = i;
       msat_term antecedent =
