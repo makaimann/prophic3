@@ -171,15 +171,12 @@ msat_truth_value IC3Array::prove()
           {
             for (auto timed_axiom : axiom_vec[i])
             {
-              for (size_t k = 0; k <= reached_k; ++k)
-              {
-                //std::cout << "Checking timed axiom: " << msat_to_smtlib2_term(msat_env_, timed_axiom) << std::endl;
-                val = msat_model_eval(model, timed_axiom);
+              //std::cout << "Checking timed axiom: " << msat_to_smtlib2_term(msat_env_, timed_axiom) << std::endl;
+              val = msat_model_eval(model, timed_axiom);
 
-                if (val == f)
-                {
-                  violated_axioms.push_back(timed_axiom);
-                }
+              if (val == f)
+              {
+                violated_axioms.push_back(timed_axiom);
               }
             }
           }
