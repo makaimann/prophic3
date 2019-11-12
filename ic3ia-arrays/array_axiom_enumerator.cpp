@@ -146,18 +146,25 @@ ic3ia::TermSet ArrayAxiomEnumerator::const_array_axioms()
 
   ic3ia::TermSet axioms;
   ic3ia::TermMap & cache = abstractor_.cache();
+  TermDeclMap &read_ufs = abstractor_.read_ufs();
   ic3ia::TermSet & const_arrs = abstractor_.const_arrs();
   TermTypeMap & orig_types = abstractor_.orig_types();
 
   msat_type _type;
+  msat_term abs_ca;
+  msat_decl read;
   for (msat_term ca : const_arrs) {
     if (!msat_is_array_type(msat_env_, msat_term_get_type(ca), &_type, nullptr))
     {
       throw "Expecting an array type";
     }
+    abs_ca = cache.at(ca);
+    read = read_ufs.at(abs_ca);
     enumerate_const_array_equalities(
         axioms,
-        cache.at(ca),             // need to convert to abstracted array
+        read,
+        abs_ca,             // need to convert to abstracted array
+        _type,
         msat_term_get_arg(ca, 0), // the value
         curr_indices_.at(msat_type_repr(_type)));
   }
@@ -430,13 +437,12 @@ void ArrayAxiomEnumerator::enumerate_store_equalities(TermSet &axioms, msat_decl
 }
 
 void ArrayAxiomEnumerator::enumerate_const_array_equalities(TermSet & axioms,
+                                                            msat_decl read,
                                                             msat_term arr,
+                                                            msat_type _type,
                                                             msat_term val,
                                                             TermSet & indices)
 {
-  TermDeclMap &read_ufs = abstractor_.read_ufs();
-  msat_decl read = read_ufs.at(arr);
-
   // equals value at every index
   for (auto i : indices)
   {
@@ -447,7 +453,6 @@ void ArrayAxiomEnumerator::enumerate_const_array_equalities(TermSet & axioms,
 
   // add it for lambda too in the finite domain case
   // no special implication here, just assert that it also equals the value
-  msat_type _type = abstractor_.orig_types().at(arr);
   size_t width;
   if (msat_is_bv_type(msat_env_, _type, &width)) {
 
