@@ -63,6 +63,8 @@ msat_truth_value IC3Array::prove()
   std::cout << "Created " << pr.prophecy_vars().size();
   std::cout << " prophecy variables for the property" << std::endl;
 
+  bool found_untimed_axioms = false;
+  bool found_timed_axioms = false;
   unsigned int reached_k = 0;
 
   // TODO: Figure out how to handle False cases someday
@@ -151,19 +153,61 @@ msat_truth_value IC3Array::prove()
         }
       }
 
-      std::cout << "Found " << violated_axioms.size() << " violated axioms!"
+      found_untimed_axioms = violated_axioms.size();
+
+      std::cout << "Found " << violated_axioms.size() << " violated untime-able axioms!"
                 << std::endl;
 
-      if (!violated_axioms.size()) {
+      if (!found_untimed_axioms)
+      {
+        vector<vector<TermSet>> timed_axioms;
+        timed_axioms.push_back(aae.equality_axioms_all_indices(bmc.get_unroller(), reached_k));
+        timed_axioms.push_back(aae.store_axioms_all_indices(bmc.get_unroller(), reached_k));
+        timed_axioms.push_back(aae.const_array_axioms_all_indices(bmc.get_unroller(), reached_k));
+
+        for(auto axiom_vec : timed_axioms)
+        {
+          for (size_t i = 0; i < axiom_vec.size(); ++i)
+          {
+            for (auto timed_axiom : axiom_vec[i])
+            {
+              for (size_t k = 0; k <= reached_k; ++k)
+              {
+                //std::cout << "Checking timed axiom: " << msat_to_smtlib2_term(msat_env_, timed_axiom) << std::endl;
+                val = msat_model_eval(model, timed_axiom);
+
+                if (val == f)
+                {
+                  violated_axioms.push_back(timed_axiom);
+                }
+              }
+            }
+          }
+        }
+
+        found_timed_axioms = violated_axioms.size();
+      }
+
+      if (!found_untimed_axioms & !found_timed_axioms) {
         debug_print_witness(bmc, aae);
         // TODO: Use real exceptions
         std::cout << "It looks like there's a concrete counter-example (or some axioms are missing)" << std::endl;
         throw std::exception();
       }
+      else if (!found_untimed_axioms) {
+        std::cout << "Found " << violated_axioms.size() << " violated TIMED axioms!" << std::endl;
+      }
 
       bmc.add_assumptions(violated_axioms);
       broken = !bmc.check_until(reached_k);
       violated_axioms.clear();
+    }
+
+    // haven't implemented history variables yet
+    if (found_timed_axioms)
+    {
+      std::cout << "Haven't implemented history variables yet -- will fail for now." << std::endl;
+      throw std::exception();
     }
 
     std::cout << "Adding " << axioms_to_add.size() << " axioms to trans."
