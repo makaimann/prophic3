@@ -174,12 +174,15 @@ ic3ia::TermSet ArrayAxiomEnumerator::store_axioms()
   ic3ia::TermSet axioms;
   ic3ia::TermMap & cache = abstractor_.cache();
   ic3ia::TermSet & stores = abstractor_.stores();
+  TermDeclMap &read_ufs = abstractor_.read_ufs();
   TermTypeMap & orig_types = abstractor_.orig_types();
   msat_term arr0;
   msat_term store;
   msat_term arr1;
   msat_term idx;
   msat_term val;
+  msat_decl read0;
+  msat_decl read1;
   for (auto e : stores)
   {
     arr0 = msat_term_get_arg(e, 0);
@@ -200,11 +203,18 @@ ic3ia::TermSet ArrayAxiomEnumerator::store_axioms()
       throw "Expecting array type";
     }
 
-    enumerate_store_equalities(
-        axioms,
-        // convert to abstract arrays
-        cache.at(arr0), cache.at(arr1), idx_to_int(msat_env_, cache.at(idx)),
-        cache.at(val), all_indices_.at(msat_type_repr(_type)), get_finite_domain_lambda(cache.at(arr0)));
+    // abstract arrays
+    arr0 = cache.at(arr0);
+    arr1 = cache.at(arr1);
+    read0 = read_ufs.at(arr0);
+    read1 = read_ufs.at(arr1);
+    // convert to abstract arrays with cache
+    enumerate_store_equalities( axioms, read0, arr0,
+                                read1, arr1, _type,
+                                idx_to_int(msat_env_, cache.at(idx)),
+                                cache.at(val),
+                                all_indices_.at(msat_type_repr(_type)),
+                                get_finite_domain_lambda(arr0));
   }
   return axioms;
 }
@@ -290,11 +300,15 @@ TermSet ArrayAxiomEnumerator::store_axioms_all_indices(Unroller &un,
 
   ic3ia::TermMap &cache = abstractor_.cache();
   ic3ia::TermSet &stores = abstractor_.stores();
+  TermDeclMap &read_ufs = abstractor_.read_ufs();
+
   msat_term arr0;
   msat_term store;
   msat_term arr1;
   msat_term idx;
   msat_term val;
+  msat_decl read0;
+  msat_decl read1;
 
   for (auto e : stores) {
     arr0 = msat_term_get_arg(e, 0);
@@ -309,11 +323,22 @@ TermSet ArrayAxiomEnumerator::store_axioms_all_indices(Unroller &un,
     idx = msat_term_get_arg(store, 1);
     val = msat_term_get_arg(store, 2);
 
-    msat_type _type = msat_term_get_type(arr0);
+    msat_type _type;
+    if (!msat_is_array_type(msat_env_, msat_term_get_type(arr0), &_type, nullptr))
+    {
+      throw "Expecting an array type";
+    }
     string typestr = msat_type_repr(_type);
+
+    // abstract arrays
+    arr0 = cache.at(arr0);
+    arr1 = cache.at(arr1);
+    read0 = read_ufs.at(arr0);
+    read1 = read_ufs.at(arr1);
+
     for (int32_t i = 0; i < k; i++) {
-      msat_term arr0_i = un.at_time(cache.at(arr0), i);
-      msat_term arr1_i = un.at_time(cache.at(arr1), i);
+      msat_term arr0_i = un.at_time(arr0, i);
+      msat_term arr1_i = un.at_time(arr1, i);
       msat_term idx_i = un.at_time(idx_to_int(msat_env_, cache.at(idx)), i);
       msat_term val_i = un.at_time(cache.at(val), i);
 
@@ -331,8 +356,11 @@ TermSet ArrayAxiomEnumerator::store_axioms_all_indices(Unroller &un,
           lambda_j = un.at_time(lambda_j, j);
         }
 
-        enumerate_store_equalities(axioms, arr0_i, arr1_i, idx_i, val_i,
-                                   timed_indices[j].at(typestr), lambda_j);
+        enumerate_store_equalities(axioms, read0, arr0_i,
+                                   read1, arr1_i, _type,
+                                   idx_i, val_i,
+                                   timed_indices[j].at(typestr),
+                                   lambda_j);
       }
     }
   }
@@ -348,14 +376,10 @@ void ArrayAxiomEnumerator::add_index(msat_type _type, msat_term i) {
 }
 
 // protected helper functions
-void ArrayAxiomEnumerator::enumerate_store_equalities(
-    TermSet &axioms, msat_term arr0, msat_term arr1, msat_term idx,
-    msat_term val, TermSet &indices, msat_term lambda) {
-  TermDeclMap &read_ufs = abstractor_.read_ufs();
-  TermTypeMap &orig_types = abstractor_.orig_types();
-  msat_decl read0 = read_ufs.at(arr0);
-  msat_decl read1 = read_ufs.at(arr1);
-
+void ArrayAxiomEnumerator::enumerate_store_equalities(TermSet &axioms, msat_decl read0, msat_term arr0,
+                                                      msat_decl read1, msat_term arr1, msat_type _type,
+                                                      msat_term idx, msat_term val, TermSet &indices,
+                                                      msat_term lambda) {
   msat_term args0[2] = {arr0, idx};
   msat_term args1[2] = {arr1, idx};
 
@@ -381,8 +405,6 @@ void ArrayAxiomEnumerator::enumerate_store_equalities(
   }
 
   // special case for finite-domain lambdas
-  msat_type _type = orig_types.at(arr0);
-
   if (!MSAT_ERROR_TERM(lambda)) {
     size_t width;
     if (!msat_is_bv_type(msat_env_, _type, &width)) {
