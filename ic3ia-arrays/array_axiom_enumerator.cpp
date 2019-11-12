@@ -287,9 +287,8 @@ vector<TermSet> ArrayAxiomEnumerator::equality_axioms_all_indices(Unroller &un,
 }
 
 vector<TermSet> ArrayAxiomEnumerator::store_axioms_all_indices(Unroller &un,
-                                                       int32_t k) {
+                                                               int32_t k) {
   vector<TermSet> axioms;
-
   TermTypeMap &orig_types = abstractor_.orig_types();
 
   // create all the timed indices and lambdas
@@ -370,6 +369,75 @@ vector<TermSet> ArrayAxiomEnumerator::store_axioms_all_indices(Unroller &un,
                                    idx_i, val_i,
                                    timed_indices[j].at(typestr),
                                    lambda_j);
+      }
+    }
+  }
+  return axioms;
+}
+
+vector<TermSet> ArrayAxiomEnumerator::const_array_axioms_all_indices(Unroller &un,
+                                                                     int32_t k)
+{
+  vector<TermSet> axioms;
+  TermTypeMap &orig_types = abstractor_.orig_types();
+
+  // create all the timed indices and lambdas
+  std::vector<unordered_map<string, TermSet>> timed_indices;
+  timed_indices.reserve(k);
+  for (int j = 0; j < k; j++) {
+    timed_indices.push_back(unordered_map<string, TermSet>());
+    axioms.push_back(TermSet());
+    for (auto elem : orig_indices_) {
+      string typestr = elem.first;
+      for (auto i : elem.second)
+      {
+        timed_indices[j][typestr].insert(un.at_time(i, j));
+      }
+    }
+  }
+
+  ic3ia::TermMap &cache = abstractor_.cache();
+  ic3ia::TermSet &const_arrs = abstractor_.const_arrs();
+  TermDeclMap &read_ufs = abstractor_.read_ufs();
+
+  msat_type _type;
+  string typestr;
+  msat_term abs_ca;
+  msat_term val;
+  msat_decl read;
+
+  for (msat_term ca : const_arrs)
+  {
+    if (!msat_is_array_type(msat_env_, msat_term_get_type(ca), &_type, nullptr))
+    {
+      throw "Expected array type";
+    }
+    typestr = msat_type_repr(_type);
+    abs_ca = cache.at(ca);
+    // value doesn't need to be timed -- should be a constant
+    val = msat_term_get_arg(ca, 0);
+    read = read_ufs.at(abs_ca);
+
+    for (int32_t i = 0; i < k; i++)
+    {
+      msat_term abs_ca_i = un.at_time(abs_ca, i);
+
+      for (int32_t j = 0; j < k; j++)
+      {
+        if (abs(i - j) <= 1) {
+          // This is an optimization
+          // All single-step axioms should have already been checked
+          continue;
+        }
+
+        // TODO: If this is too expensive, cache by e beforehand
+        msat_term lambda_j = get_finite_domain_lambda(abs_ca);
+        if (!MSAT_ERROR_TERM(lambda_j)) {
+          lambda_j = un.at_time(lambda_j, j);
+        }
+
+        enumerate_const_array_axioms(axioms[j], read, abs_ca_i,
+                                     _type, val, timed_indices[j].at(typestr));
       }
     }
   }
