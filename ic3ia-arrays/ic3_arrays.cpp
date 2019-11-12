@@ -32,10 +32,13 @@ msat_truth_value IC3Array::prove()
                      aa.indices(),
                      aa.witnesses());
 
+  TermSet proph_vars;
+
   // create state variables for prophecy vars and ass as indices
   TermTypeMap &orig_sorts = aa.orig_sorts();
   for (auto elem : pr.prophecy_vars()) {
     msat_term proph = elem.first;
+    proph_vars.insert(proph);
     msat_decl proph_declN = msat_declare_function(
         msat_env_, (std::string(msat_term_repr(proph)) + "N").c_str(),
         msat_term_get_type(proph));
@@ -70,7 +73,7 @@ msat_truth_value IC3Array::prove()
     // NOTE: It is very IMPORTANT that ic3 is instantiated here
     //       at one point, I had it instantiated outside of the loop
     //       then it always returned true the second time prove was called...
-    IC3 ic3(abs_ts_, opts_);
+    IC3 ic3(abs_ts_, opts_, l2s_);
     res = ic3.prove();
 
     if (res == MSAT_TRUE) {
@@ -97,8 +100,7 @@ msat_truth_value IC3Array::prove()
     assert((res != MSAT_FALSE) || broken);
 
     // TODO: filter axioms with unsat core
-    TermSet init_axioms_to_add;
-    TermSet trans_axioms_to_add;
+    TermSet axioms_to_add;
 
     while (broken) {
       msat_model model = bmc.get_model();
@@ -143,12 +145,7 @@ msat_truth_value IC3Array::prove()
               // std::cout << msat_to_smtlib2_term(msat_env_, timed_axiom) <<
               // std::endl;
               violated_axioms.push_back(timed_axiom);
-              if (i == 0) {
-                // TODO: handle this in a cleaner way (maybe use enums)
-                init_axioms_to_add.insert(ax);
-              } else {
-                trans_axioms_to_add.insert(ax);
-              }
+              axioms_to_add.insert(ax);
             }
           }
         }
@@ -169,28 +166,33 @@ msat_truth_value IC3Array::prove()
       violated_axioms.clear();
     }
 
-    std::cout << "Adding " << init_axioms_to_add.size() << " axioms to init."
+    std::cout << "Adding " << axioms_to_add.size() << " axioms to trans."
               << std::endl;
-    for (auto ax : init_axioms_to_add) {
-      abs_ts_.add_init(ax);
-    }
-    init_axioms_to_add.clear();
-
-    std::cout << "Adding " << trans_axioms_to_add.size() << " axioms to trans."
-              << std::endl;
-    for (auto ax : trans_axioms_to_add) {
+    size_t cnt = 0;
+    for (auto ax : axioms_to_add) {
       abs_ts_.add_trans(ax);
-      if (abs_ts_.only_cur(ax)) {
-        abs_ts_.add_trans(abs_ts_.next(ax));
 
-        // TODO: figure out if this makes sense
-        //       all the init axioms should take care of k=0 counterexamples
-        //       but if we remove this line, it fails to find an interpolant
-        //       for hard-array.vmt and hard-array-false.vmt
-        abs_ts_.add_init(ax);
+      // if there's no next-state variables, add next version to trans
+      if (!abs_ts_.contains_next(ax)) {
+        abs_ts_.add_trans(abs_ts_.next(ax));
       }
+
+      // add to init if there's only current variables (no inputs or next)
+      // + a couple other conditions
+      // TODO: Understand this better
+      //       Not even sure if this is right or why we need it
+      //       but without it, it fails to find an interpolant
+      //       for hard-array.vmt and hard-array-false.vmt
+      if (abs_ts_.only_cur(ax) && (reached_k == 1 || contains_vars(ax, proph_vars))) {
+        // only add axioms to init if the counterexample is length 1
+        // or it involves prophecy variables
+        abs_ts_.add_init(ax);
+        cnt++;
+      }
+
     }
-    trans_axioms_to_add.clear();
+    std::cout << "Added " << cnt << " axioms to init." << std::endl;
+    axioms_to_add.clear();
 
     // increment reached_k
     reached_k++;
@@ -285,5 +287,35 @@ void IC3Array::debug_print_witness(Bmc &bmc,
       std::cout << i << ": " << msat_to_smtlib2_term(msat_env_, a) << std::endl;
     }
   }
+}
+
+bool IC3Array::contains_vars(msat_term term, const TermSet &vars) const {
+  struct Data {
+    bool contains_var;
+    const TermSet &vars;
+    Data(const TermSet &v) : contains_var(false), vars(v){};
+  };
+
+  auto visit = [](msat_env e, msat_term t, int preorder,
+                  void *data) -> msat_visit_status {
+    Data *d = static_cast<Data *>(data);
+    // a variable is a term with no children and no built-in
+    // interpretation
+    if (preorder && msat_term_arity(t) == 0 &&
+        msat_decl_get_tag(e, msat_term_get_decl(t)) == MSAT_TAG_UNKNOWN &&
+        !msat_term_is_number(e, t)) {
+
+      // check if it's in the var set
+      if (d->vars.find(t) != d->vars.end()) {
+        d->contains_var = true;
+        return MSAT_VISIT_ABORT;
+      }
+    }
+    return MSAT_VISIT_PROCESS;
+  };
+
+  Data data(vars);
+  msat_visit_term(msat_env_, term, visit, &data);
+  return data.contains_var;
 }
 }

@@ -3,6 +3,10 @@
 #include "mathsat.h"
 #include "utils.h"
 
+#include "bmc.h"
+#include "ic3.h"
+#include "ltl.h"
+
 #include "array_abstractor.h"
 #include "array_flattener.h"
 #include "array_axiom_enumerator.h"
@@ -23,9 +27,12 @@ int main(int argc, const char **argv)
   msat_destroy_config(cfg);
 
   TransitionSystem ts(env);
+  TransitionSystem product(env);
+  LTLEncoder ltl(opts, env);
+  TransitionSystem tableau(env);
   TermList preds;
 
-  if (!read_ts(opts, ts, preds)) {
+  if (!read_ts(opts, ts, ltl, tableau, product, preds)) {
     std::cout << "ERROR reading input" << std::endl;
     return 1;
   }
@@ -35,11 +42,13 @@ int main(int argc, const char **argv)
               << endlog;
   }
 
+  LiveEncoder liveenc(product, opts);
+
   // ArrayFlattener af(ts);
   // TransitionSystem abs_ts = af.flatten_transition_system();
   // ArrayAbstractor aa(abs_ts);
   // abs_ts = aa.abstract_transition_system();
-  IC3Array ic3ia_array(ts, opts, 0);
+  IC3Array ic3ia_array(product, opts, liveenc, 0);
 
   // TODO: finish implementing prove and uncomment this
   msat_truth_value res = ic3ia_array.prove();

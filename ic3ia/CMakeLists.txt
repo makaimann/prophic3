@@ -26,8 +26,10 @@ set(SRCS
     solver.cpp
     ts.cpp
     unroll.cpp
-    ltl.cpp
+    live.cpp
     bmc.cpp
+    ltl.cpp
+    proof.cpp
     )
 
 include_directories(. ${MSAT_INCLUDE_DIR})
@@ -35,3 +37,8 @@ include_directories(. ${MSAT_INCLUDE_DIR})
 add_definitions(-std=c++11)
 add_executable(ic3ia ${SRCS})
 target_link_libraries(ic3ia ${mathsat} ${gmp} ${gmpxx})
+
+add_custom_target(proofchecker ALL
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PROJECT_SOURCE_DIR}/proofchecker.py" proofchecker.py
+    WORKING_DIRECTORY "${PROJECT_BINARY_DIR}"
+    )

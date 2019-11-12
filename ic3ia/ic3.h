@@ -22,14 +22,13 @@
 
 #pragma once
 
-#include "prover.h"
-#include "ts.h"
 #include "ia.h"
+#include "live.h"
+#include "prover.h"
 #include "solver.h"
-#include "ltl.h"
+#include "ts.h"
 #include <queue>
 #include <random>
-
 
 namespace ic3ia {
 
@@ -46,23 +45,23 @@ namespace ic3ia {
  */
 class IC3: public Prover {
 public:
-    IC3(TransitionSystem &ts, const Options &opts);
-    
-    void set_initial_predicates(const TermList &preds);
-    ///< sets the intial set of predicates to use for implicit abstraction
-    
-    msat_truth_value prove();
-    ///< main method: check whether the property holds or not
-    
-    int witness(std::vector<TermList> &out);
-    ///< compute a witness for the property: a counterexample trace if the
-    ///< property is false (where each element of the vector is an assignment
-    ///< to state and input vars), or an inductive invariant if the property
-    ///< holds (in this case, each element of the vector is a clause that is
-    ///< part of the invariant)
+  IC3(TransitionSystem &ts, const Options &opts, LiveEncoder &l2s);
 
-    void print_stats() const;
-    ///< print search statistics on stdout
+  void set_initial_predicates(const TermList &preds);
+  ///< sets the intial set of predicates to use for implicit abstraction
+
+  msat_truth_value prove();
+  ///< main method: check whether the property holds or not
+
+  int witness(std::vector<TermList> &out);
+  ///< compute a witness for the property: a counterexample trace if the
+  ///< property is false (where each element of the vector is an assignment
+  ///< to state and input vars), or an inductive invariant if the property
+  ///< holds (in this case, each element of the vector is a clause that is
+  ///< part of the invariant)
+
+  void print_stats() const;
+  ///< print search statistics on stdout
     
 private:
     //------------------------------------------------------------------------
@@ -203,11 +202,13 @@ private:
     
     Cube get_next(const Cube &c);
     ///< return the cube c'
-    
-    void get_cube_from_model(Cube &out);
+
+    void get_cube_from_model(Cube &out, Cube *inputs = nullptr);
     ///< extract a cube from the satisfying assignment found by the SMT solver
     ///< for the last solve() call
-    
+
+    void generalize_pre(const Cube &target, const Cube &inputs, Cube &out);
+
     bool subsumes(const Cube &a, const Cube &b);
     ///< checks whether a subsumes b
     
@@ -349,8 +350,10 @@ private:
     ///< generalize()
     
     uint32_t last_reset_calls_; ///< number of SMT queries since last reset
+    bool try_gen_pre_; ///< true if we should try to generalize predecessors
+                       ///< (see generalize_pre)
 
-    LiveEncoder l2s_; ///< liveness to safety encoder for liveness properties
+    LiveEncoder &l2s_; ///< liveness to safety encoder for liveness properties
     LiveRefiner liveref_; ///< refiner for liveness properties
     RankRelList rankrels_; ///< list of ranking relations used in the encoding
     TermSet livepreds_; ///< set of predicates for the abstract L2S
@@ -365,6 +368,7 @@ private:
     uint32_t num_added_cubes_;
     uint32_t num_subsumed_cubes_;
     uint32_t num_block_;
+    uint32_t num_generalize_pre_;
     uint32_t num_refinements_;
     uint32_t num_predicates_;
     uint32_t max_cube_size_;
@@ -377,11 +381,12 @@ private:
     double solve_unsat_time_;
     double block_time_;
     double generalize_and_push_time_;
+    double generalize_pre_time_;
     double rec_block_time_;
     double propagate_time_;
     double refinement_time_;
     double liveness_refinement_time_;
-    double total_time_;
+    double prove_time_;
 };
 
 } // namespace ic3ia

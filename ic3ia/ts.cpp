@@ -31,52 +31,39 @@ TransitionSystem::TransitionSystem(msat_env env):
     reset();
 }
 
+bool TransitionSystem::initialize(const TermMap &statevars, msat_term init,
+                                  msat_term trans, msat_term prop,
+                                  bool live_prop) {
+  reset();
 
-void TransitionSystem::initialize(
-    const TermMap &statevars,
-    msat_term init, msat_term trans, msat_term prop, bool live_prop)
-{
-    reset();
-    
-    for (auto p : statevars) {
-        statevars_.push_back(p.first);
-    }
-    std::sort(statevars_.begin(), statevars_.end());
+  if (MSAT_ERROR_TERM(init) || MSAT_ERROR_TERM(trans) ||
+      MSAT_ERROR_TERM(prop)) {
+    return false;
+  }
 
-    for (auto s : statevars_) {
-        msat_term n = statevars.find(s)->second;
-        nextstatevars_.push_back(n);
-        cur2next_[s] = n;
-        next2cur_[n] = s;
-        statevars_set_.insert(s);
-        nextstatevars_set_.insert(n);
-    }
+  for (auto p : statevars) {
+    statevars_.push_back(p.first);
+  }
+  std::sort(statevars_.begin(), statevars_.end());
 
-    init_ = init;
-    trans_ = trans;
-    prop_ = prop;
-    live_prop_ = live_prop;
+  for (auto s : statevars_) {
+    msat_term n = statevars.find(s)->second;
+    nextstatevars_.push_back(n);
+    cur2next_[s] = n;
+    next2cur_[n] = s;
+    statevars_set_.insert(s);
+    nextstatevars_set_.insert(n);
+  }
 
-    collect_inputs();
+  init_ = init;
+  trans_ = trans;
+  live_prop_ = live_prop;
+  prop_ = prop;
 
-    if (live_prop) {
-        if (!(msat_term_is_not(env_, prop_) &&
-              msat_term_is_boolean_constant(env_,
-                                            msat_term_get_arg(prop_, 0)))) {
-            VarProvider vp(env_);
-            msat_term fair = vp.fresh_var("fair");
-            msat_term fair1 = vp.fresh_var("fair.next");
-            add_statevar(fair, fair1);
-            msat_term initc =
-                msat_make_iff(env_, msat_make_not(env_, fair), prop_);
-            init_ = msat_make_and(env_, init_, initc);
-            trans_ = msat_make_and(env_, trans_,
-                                   msat_make_and(env_, initc, next(initc)));
-            prop_ = msat_make_not(env_, fair);
-        }
-    }
+  collect_inputs();
+
+  return true;
 }
-
 
 void TransitionSystem::reset()
 {
@@ -90,6 +77,10 @@ void TransitionSystem::reset()
     
     cur2next_.clear();
     next2cur_.clear();
+
+    MSAT_MAKE_ERROR_TERM(init_);
+    MSAT_MAKE_ERROR_TERM(trans_);
+    MSAT_MAKE_ERROR_TERM(prop_);
 }
 
 
@@ -176,6 +167,45 @@ void TransitionSystem::add_trans(msat_term t)
     trans_ = msat_make_and(env_, trans_, t);
 }
 
+void TransitionSystem::to_vmt(std::ostream &out) const {
+  std::vector<const char *> annots;
+  std::vector<std::string> annotstr;
+  TermList terms;
+
+  for (auto v : statevars_) {
+    terms.push_back(v);
+    annotstr.push_back("next");
+    char *s = msat_term_repr(next(v));
+    annotstr.push_back(std::string("|") + s + "|");
+    msat_free(s);
+  }
+
+  terms.push_back(init_);
+  annotstr.push_back("init");
+  annotstr.push_back("true");
+
+  terms.push_back(trans_);
+  annotstr.push_back("trans");
+  annotstr.push_back("true");
+
+  terms.push_back(prop());
+  if (live_prop_) {
+    annotstr.push_back("live-property");
+  } else {
+    annotstr.push_back("invar-property");
+  }
+  annotstr.push_back("0");
+
+  for (size_t i = 0; i < annotstr.size(); ++i) {
+    annots.push_back(annotstr[i].c_str());
+  }
+
+  char *s =
+      msat_annotated_list_to_smtlib2(env_, terms.size(), &terms[0], &annots[0]);
+  out << s;
+  msat_free(s);
+}
+
 // added by Makai
 bool TransitionSystem::only_cur(msat_term t) const {
   struct Data {
@@ -188,15 +218,12 @@ bool TransitionSystem::only_cur(msat_term t) const {
     Data *d = static_cast<Data *>(data);
     // a variable is a term with no children and no built-in
     // interpretation
-    if (preorder &&
-        msat_term_arity(t) == 0 &&
-        msat_decl_get_tag(
-                          e, msat_term_get_decl(t)) == MSAT_TAG_UNKNOWN &&
+    if (preorder && msat_term_arity(t) == 0 &&
+        msat_decl_get_tag(e, msat_term_get_decl(t)) == MSAT_TAG_UNKNOWN &&
         !msat_term_is_number(e, t)) {
 
       // check if it's not a current variable
-      if (d->curvars.find(t) == d->curvars.end())
-      {
+      if (d->curvars.find(t) == d->curvars.end()) {
         d->only_cur = false;
         return MSAT_VISIT_ABORT;
       }
@@ -207,6 +234,36 @@ bool TransitionSystem::only_cur(msat_term t) const {
   Data data(statevars_set_);
   msat_visit_term(env_, t, visit, &data);
   return data.only_cur;
+}
+
+// added by Makai
+bool TransitionSystem::contains_next(msat_term t) const {
+  struct Data {
+    bool has_next;
+    const TermSet &nextvars;
+    Data(const TermSet &nv) : has_next(false), nextvars(nv){};
+  };
+  auto visit = [](msat_env e, msat_term t, int preorder,
+                  void *data) -> msat_visit_status {
+                 Data *d = static_cast<Data *>(data);
+                 // a variable is a term with no children and no built-in
+                 // interpretation
+                 if (preorder && msat_term_arity(t) == 0 &&
+                     msat_decl_get_tag(e, msat_term_get_decl(t)) == MSAT_TAG_UNKNOWN &&
+                     !msat_term_is_number(e, t)) {
+
+                   // check if it contains a next variable
+                   if (d->nextvars.find(t) != d->nextvars.end()) {
+                     d->has_next = true;
+                     return MSAT_VISIT_ABORT;
+                   }
+                 }
+                 return MSAT_VISIT_PROCESS;
+               };
+
+  Data data(nextstatevars_set_);
+  msat_visit_term(env_, t, visit, &data);
+  return data.has_next;
 }
 
 } // namespace ic3ia

@@ -118,71 +118,65 @@ Refiner::~Refiner()
     }
 }
 
+bool Refiner::refine(const std::vector<TermList> &cex) {
+  // reset the interpolating solver
+  msat_reset_env(solver_);
+  preds_.clear();
+  groups_.clear();
 
-bool Refiner::refine(const std::vector<TermList> &cex, bool all_preds)
-{
-    // reset the interpolating solver
-    msat_reset_env(solver_);
-    preds_.clear();
-    groups_.clear();
+  // create the interpolation groups
+  for (size_t k = groups_.size(); k < cex.size(); ++k) {
+    groups_.push_back(msat_create_itp_group(solver_));
+  }
 
-    // create the interpolation groups
-    for (size_t k = groups_.size(); k < cex.size(); ++k) {
-        groups_.push_back(msat_create_itp_group(solver_));
+  logger(3) << "entering abstraction refinement" << endlog;
+
+  // generate the BMC problem for the input abstract counterexample trace,
+  // putting each step in a different interpolation group
+  for (size_t k = 0; k < cex.size(); ++k) {
+    msat_set_itp_group(solver_, groups_[k]);
+    msat_term s = make_and(solver_, cex[k]);
+    msat_assert_formula(solver_, un_.at_time(s, k));
+    if (k != cex.size() - 1) {
+      msat_assert_formula(solver_, un_.at_time(ts_.trans(), k));
     }
+    logger(3) << "abstract state " << k << ": " << logterm(solver_, s)
+              << endlog;
+  }
+  // check whether the counterexample is concrete
+  msat_result res = msat_solve(solver_);
 
-    logger(3) << "entering abstraction refinement" << endlog;
-
-    // generate the BMC problem for the input abstract counterexample trace,
-    // putting each step in a different interpolation group
-    for (size_t k = 0; k < cex.size(); ++k) {
-        msat_set_itp_group(solver_, groups_[k]);
-        msat_term s = make_and(solver_, cex[k]);
-        msat_assert_formula(solver_, un_.at_time(s, k));
-        if (k != cex.size()-1) {
-            msat_assert_formula(solver_, un_.at_time(ts_.trans(), k));
-        }
-        logger(3) << "abstract state " << k << ": " << logterm(solver_, s)
-                  << endlog;
+  if (res == MSAT_UNSAT) {
+    logger(3) << "counterexample is spurious, extracting interpolants"
+              << endlog;
+    // compute a sequence interpolant for the spurious cex trace, and
+    // extract the atomic predicates occurring in each element of the
+    // sequence (after proper untiming -- see Unroller::untime())
+    extract_predicates(solver_);
+    if (minpreds_) {
+      minimize_predicates(cex);
     }
-    // check whether the counterexample is concrete
-    msat_result res = msat_solve(solver_);    
+  } else {
+    logger(3) << "counterexample is real" << endlog;
+  }
 
-    if (res == MSAT_UNSAT) {
-        logger(3) << "counterexample is spurious, extracting interpolants"
-                  << endlog;
-        // compute a sequence interpolant for the spurious cex trace, and
-        // extract the atomic predicates occurring in each element of the
-        // sequence (after proper untiming -- see Unroller::untime())
-        extract_predicates(solver_, all_preds);
-        if (minpreds_ && !all_preds) {
-            minimize_predicates(cex);
-        }
-    } else {
-        logger(3) << "counterexample is real" << endlog;
-    }
-
-    return (res == MSAT_UNSAT);
+  return (res == MSAT_UNSAT);
 }
 
+void Refiner::extract_predicates(msat_env env) {
+  preds_.clear();
 
-void Refiner::extract_predicates(msat_env env, bool include_bool_vars)
-{
-    preds_.clear();
-
-    for (size_t i = 1; i < groups_.size(); ++i) {
-        msat_term t = msat_get_interpolant(env, &groups_[0], i);
-        if (MSAT_ERROR_TERM(t))
-        {
-          std::cout << "Failed to get interpolant" << std::endl;
-          throw std::exception();
-        }
-        logger(3) << "got interpolant " << i << ": " << logterm(env, t)
-                  << endlog;
-        get_predicates(env, un_.untime(t), preds_, include_bool_vars);
+  for (size_t i = 1; i < groups_.size(); ++i) {
+    msat_term t = msat_get_interpolant(env, &groups_[0], i);
+    logger(3) << "got interpolant " << i << ": " << logterm(env, t) << endlog;
+    if (MSAT_ERROR_TERM(t))
+    {
+      std::cout << "Failed to get interpolant." << std::endl;
+      throw std::exception();
     }
+    get_predicates(env, un_.untime(t), preds_);
+  }
 }
-
 
 bool Refiner::counterexample(std::vector<TermList> &cex)
 {
@@ -325,6 +319,18 @@ bool PredRefMinimizer::operator()(msat_term trans,
             if (core.find(l) != core.end()) {
                 newpreds.insert(p);
             }
+        }
+        if (newpreds.empty()) {
+          // do not perform any minimization in this case. This can happen
+          // when the model has uninterpreted functions: in this case, the
+          // trace might be spurious because the various abstract states
+          // force incompatible interpretations of the UFs. Since predicate
+          // minimization is based on unrolling, in this case the solver
+          // will find unsat without needing any predicate. But since the
+          // IC3 core is *not* based on unrolling, it will need the
+          // predicate. Therefore, in this case we simply bail out and
+          // consider all predicates as relevant
+          newpreds.insert(curpreds.begin(), curpreds.end());
         }
         return true;
     } else {

@@ -87,6 +87,7 @@
     The only catch here is if the counter-example is length 1 (no TRANS)
     Then, you have to add it to INIT as well
 ** IC3IA sometimes fails to compute a new interpolant (even without any arrays)
+*** Can happen for integers
 ** Optimizations
 *** Pruning lemmas
 *** Inputs vs state
@@ -95,6 +96,8 @@
 **** Probably not good for performance
 **** I think this happens for const-arrays -- e.g. the CONSTARRAY gets a fresh symbol, when we could just add axioms over the array it's equal to
 **** The current approach is more general, but maybe we should follow it up with a top-level propagator that's also aware of the axioms to be generated
+*** Possibly speed things up with additional equality lemmas
+**** e.g. eq(arr0, arr1) -> arr0 = arr1 (or maybe we should just use = to begin with. Why bother with the UF?)
 * Identifying Broken Array Axioms
 ** Have Array tracker for every array in the system
 ** Need to examine a bmc trace and find missing axioms

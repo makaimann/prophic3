@@ -25,7 +25,6 @@ void ArrayFlattener::do_flattening()
 
     // first do init and property
     msat_term new_init = flatten(orig_ts_.init());
-    msat_term new_trans = flatten(orig_ts_.trans());
     msat_term new_prop = flatten(orig_ts_.prop());
 
     // create state vars for new variables appearing in init and prop
@@ -37,28 +36,35 @@ void ArrayFlattener::do_flattening()
                                 msat_term_get_type(elem.first));
         msat_term vn = msat_make_constant(msat_env_, vn_decl);
         new_state_vars[elem.first] = vn;
+
+	msat_term arr_eq = msat_make_equal(msat_env_, elem.first, new_vars_.at(elem.first));
+	new_init = msat_make_and(msat_env_, new_init, arr_eq);
     }
 
-    // current to next
-    auto subst = [=](msat_term v) -> msat_term { return new_state_vars.at(v); };
-    TermMap next_cache;
+    msat_term new_trans = flatten(orig_ts_.trans());
+
+    //TODO: liveness prop handling
+    flatten_ts_.initialize(new_state_vars, new_init, new_trans, new_prop,
+                           orig_ts_.live_prop());
+
+    // create set of next state variables -- faster look up for contains_next
+    TermSet nextvars;
+    for (auto nv : flatten_ts_.nextstatevars())
+    {
+      nextvars.insert(nv);
+    }
 
     for (auto elem : new_vars_) {
       msat_term arr_eq = msat_make_equal(msat_env_, elem.first, new_vars_.at(elem.first));
-      new_init = msat_make_and(msat_env_, new_init, arr_eq);
-      new_trans = msat_make_and(msat_env_, new_trans, arr_eq);
+      flatten_ts_.add_trans(arr_eq);
 
       // add next-state version of invariants (only involves current vars)
-      if (only_cur(arr_eq, new_state_vars)) {
-        msat_term arr_eq_n =
-	        apply_substitution(msat_env_, arr_eq, next_cache, subst);
+      if (!contains_next(arr_eq, nextvars)) {
+        msat_term arr_eq_n = flatten_ts_.next(arr_eq);
         new_trans = msat_make_and(msat_env_, new_trans, arr_eq_n);
       }
     }
 
-    //TODO: liveness prop handling
-    flatten_ts_.initialize(new_state_vars, new_init, new_trans, new_prop,
-			   orig_ts_.live_prop());
 }
 
 msat_term ArrayFlattener::flatten(const msat_term t) {
@@ -126,16 +132,17 @@ msat_term ArrayFlattener::flatten(const msat_term t) {
   return cache_[t];
 }
 
-bool ArrayFlattener::only_cur(const msat_term term, TermMap &state_vars) {
+bool ArrayFlattener::contains_next(const msat_term term, TermSet &next_vars) {
   // TODO: need to use new state variables for checking
   //       maybe easier to build the new transition system first
 
   struct Data {
-    bool *justcur;
-    TermMap &state_vars;
-    Data(bool *j, TermMap &sv) : justcur(j), state_vars(sv) {}
+    bool *has_next;
+    TermSet &next_vars;
+    Data(bool *h, TermSet &nv) : has_next(h), next_vars(nv) {}
   };
-  bool justcur = true;
+
+  bool has_next = false;
 
   auto visit = [](msat_env e, msat_term t, int preorder,
                   void *data) -> msat_visit_status {
@@ -147,10 +154,8 @@ bool ArrayFlattener::only_cur(const msat_term term, TermMap &state_vars) {
 
     msat_decl decl = msat_term_get_decl(t);
     if (!MSAT_ERROR_DECL(decl)) {
-      // TODO: if it's a next-variable or an input, change justcur to false and
-      // break
-      if (d->state_vars.find(t) == d->state_vars.end()) {
-        *d->justcur = false;
+      if (d->next_vars.find(t) != d->next_vars.end()) {
+        *d->has_next = true;
         return MSAT_VISIT_ABORT;
       }
     }
@@ -158,9 +163,9 @@ bool ArrayFlattener::only_cur(const msat_term term, TermMap &state_vars) {
     return MSAT_VISIT_PROCESS;
   };
 
-  Data data(&justcur, state_vars);
+  Data data(&has_next, next_vars);
   msat_visit_term(msat_env_, term, visit, &data);
-  return *data.justcur;
+  return *data.has_next;
 }
 
 } // namespace ic3ia_array
