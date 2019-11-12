@@ -130,7 +130,8 @@ private:
    * Important Note: lambda argument can be an error term (if there is no finite
    * domain lambda)
    */
-  void enumerate_eq_uf_axioms(ic3ia::TermSet &axioms, msat_term eq_uf,
+  void enumerate_eq_uf_axioms(ic3ia::TermSet &axioms, msat_decl read0,
+                              msat_decl read1, msat_type _type, msat_term eq_uf,
                               msat_term witness, ic3ia::TermSet &indices,
                               msat_term lambda);
 

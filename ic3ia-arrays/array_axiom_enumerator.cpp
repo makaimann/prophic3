@@ -57,6 +57,9 @@ msat_term ArrayAxiomEnumerator::bound_lambda(msat_term lambda, size_t width)
 
 ic3ia::TermSet ArrayAxiomEnumerator::init_eq_axioms()
 {
+  TermDeclMap &read_ufs = abstractor_.read_ufs();
+  TermTypeMap &orig_sorts = abstractor_.orig_sorts();
+
   if (init_eq_axioms_.size())
   {
     return init_eq_axioms_;
@@ -64,9 +67,16 @@ ic3ia::TermSet ArrayAxiomEnumerator::init_eq_axioms()
 
   const ic3ia::TermMap & witnesses = abstractor_.witnesses();
   ic3ia::TermSet axioms;
+  msat_decl read0;
+  msat_decl read1;
+  msat_type _type;
   for (auto e : init_equalities_)
   {
-    enumerate_eq_uf_axioms(axioms, e, witnesses.at(e), curr_indices_,
+    read0 = read_ufs.at(msat_term_get_arg(e, 0));
+    read1 = read_ufs.at(msat_term_get_arg(e, 1));
+    _type = orig_sorts.at(msat_term_get_arg(e, 0));
+    enumerate_eq_uf_axioms(axioms, read0, read1, _type, e, witnesses.at(e),
+                           curr_indices_,
                            get_finite_domain_lambda(msat_term_get_arg(e, 0)));
   }
   return axioms;
@@ -74,6 +84,9 @@ ic3ia::TermSet ArrayAxiomEnumerator::init_eq_axioms()
 
 ic3ia::TermSet ArrayAxiomEnumerator::trans_eq_axioms()
 {
+  TermDeclMap &read_ufs = abstractor_.read_ufs();
+  TermTypeMap &orig_sorts = abstractor_.orig_sorts();
+
   if (trans_eq_axioms_.size())
   {
     return trans_eq_axioms_;
@@ -81,9 +94,16 @@ ic3ia::TermSet ArrayAxiomEnumerator::trans_eq_axioms()
 
   const ic3ia::TermMap & witnesses = abstractor_.witnesses();
   ic3ia::TermSet axioms;
+  msat_decl read0;
+  msat_decl read1;
+  msat_type _type;
   for (auto e : trans_equalities_)
   {
-    enumerate_eq_uf_axioms(axioms, e, witnesses.at(e), all_indices_,
+    read0 = read_ufs.at(msat_term_get_arg(e, 0));
+    read1 = read_ufs.at(msat_term_get_arg(e, 1));
+    _type = orig_sorts.at(msat_term_get_arg(e, 0));
+    enumerate_eq_uf_axioms(axioms, read0, read1, _type, e, witnesses.at(e),
+                           all_indices_,
                            get_finite_domain_lambda(msat_term_get_arg(e, 0)));
   }
   return axioms;
@@ -91,6 +111,9 @@ ic3ia::TermSet ArrayAxiomEnumerator::trans_eq_axioms()
 
 ic3ia::TermSet ArrayAxiomEnumerator::prop_eq_axioms()
 {
+  TermDeclMap &read_ufs = abstractor_.read_ufs();
+  TermTypeMap &orig_sorts = abstractor_.orig_sorts();
+
   if (prop_eq_axioms_.size())
   {
     return prop_eq_axioms_;
@@ -98,9 +121,16 @@ ic3ia::TermSet ArrayAxiomEnumerator::prop_eq_axioms()
 
   const ic3ia::TermMap & witnesses = abstractor_.witnesses();
   ic3ia::TermSet axioms;
+  msat_decl read0;
+  msat_decl read1;
+  msat_type _type;
   for (auto e : prop_equalities_)
   {
-    enumerate_eq_uf_axioms(axioms, e, witnesses.at(e), all_indices_,
+    read0 = read_ufs.at(msat_term_get_arg(e, 0));
+    read1 = read_ufs.at(msat_term_get_arg(e, 1));
+    _type = orig_sorts.at(msat_term_get_arg(e, 0));
+    enumerate_eq_uf_axioms(axioms, read0, read1, _type, e, witnesses.at(e),
+                           all_indices_,
                            get_finite_domain_lambda(msat_term_get_arg(e, 0)));
   }
   return axioms;
@@ -170,6 +200,9 @@ TermSet ArrayAxiomEnumerator::equality_axioms_all_indices(Unroller &un,
   const ic3ia::TermMap &witnesses = abstractor_.witnesses();
   ic3ia::TermSet axioms;
 
+  TermDeclMap &read_ufs = abstractor_.read_ufs();
+  TermTypeMap &orig_sorts = abstractor_.orig_sorts();
+
   // create all the timed indices and lambdas
   std::vector<TermSet> timed_indices;
   timed_indices.reserve(k);
@@ -180,10 +213,18 @@ TermSet ArrayAxiomEnumerator::equality_axioms_all_indices(Unroller &un,
     }
   }
 
+  msat_decl read0;
+  msat_decl read1;
+  msat_type _type;
+
   // TODO - check if this is sufficient
   //        I think that we only need to look at equalities in trans
   //        because at this point init/prop equalities should already be handled
   for (auto e : trans_equalities_) {
+    read0 = read_ufs.at(msat_term_get_arg(e, 0));
+    read1 = read_ufs.at(msat_term_get_arg(e, 1));
+    _type = orig_sorts.at(msat_term_get_arg(e, 0));
+
     for (int32_t i = 0; i < k; i++) {
       msat_term e_i = un.at_time(e, i);
       msat_term witness_i = un.at_time(witnesses.at(e), i);
@@ -201,8 +242,8 @@ TermSet ArrayAxiomEnumerator::equality_axioms_all_indices(Unroller &un,
           lambda_j = un.at_time(lambda_j, j);
         }
 
-        enumerate_eq_uf_axioms(axioms, e_i, witness_i, timed_indices[j],
-                               lambda_j);
+        enumerate_eq_uf_axioms(axioms, read0, read1, _type, e_i, witness_i,
+                               timed_indices[j], lambda_j);
       }
     }
   }
@@ -375,18 +416,13 @@ void ArrayAxiomEnumerator::enumerate_const_array_equalities(TermSet & axioms,
   }
 }
 
-void ArrayAxiomEnumerator::enumerate_eq_uf_axioms(ic3ia::TermSet &axioms,
-                                                  msat_term eq_uf,
-                                                  msat_term witness,
-                                                  ic3ia::TermSet &indices,
-                                                  msat_term lambda) {
-  TermDeclMap &read_ufs = abstractor_.read_ufs();
+void ArrayAxiomEnumerator::enumerate_eq_uf_axioms(
+    ic3ia::TermSet &axioms, msat_decl read0, msat_decl read1, msat_type _type,
+    msat_term eq_uf, msat_term witness, ic3ia::TermSet &indices,
+    msat_term lambda) {
 
   msat_term arr0 = msat_term_get_arg(eq_uf, 0);
   msat_term arr1 = msat_term_get_arg(eq_uf, 1);
-
-  msat_decl read0 = read_ufs.at(arr0);
-  msat_decl read1 = read_ufs.at(arr1);
 
   msat_term args0[2];
   msat_term args1[2];
@@ -411,8 +447,6 @@ void ArrayAxiomEnumerator::enumerate_eq_uf_axioms(ic3ia::TermSet &axioms,
                                         eq_reads),
                           msat_make_not(msat_env_, eq_uf)));
   }
-
-  msat_type _type = abstractor_.orig_sorts().at(arr0);
 
   if (!MSAT_ERROR_TERM(lambda)) {
     // get width -- only need to check one array
