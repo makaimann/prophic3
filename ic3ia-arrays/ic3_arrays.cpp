@@ -54,7 +54,7 @@ msat_truth_value IC3Array::prove()
   // treat each of these prophecy variables as an index
   // want to generate lemmas over them
   for (auto elem : pr.prophecy_vars()) {
-    aae.add_index(elem.first);
+    aae.add_index(orig_sorts.at(elem.first), elem.first);
   }
 
   // set the new property
@@ -246,11 +246,8 @@ void IC3Array::debug_print_witness(Bmc &bmc,
     msat_decl fun = elem.second;
 
     TermSet indices;
-    for (auto i : aae.all_indices()) {
-      if (!msat_type_equals(orig_sorts.at(arr),
-                            orig_sorts.at(abs_ts_.cur(i)))) {
-        continue;
-      }
+    string typestr = msat_type_repr(orig_sorts.at(arr));
+    for (auto i : aae.all_indices().at(typestr)) {
       for (size_t k = 0; k < witness.size(); ++k) {
         indices.insert(msat_model_eval(model, u.at_time(i, k)));
       }

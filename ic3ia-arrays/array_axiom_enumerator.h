@@ -2,6 +2,7 @@
 #define ARRAY_AXIOM_ENUMERATOR_H
 
 #include <vector>
+#include <unordered_map>
 
 #include "bmc.h"
 
@@ -18,12 +19,15 @@ public:
     // sort the indices
     // convenient to store them grouped by current and all for 1-step and 2-step
     // lemmas
+    std::string typestr;
+    TermTypeMap & orig_sorts = abstractor_.orig_sorts();
     for (auto idx : abstractor_.indices()) {
       // TODO: what if the index is an input -- could happen
-      curr_indices_.insert(ts.cur(idx));
-      orig_indices_.insert(ts.cur(idx));
-      all_indices_.insert(ts.cur(idx));
-      all_indices_.insert(ts.next(idx));
+      typestr = msat_type_repr(orig_sorts.at(idx));
+      curr_indices_[typestr].insert(ts.cur(idx));
+      orig_indices_[typestr].insert(ts.cur(idx));
+      all_indices_[typestr].insert(ts.cur(idx));
+      all_indices_[typestr].insert(ts.next(idx));
     }
 
     // Find all the array equalities
@@ -57,19 +61,19 @@ public:
    */
   ic3ia::TermSet store_axioms_all_indices(ic3ia::Unroller &un, int32_t k);
 
-  void add_index(msat_term i);
+  void add_index(msat_type _type, msat_term i);
 
   // debugging
   ArrayAbstractor &get_abstractor() { return abstractor_; };
-  ic3ia::TermSet &all_indices() { return all_indices_; };
+  std::unordered_map<std::string, ic3ia::TermSet> &all_indices() { return all_indices_; };
 
 private:
   const ic3ia::TransitionSystem &ts_;
   ArrayAbstractor &abstractor_;
   msat_env msat_env_;
-  ic3ia::TermSet orig_indices_;
-  ic3ia::TermSet curr_indices_;
-  ic3ia::TermSet all_indices_;
+  std::unordered_map<std::string, ic3ia::TermSet> orig_indices_;
+  std::unordered_map<std::string, ic3ia::TermSet> curr_indices_;
+  std::unordered_map<std::string, ic3ia::TermSet> all_indices_;
   // equality ufs present in init
   ic3ia::TermSet init_equalities_;
   // equality ufs present in trans
