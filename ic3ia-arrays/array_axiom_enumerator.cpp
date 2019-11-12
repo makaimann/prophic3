@@ -226,10 +226,10 @@ ic3ia::TermSet ArrayAxiomEnumerator::store_axioms()
   return axioms;
 }
 
-TermSet ArrayAxiomEnumerator::equality_axioms_all_indices(Unroller &un,
+vector<TermSet> ArrayAxiomEnumerator::equality_axioms_all_indices(Unroller &un,
                                                           int32_t k) {
   const ic3ia::TermMap &witnesses = abstractor_.witnesses();
-  ic3ia::TermSet axioms;
+  vector<TermSet> axioms;
 
   TermDeclMap &read_ufs = abstractor_.read_ufs();
   TermTypeMap &orig_types = abstractor_.orig_types();
@@ -239,6 +239,7 @@ TermSet ArrayAxiomEnumerator::equality_axioms_all_indices(Unroller &un,
   timed_indices.reserve(k);
   for (int j = 0; j < k; j++) {
     timed_indices.push_back(unordered_map<string, TermSet>());
+    axioms.push_back(TermSet());
     for (auto elem : orig_indices_) {
       string typestr = elem.first;
       for (auto i : elem.second)
@@ -277,7 +278,7 @@ TermSet ArrayAxiomEnumerator::equality_axioms_all_indices(Unroller &un,
           lambda_j = un.at_time(lambda_j, j);
         }
 
-        enumerate_eq_uf_axioms(axioms, read0, read1, _type, e_i, witness_i,
+        enumerate_eq_uf_axioms(axioms[j], read0, read1, _type, e_i, witness_i,
                                timed_indices[j].at(msat_type_repr(_type)), lambda_j);
       }
     }
@@ -285,9 +286,9 @@ TermSet ArrayAxiomEnumerator::equality_axioms_all_indices(Unroller &un,
   return axioms;
 }
 
-TermSet ArrayAxiomEnumerator::store_axioms_all_indices(Unroller &un,
+vector<TermSet> ArrayAxiomEnumerator::store_axioms_all_indices(Unroller &un,
                                                        int32_t k) {
-  ic3ia::TermSet axioms;
+  vector<TermSet> axioms;
 
   TermTypeMap &orig_types = abstractor_.orig_types();
 
@@ -296,6 +297,7 @@ TermSet ArrayAxiomEnumerator::store_axioms_all_indices(Unroller &un,
   timed_indices.reserve(k);
   for (int j = 0; j < k; j++) {
     timed_indices.push_back(unordered_map<string, TermSet>());
+    axioms.push_back(TermSet());
     for (auto elem : orig_indices_) {
       string typestr = elem.first;
       for (auto i : elem.second)
@@ -363,7 +365,7 @@ TermSet ArrayAxiomEnumerator::store_axioms_all_indices(Unroller &un,
           lambda_j = un.at_time(lambda_j, j);
         }
 
-        enumerate_store_equalities(axioms, read0, arr0_i,
+        enumerate_store_equalities(axioms[j], read0, arr0_i,
                                    read1, arr1_i, _type,
                                    idx_i, val_i,
                                    timed_indices[j].at(typestr),
