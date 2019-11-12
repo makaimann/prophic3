@@ -160,7 +160,7 @@ ic3ia::TermSet ArrayAxiomEnumerator::const_array_axioms()
     }
     abs_ca = cache.at(ca);
     read = read_ufs.at(abs_ca);
-    enumerate_const_array_equalities(
+    enumerate_const_array_axioms(
         axioms,
         read,
         abs_ca,             // need to convert to abstracted array
@@ -436,12 +436,12 @@ void ArrayAxiomEnumerator::enumerate_store_equalities(TermSet &axioms, msat_decl
   }
 }
 
-void ArrayAxiomEnumerator::enumerate_const_array_equalities(TermSet & axioms,
-                                                            msat_decl read,
-                                                            msat_term arr,
-                                                            msat_type _type,
-                                                            msat_term val,
-                                                            TermSet & indices)
+void ArrayAxiomEnumerator::enumerate_const_array_axioms(TermSet & axioms,
+                                                        msat_decl read,
+                                                        msat_term arr,
+                                                        msat_type _type,
+                                                        msat_term val,
+                                                        TermSet & indices)
 {
   // equals value at every index
   for (auto i : indices)
