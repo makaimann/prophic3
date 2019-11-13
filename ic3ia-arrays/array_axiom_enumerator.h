@@ -26,6 +26,7 @@ public:
       typestr = msat_type_repr(orig_types.at(idx));
       curr_indices_[typestr].insert(ts.cur(idx));
       orig_indices_[typestr].insert(ts.cur(idx));
+      orig_indices_set_.insert(ts.cur(idx));
       all_indices_[typestr].insert(ts.cur(idx));
       all_indices_[typestr].insert(ts.next(idx));
     }
@@ -67,7 +68,13 @@ public:
    */
   std::vector<ic3ia::TermSet> const_array_axioms_all_indices(ic3ia::Unroller &un, size_t k);
 
+  /* Adds an index to the index set (mostly used for adding prophecy vars) */
   void add_index(msat_type _type, msat_term i);
+
+  /** Get all indices present in an UNTIMED term
+   *  Important note: ONLY checks original indices (won't include indices added with add_index)
+   */
+  ic3ia::TermSet get_index(msat_term t) const;
 
   // debugging
   ArrayAbstractor &get_abstractor() { return abstractor_; };
@@ -78,6 +85,7 @@ private:
   ArrayAbstractor &abstractor_;
   msat_env msat_env_;
   std::unordered_map<std::string, ic3ia::TermSet> orig_indices_;
+  ic3ia::TermSet orig_indices_set_;
   std::unordered_map<std::string, ic3ia::TermSet> curr_indices_;
   std::unordered_map<std::string, ic3ia::TermSet> all_indices_;
   // equality ufs present in init

@@ -440,6 +440,37 @@ void ArrayAxiomEnumerator::add_index(msat_type _type, msat_term i) {
   all_indices_[typestr].insert(ts_.next(i));
 }
 
+TermSet ArrayAxiomEnumerator::get_index(msat_term t) const
+{
+  struct Data {
+    TermSet &found_indices;
+    const TermSet &index_set;
+    Data(TermSet &fi, const TermSet &is) : found_indices(fi), index_set(is) {};
+  };
+
+  auto visit = [](msat_env e, msat_term t, int preorder,
+                  void *data) -> msat_visit_status {
+    Data *d = static_cast<Data *>(data);
+    // a variable is a term with no children and no built-in
+    // interpretation
+    if (preorder && msat_term_arity(t) == 0 &&
+        msat_decl_get_tag(e, msat_term_get_decl(t)) == MSAT_TAG_UNKNOWN &&
+        !msat_term_is_number(e, t)) {
+
+      // check if it's in the var set
+      if (d->index_set.find(t) != d->index_set.end())
+      {
+        d->found_indices.insert(t);
+      }
+    }
+    return MSAT_VISIT_PROCESS;
+  };
+
+  TermSet found_indices;
+  Data data(found_indices, orig_indices_set_);
+  return found_indices;
+}
+
 // protected helper functions
 void ArrayAxiomEnumerator::enumerate_store_equalities(TermSet &axioms, msat_decl read0, msat_term arr0,
                                                       msat_decl read1, msat_term arr1, msat_type _type,
