@@ -53,19 +53,19 @@ public:
    *  un - the unroller to use for timing
    *  k - the maximum time-step (exclusive e.g. the length of the CEX)
    */
-  std::vector<ic3ia::TermSet> equality_axioms_all_indices(ic3ia::Unroller &un, int32_t k);
+  std::vector<ic3ia::TermSet> equality_axioms_all_indices(ic3ia::Unroller &un, size_t k);
 
   /** Enumerate store axioms over indices at all times
    *  un - the unroller to use for timing
    *  k - the maximum time-step (exclusive)
    */
-  std::vector<ic3ia::TermSet> store_axioms_all_indices(ic3ia::Unroller &un, int32_t k);
+  std::vector<ic3ia::TermSet> store_axioms_all_indices(ic3ia::Unroller &un, size_t k);
 
   /** Enumerate const array axioms over indices at all times
    *  un - the unroller to use for timing
    *  k - the maximum time-step (exclusive)
    */
-  std::vector<ic3ia::TermSet> const_array_axioms_all_indices(ic3ia::Unroller &un, int32_t k);
+  std::vector<ic3ia::TermSet> const_array_axioms_all_indices(ic3ia::Unroller &un, size_t k);
 
   void add_index(msat_type _type, msat_term i);
 

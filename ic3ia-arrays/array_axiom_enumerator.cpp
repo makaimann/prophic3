@@ -227,7 +227,7 @@ ic3ia::TermSet ArrayAxiomEnumerator::store_axioms()
 }
 
 vector<TermSet> ArrayAxiomEnumerator::equality_axioms_all_indices(Unroller &un,
-                                                          int32_t k) {
+                                                          size_t k) {
   const ic3ia::TermMap &witnesses = abstractor_.witnesses();
   vector<TermSet> axioms;
 
@@ -261,11 +261,11 @@ vector<TermSet> ArrayAxiomEnumerator::equality_axioms_all_indices(Unroller &un,
       read1 = read_ufs.at(msat_term_get_arg(e, 1));
       _type = orig_types.at(msat_term_get_arg(e, 0));
 
-      for (int32_t i = 0; i < k; i++) {
+      for (size_t i = 0; i < k; i++) {
         msat_term e_i = un.at_time(e, i);
         msat_term witness_i = un.at_time(witnesses.at(e), i);
 
-        for (int32_t j = 0; j < k; j++) {
+        for (size_t j = 0; j < k; j++) {
           // TODO: If this is too expensive, cache by e beforehand
           msat_term lambda_j = get_finite_domain_lambda(msat_term_get_arg(e, 0));
           if (!MSAT_ERROR_TERM(lambda_j)) {
@@ -283,7 +283,7 @@ vector<TermSet> ArrayAxiomEnumerator::equality_axioms_all_indices(Unroller &un,
 }
 
 vector<TermSet> ArrayAxiomEnumerator::store_axioms_all_indices(Unroller &un,
-                                                               int32_t k) {
+                                                               size_t k) {
   vector<TermSet> axioms;
   TermTypeMap &orig_types = abstractor_.orig_types();
 
@@ -340,7 +340,7 @@ vector<TermSet> ArrayAxiomEnumerator::store_axioms_all_indices(Unroller &un,
     read0 = read_ufs.at(arr0);
     read1 = read_ufs.at(arr1);
 
-    for (int32_t i = 0; i < k; i++) {
+    for (size_t i = 0; i < k; i++) {
       msat_term arr0_i = un.at_time(arr0, i);
       msat_term arr1_i = un.at_time(arr1, i);
       msat_term idx_i = un.at_time(idx_to_int(msat_env_, cache.at(idx)), i);
@@ -351,7 +351,7 @@ vector<TermSet> ArrayAxiomEnumerator::store_axioms_all_indices(Unroller &un,
       //       have already been checked
       //       IMPORTANT: That only holds for STATE indices, because inputs
       //                   don't have next
-      for (int32_t j = 0; j < k; j++) {
+      for (size_t j = 0; j < k; j++) {
         // TODO: If this is too expensive, cache by e beforehand
         msat_term lambda_j = get_finite_domain_lambda(arr0);
         if (!MSAT_ERROR_TERM(lambda_j)) {
@@ -370,7 +370,7 @@ vector<TermSet> ArrayAxiomEnumerator::store_axioms_all_indices(Unroller &un,
 }
 
 vector<TermSet> ArrayAxiomEnumerator::const_array_axioms_all_indices(Unroller &un,
-                                                                     int32_t k)
+                                                                     size_t k)
 {
   vector<TermSet> axioms;
   TermTypeMap &orig_types = abstractor_.orig_types();
@@ -412,11 +412,11 @@ vector<TermSet> ArrayAxiomEnumerator::const_array_axioms_all_indices(Unroller &u
     val = msat_term_get_arg(ca, 0);
     read = read_ufs.at(abs_ca);
 
-    for (int32_t i = 0; i < k; i++)
+    for (size_t i = 0; i < k; i++)
     {
       msat_term abs_ca_i = un.at_time(abs_ca, i);
 
-      for (int32_t j = 0; j < k; j++)
+      for (size_t j = 0; j < k; j++)
       {
         // TODO: If this is too expensive, cache by e beforehand
         msat_term lambda_j = get_finite_domain_lambda(abs_ca);
