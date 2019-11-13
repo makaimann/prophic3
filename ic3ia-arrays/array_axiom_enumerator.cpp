@@ -253,36 +253,32 @@ vector<TermSet> ArrayAxiomEnumerator::equality_axioms_all_indices(Unroller &un,
   msat_decl read1;
   msat_type _type;
 
-  // TODO - check if this is sufficient
-  //        I think that we only need to look at equalities in trans
-  //        because at this point init/prop equalities should already be handled
-  for (auto e : trans_equalities_) {
-    read0 = read_ufs.at(msat_term_get_arg(e, 0));
-    read1 = read_ufs.at(msat_term_get_arg(e, 1));
-    _type = orig_types.at(msat_term_get_arg(e, 0));
+  vector<TermSet> equalities_vec({init_equalities_, trans_equalities_});
+  for (auto equalities : equalities_vec)
+  {
+    for (auto e : equalities) {
+      read0 = read_ufs.at(msat_term_get_arg(e, 0));
+      read1 = read_ufs.at(msat_term_get_arg(e, 1));
+      _type = orig_types.at(msat_term_get_arg(e, 0));
 
-    for (int32_t i = 0; i < k; i++) {
-      msat_term e_i = un.at_time(e, i);
-      msat_term witness_i = un.at_time(witnesses.at(e), i);
+      for (int32_t i = 0; i < k; i++) {
+        msat_term e_i = un.at_time(e, i);
+        msat_term witness_i = un.at_time(witnesses.at(e), i);
 
-      for (int32_t j = 0; j < k; j++) {
-        if (abs(i - j) <= 1) {
-          // This is an optimization
-          // All single-step axioms should have already been checked
-          continue;
+        for (int32_t j = 0; j < k; j++) {
+          // TODO: If this is too expensive, cache by e beforehand
+          msat_term lambda_j = get_finite_domain_lambda(msat_term_get_arg(e, 0));
+          if (!MSAT_ERROR_TERM(lambda_j)) {
+            lambda_j = un.at_time(lambda_j, j);
+          }
+
+          enumerate_eq_uf_axioms(axioms[j], read0, read1, _type, e_i, witness_i,
+                                 timed_indices[j].at(msat_type_repr(_type)), lambda_j);
         }
-
-        // TODO: If this is too expensive, cache by e beforehand
-        msat_term lambda_j = get_finite_domain_lambda(msat_term_get_arg(e, 0));
-        if (!MSAT_ERROR_TERM(lambda_j)) {
-          lambda_j = un.at_time(lambda_j, j);
-        }
-
-        enumerate_eq_uf_axioms(axioms[j], read0, read1, _type, e_i, witness_i,
-                               timed_indices[j].at(msat_type_repr(_type)), lambda_j);
       }
     }
   }
+
   return axioms;
 }
 
@@ -350,14 +346,12 @@ vector<TermSet> ArrayAxiomEnumerator::store_axioms_all_indices(Unroller &un,
       msat_term idx_i = un.at_time(idx_to_int(msat_env_, cache.at(idx)), i);
       msat_term val_i = un.at_time(cache.at(val), i);
 
+      // TODO: as an optimization, don't enumerate all i, j pairs
+      //       for *state variable* indices, ones where abs(i - j) <= 1
+      //       have already been checked
+      //       IMPORTANT: That only holds for STATE indices, because inputs
+      //                   don't have next
       for (int32_t j = 0; j < k; j++) {
-
-        if (abs(i - j) <= 1) {
-          // This is an optimization
-          // All single-step axioms should have already been checked
-          continue;
-        }
-
         // TODO: If this is too expensive, cache by e beforehand
         msat_term lambda_j = get_finite_domain_lambda(arr0);
         if (!MSAT_ERROR_TERM(lambda_j)) {
@@ -424,12 +418,6 @@ vector<TermSet> ArrayAxiomEnumerator::const_array_axioms_all_indices(Unroller &u
 
       for (int32_t j = 0; j < k; j++)
       {
-        if (abs(i - j) <= 1) {
-          // This is an optimization
-          // All single-step axioms should have already been checked
-          continue;
-        }
-
         // TODO: If this is too expensive, cache by e beforehand
         msat_term lambda_j = get_finite_domain_lambda(abs_ca);
         if (!MSAT_ERROR_TERM(lambda_j)) {
