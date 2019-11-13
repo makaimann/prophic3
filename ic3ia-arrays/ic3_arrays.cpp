@@ -161,9 +161,9 @@ msat_truth_value IC3Array::prove()
       if (!found_untimed_axioms)
       {
         vector<vector<TermSet>> timed_axioms;
-        timed_axioms.push_back(aae.equality_axioms_all_indices(bmc.get_unroller(), reached_k));
-        timed_axioms.push_back(aae.store_axioms_all_indices(bmc.get_unroller(), reached_k));
-        timed_axioms.push_back(aae.const_array_axioms_all_indices(bmc.get_unroller(), reached_k));
+        timed_axioms.push_back(aae.equality_axioms_all_indices(u, reached_k));
+        timed_axioms.push_back(aae.store_axioms_all_indices(u, reached_k));
+        timed_axioms.push_back(aae.const_array_axioms_all_indices(u, reached_k));
 
         for(auto axiom_vec : timed_axioms)
         {
