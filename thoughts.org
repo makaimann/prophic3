@@ -171,7 +171,7 @@ z3). Use it like that:
 
     $ python z3horntranslate.py array_init_const.smt2 | ./horn2vmt
 
-* TODO Store next indices in orig_sorts, and stop using ts.cur in refiner to get correct sort
+* TODO Store next indices in orig_types, and stop using ts.cur in refiner to get correct sort
 * TODO Just create a UF for everything, including store and const array
 * TODO Have a separate pass that collects top-level UF equalities
 * TODO Refiner just traverses the formula (or maybe we can store the UFs) and then figures out the lemmas to add

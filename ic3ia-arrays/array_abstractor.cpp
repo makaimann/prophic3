@@ -85,7 +85,7 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
     TermSet &removed_vars;
     TermMap &witnesses;
     TermDeclMap &read_ufs;
-    TermTypeMap &orig_sorts;
+    TermTypeMap &orig_types;
     TermSet &const_arrs;
     TermSet &stores;
     TermMap &cache;
@@ -97,7 +97,7 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
                     TermMap &c, unsigned int &e, unsigned int &ri,
                     const TransitionSystem &cts)
         : indices(i), new_vars(nv), removed_vars(rv), witnesses(w), read_ufs(r),
-          orig_sorts(o), const_arrs(ca), stores(s), cache(c), eq_id(e),
+          orig_types(o), const_arrs(ca), stores(s), cache(c), eq_id(e),
           read_id(ri), conc_ts(cts) {}
   };
 
@@ -169,8 +169,8 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
         d->read_ufs[arr_intN] = readfun;
 
         // keep track of the original index sort
-        d->orig_sorts[arr_int] = arridxtype;
-        d->orig_sorts[arr_intN] = arridxtype;
+        d->orig_types[arr_int] = arridxtype;
+        d->orig_types[arr_intN] = arridxtype;
 
       }
       // check if it's an array equality
@@ -226,7 +226,7 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
             msat_declare_function(e, (witness_name + "N").c_str(), idx_type);
         msat_term witnessN = msat_make_constant(e, decl_witnessN);
         d->witnesses[eq_uf] = idx_to_int(e, witness);
-        d->orig_sorts[idx_to_int(e, witness)] = idx_type;
+        d->orig_types[idx_to_int(e, witness)] = idx_type;
         d->indices.insert(idx_to_int(e, witness));
         // TODO: figure out cleanest way to get next-state version of lemmas as well
         // e.g. equal(next(arr), next(arr2)) -> ...
@@ -243,7 +243,7 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
         msat_term int_idx = idx_to_int(e, d->cache[idx]);
         msat_type orig_idx_sort = msat_term_get_type(idx);
         d->indices.insert(int_idx);
-        d->orig_sorts[int_idx] = orig_idx_sort;
+        d->orig_types[int_idx] = orig_idx_sort;
 
         msat_type arridxtype;
         msat_type arrelemtype;
@@ -260,7 +260,7 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
         msat_term int_idx = idx_to_int(e, d->cache[idx]);
         msat_type orig_idx_sort = msat_term_get_type(idx);
         d->indices.insert(int_idx);
-        d->orig_sorts[int_idx] = orig_idx_sort;
+        d->orig_types[int_idx] = orig_idx_sort;
       } else {
         // rebuild the term
         size_t arity = msat_term_arity(t);
@@ -282,7 +282,7 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
   };
 
   AbstractionData data = AbstractionData(
-      indices_, new_vars_, removed_vars_, witnesses_, read_ufs_, orig_sorts_,
+      indices_, new_vars_, removed_vars_, witnesses_, read_ufs_, orig_types_,
       const_arrs_, stores_, cache_, eq_id_, read_id_, conc_ts_);
   msat_visit_term(msat_env_, term, visit, &data);
   return data.cache.at(term);
@@ -293,7 +293,7 @@ void ArrayAbstractor::create_lambdas() {
   // represents an index which hasn't been seen yet
   std::vector<msat_type> types; // msat_type not hashable
   TermTypeMap lambdas;
-  for (auto elem : orig_sorts_) {
+  for (auto elem : orig_types_) {
     msat_type _type = elem.second;
     if (std::find(types.begin(), types.end(), _type) == types.end()) {
       types.push_back(_type);
@@ -315,7 +315,7 @@ void ArrayAbstractor::create_lambdas() {
       msat_term alldiff = msat_make_true(msat_env_);
       for (auto i : indices_) {
         // only if the sorts match
-        if (orig_sorts_[i] == _type) {
+        if (orig_types_[i] == _type) {
           alldiff = msat_make_and(
               msat_env_, alldiff,
               msat_make_not(msat_env_, msat_make_equal(msat_env_, lambda, i)));
@@ -324,7 +324,7 @@ void ArrayAbstractor::create_lambdas() {
       abs_ts_.add_trans(alldiff);
 
       // store original sort (might be the same if it's already an integer)
-      orig_sorts_[lambda] = _type;
+      orig_types_[lambda] = _type;
 
       // if it's an infinite domain index, can just add it to index sets
       // otherwise keep it separate

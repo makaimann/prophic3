@@ -2,6 +2,7 @@
 #define ARRAY_AXIOM_ENUMERATOR_H
 
 #include <vector>
+#include <unordered_map>
 
 #include "bmc.h"
 
@@ -18,12 +19,15 @@ public:
     // sort the indices
     // convenient to store them grouped by current and all for 1-step and 2-step
     // lemmas
+    std::string typestr;
+    TermTypeMap & orig_types = abstractor_.orig_types();
     for (auto idx : abstractor_.indices()) {
       // TODO: what if the index is an input -- could happen
-      curr_indices_.insert(ts.cur(idx));
-      orig_indices_.insert(ts.cur(idx));
-      all_indices_.insert(ts.cur(idx));
-      all_indices_.insert(ts.next(idx));
+      typestr = msat_type_repr(orig_types.at(idx));
+      curr_indices_[typestr].insert(ts.cur(idx));
+      orig_indices_[typestr].insert(ts.cur(idx));
+      all_indices_[typestr].insert(ts.cur(idx));
+      all_indices_[typestr].insert(ts.next(idx));
     }
 
     // Find all the array equalities
@@ -45,19 +49,37 @@ public:
   ic3ia::TermSet const_array_axioms();
   ic3ia::TermSet store_axioms();
 
-  void add_index(msat_term i);
+  /** Enumerate equality axioms over indices at all times
+   *  un - the unroller to use for timing
+   *  k - the maximum time-step (exclusive e.g. the length of the CEX)
+   */
+  std::vector<ic3ia::TermSet> equality_axioms_all_indices(ic3ia::Unroller &un, size_t k);
+
+  /** Enumerate store axioms over indices at all times
+   *  un - the unroller to use for timing
+   *  k - the maximum time-step (exclusive)
+   */
+  std::vector<ic3ia::TermSet> store_axioms_all_indices(ic3ia::Unroller &un, size_t k);
+
+  /** Enumerate const array axioms over indices at all times
+   *  un - the unroller to use for timing
+   *  k - the maximum time-step (exclusive)
+   */
+  std::vector<ic3ia::TermSet> const_array_axioms_all_indices(ic3ia::Unroller &un, size_t k);
+
+  void add_index(msat_type _type, msat_term i);
 
   // debugging
   ArrayAbstractor &get_abstractor() { return abstractor_; };
-  ic3ia::TermSet &all_indices() { return all_indices_; };
+  std::unordered_map<std::string, ic3ia::TermSet> &all_indices() { return all_indices_; };
 
 private:
   const ic3ia::TransitionSystem &ts_;
   ArrayAbstractor &abstractor_;
   msat_env msat_env_;
-  ic3ia::TermSet orig_indices_;
-  ic3ia::TermSet curr_indices_;
-  ic3ia::TermSet all_indices_;
+  std::unordered_map<std::string, ic3ia::TermSet> orig_indices_;
+  std::unordered_map<std::string, ic3ia::TermSet> curr_indices_;
+  std::unordered_map<std::string, ic3ia::TermSet> all_indices_;
   // equality ufs present in init
   ic3ia::TermSet init_equalities_;
   // equality ufs present in trans
@@ -93,13 +115,14 @@ private:
    * Important Note: lambda argument can be an error term (if there is no finite
    * domain lambda)
    */
-  void enumerate_store_equalities(ic3ia::TermSet &axioms, msat_term arr0,
-                                  msat_term arr1, msat_term idx, msat_term val,
+  void enumerate_store_equalities(ic3ia::TermSet &axioms, msat_decl read0, msat_term arr0,
+                                  msat_decl read1, msat_term arr1, msat_type _type,
+                                  msat_term idx, msat_term val,
                                   ic3ia::TermSet &indices, msat_term lambda);
 
   /* Enumerate store axioms on all indices: forall i . arr[i] = val */
-  void enumerate_const_array_equalities(ic3ia::TermSet &axioms, msat_term arr,
-                                        msat_term val, ic3ia::TermSet &indices);
+  void enumerate_const_array_axioms(ic3ia::TermSet &axioms, msat_decl read, msat_term arr,
+                                    msat_type _type, msat_term val, ic3ia::TermSet &indices);
 
   // TODO: Figure out if we can remove some of these lemmas
   //       probably don't need them all
@@ -118,7 +141,8 @@ private:
    * Important Note: lambda argument can be an error term (if there is no finite
    * domain lambda)
    */
-  void enumerate_eq_uf_axioms(ic3ia::TermSet &axioms, msat_term eq_uf,
+  void enumerate_eq_uf_axioms(ic3ia::TermSet &axioms, msat_decl read0,
+                              msat_decl read1, msat_type _type, msat_term eq_uf,
                               msat_term witness, ic3ia::TermSet &indices,
                               msat_term lambda);
 

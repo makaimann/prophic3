@@ -35,7 +35,7 @@ msat_truth_value IC3Array::prove()
   TermSet proph_vars;
 
   // create state variables for prophecy vars and ass as indices
-  TermTypeMap &orig_sorts = aa.orig_sorts();
+  TermTypeMap &orig_types = aa.orig_types();
   for (auto elem : pr.prophecy_vars()) {
     msat_term proph = elem.first;
     proph_vars.insert(proph);
@@ -48,13 +48,13 @@ msat_truth_value IC3Array::prove()
     abs_ts_.add_statevar(proph, prophN);
     abs_ts_.add_trans(msat_make_equal(msat_env_, prophN, proph));
     // save the original sort of the variable -- for the axiom enumerator
-    orig_sorts[proph] = orig_sorts.at(elem.second);
+    orig_types[proph] = orig_types.at(elem.second);
   }
 
   // treat each of these prophecy variables as an index
   // want to generate lemmas over them
   for (auto elem : pr.prophecy_vars()) {
-    aae.add_index(elem.first);
+    aae.add_index(orig_types.at(elem.first), elem.first);
   }
 
   // set the new property
@@ -63,6 +63,8 @@ msat_truth_value IC3Array::prove()
   std::cout << "Created " << pr.prophecy_vars().size();
   std::cout << " prophecy variables for the property" << std::endl;
 
+  bool found_untimed_axioms = false;
+  bool found_timed_axioms = false;
   unsigned int reached_k = 0;
 
   // TODO: Figure out how to handle False cases someday
@@ -151,19 +153,58 @@ msat_truth_value IC3Array::prove()
         }
       }
 
-      std::cout << "Found " << violated_axioms.size() << " violated axioms!"
+      found_untimed_axioms = violated_axioms.size();
+
+      std::cout << "Found " << violated_axioms.size() << " violated untime-able axioms!"
                 << std::endl;
 
-      if (!violated_axioms.size()) {
+      if (!found_untimed_axioms)
+      {
+        vector<vector<TermSet>> timed_axioms;
+        timed_axioms.push_back(aae.equality_axioms_all_indices(u, reached_k));
+        timed_axioms.push_back(aae.store_axioms_all_indices(u, reached_k));
+        timed_axioms.push_back(aae.const_array_axioms_all_indices(u, reached_k));
+
+        for(auto axiom_vec : timed_axioms)
+        {
+          for (size_t i = 0; i < axiom_vec.size(); ++i)
+          {
+            for (auto timed_axiom : axiom_vec[i])
+            {
+              //std::cout << "Checking timed axiom: " << msat_to_smtlib2_term(msat_env_, timed_axiom) << std::endl;
+              val = msat_model_eval(model, timed_axiom);
+
+              if (val == f)
+              {
+                violated_axioms.push_back(timed_axiom);
+              }
+            }
+          }
+        }
+
+        found_timed_axioms = violated_axioms.size();
+      }
+
+      if (!found_untimed_axioms & !found_timed_axioms) {
         debug_print_witness(bmc, aae);
         // TODO: Use real exceptions
         std::cout << "It looks like there's a concrete counter-example (or some axioms are missing)" << std::endl;
         throw std::exception();
       }
+      else if (!found_untimed_axioms) {
+        std::cout << "Found " << violated_axioms.size() << " violated TIMED axioms!" << std::endl;
+      }
 
       bmc.add_assumptions(violated_axioms);
       broken = !bmc.check_until(reached_k);
       violated_axioms.clear();
+    }
+
+    // haven't implemented history variables yet
+    if (found_timed_axioms)
+    {
+      std::cout << "Haven't implemented history variables yet -- will fail for now." << std::endl;
+      throw std::exception();
     }
 
     std::cout << "Adding " << axioms_to_add.size() << " axioms to trans."
@@ -210,7 +251,7 @@ void IC3Array::debug_print_witness(Bmc &bmc,
                                    ArrayAxiomEnumerator &aae) {
   Unroller &u = bmc.get_unroller();
   ArrayAbstractor &abstractor = aae.get_abstractor();
-  TermTypeMap &orig_sorts = abstractor.orig_sorts();
+  TermTypeMap &orig_types = abstractor.orig_types();
   std::vector<TermList> witness;
   bmc.witness(witness);
   msat_model model = bmc.get_model();
@@ -246,18 +287,15 @@ void IC3Array::debug_print_witness(Bmc &bmc,
     msat_decl fun = elem.second;
 
     TermSet indices;
-    for (auto i : aae.all_indices()) {
-      if (!msat_type_equals(orig_sorts.at(arr),
-                            orig_sorts.at(abs_ts_.cur(i)))) {
-        continue;
-      }
+    string typestr = msat_type_repr(orig_types.at(arr));
+    for (auto i : aae.all_indices().at(typestr)) {
       for (size_t k = 0; k < witness.size(); ++k) {
         indices.insert(msat_model_eval(model, u.at_time(i, k)));
       }
     }
 
     for (auto w : abstractor.witnesses()) {
-      if (!msat_type_equals(orig_sorts.at(arr), orig_sorts.at(w.second))) {
+      if (!msat_type_equals(orig_types.at(arr), orig_types.at(w.second))) {
         continue;
       }
       for (size_t k = 0; k < witness.size(); ++k) {
