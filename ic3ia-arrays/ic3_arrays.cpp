@@ -102,7 +102,11 @@ msat_truth_value IC3Array::prove()
     assert((res != MSAT_FALSE) || broken);
 
     // TODO: filter axioms with unsat core
-    TermSet axioms_to_add;
+    TermSet untimed_axioms_to_add;
+    // maps timed lemmas to the time of the index involved in the lemma
+    unordered_map<msat_term, size_t> time_of_index;
+    // stores timed axioms that need to be refined
+    TermSet timed_axioms_to_refine;
 
     while (broken) {
       msat_model model = bmc.get_model();
@@ -147,7 +151,7 @@ msat_truth_value IC3Array::prove()
               // std::cout << msat_to_smtlib2_term(msat_env_, timed_axiom) <<
               // std::endl;
               violated_axioms.push_back(timed_axiom);
-              axioms_to_add.insert(ax);
+              untimed_axioms_to_add.insert(ax);
             }
           }
         }
@@ -177,6 +181,8 @@ msat_truth_value IC3Array::prove()
               if (val == f)
               {
                 violated_axioms.push_back(timed_axiom);
+                time_of_index[timed_axiom] = i;
+                timed_axioms_to_refine.insert(timed_axiom);
               }
             }
           }
@@ -203,14 +209,20 @@ msat_truth_value IC3Array::prove()
     // haven't implemented history variables yet
     if (found_timed_axioms)
     {
+      // TODO: this comment is for later, need to refine by adding history vars
+      // will untime the axiom first
+      // Important Note: Untiming will not handle next correctly e.g.
+      //     y@4 = 2*x@3   ->   y = 2*x   instead of    y' = 2*x
+      // but in this case it doesn't matter, because we only care about cur values
+
       std::cout << "Haven't implemented history variables yet -- will fail for now." << std::endl;
       throw std::exception();
     }
 
-    std::cout << "Adding " << axioms_to_add.size() << " axioms to trans."
+    std::cout << "Adding " << untimed_axioms_to_add.size() << " axioms to trans."
               << std::endl;
     size_t cnt = 0;
-    for (auto ax : axioms_to_add) {
+    for (auto ax : untimed_axioms_to_add) {
       abs_ts_.add_trans(ax);
 
       // if there's no next-state variables, add next version to trans
@@ -233,7 +245,7 @@ msat_truth_value IC3Array::prove()
 
     }
     std::cout << "Added " << cnt << " axioms to init." << std::endl;
-    axioms_to_add.clear();
+    untimed_axioms_to_add.clear();
 
     // increment reached_k
     reached_k++;
