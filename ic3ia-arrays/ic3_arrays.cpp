@@ -91,8 +91,6 @@ msat_truth_value IC3Array::prove()
     {
       std::cout << "IC3 returned undefined...by construction this should not happen! oops..." << std::endl;
       throw std::exception();
-      // try a deeper k
-      reached_k++;
     }
 
     // Run bmc
@@ -246,9 +244,6 @@ msat_truth_value IC3Array::prove()
     }
     std::cout << "Added " << cnt << " axioms to init." << std::endl;
     untimed_axioms_to_add.clear();
-
-    // increment reached_k
-    reached_k++;
   }
   // TODO: do this correctly
   return MSAT_FALSE;
