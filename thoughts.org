@@ -164,6 +164,11 @@
 *** Ideally want to prove some kind of relative completeness (eventually)
 **** This could maybe be a journal version contribution, like Ahmed's work
 *** Look at QUIC3
+* Unrolling / Untiming
+        // Important Note: Untiming will not handle next correctly e.g.
+        //     y@4 = 2*x@3   ->   y = 2*x   instead of    y' = 2*x
+        // but in this case it doesn't matter, because we only care about cur values
+
 * Z3 Horn to VMT Translator (copied from an email)
 Here's a script for translating the old syntax to the new one (you need
 to adjust the sys.path at the beginning to point to your installation of
