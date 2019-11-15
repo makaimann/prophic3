@@ -40,7 +40,7 @@ msat_truth_value IC3Array::prove()
     msat_term proph = elem.first;
     proph_vars.insert(proph);
     msat_decl proph_declN = msat_declare_function(
-        msat_env_, (std::string(msat_term_repr(proph)) + "N").c_str(),
+        msat_env_, (std::string(msat_term_repr(proph)) + ".next").c_str(),
         msat_term_get_type(proph));
     msat_term prophN = msat_make_constant(msat_env_, proph_declN);
     // add the prophecy variable to the transition system
