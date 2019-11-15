@@ -204,19 +204,6 @@ msat_truth_value IC3Array::prove()
       violated_axioms.clear();
     }
 
-    // haven't implemented history variables yet
-    if (found_timed_axioms)
-    {
-      // TODO: this comment is for later, need to refine by adding history vars
-      // will untime the axiom first
-      // Important Note: Untiming will not handle next correctly e.g.
-      //     y@4 = 2*x@3   ->   y = 2*x   instead of    y' = 2*x
-      // but in this case it doesn't matter, because we only care about cur values
-
-      std::cout << "Haven't implemented history variables yet -- will fail for now." << std::endl;
-      throw std::exception();
-    }
-
     std::cout << "Adding " << untimed_axioms_to_add.size() << " axioms to trans."
               << std::endl;
     size_t cnt = 0;
@@ -244,6 +231,28 @@ msat_truth_value IC3Array::prove()
     }
     std::cout << "Added " << cnt << " axioms to init." << std::endl;
     untimed_axioms_to_add.clear();
+
+    // haven't implemented history variables yet
+    if (found_timed_axioms)
+    {
+      unordered_map<msat_term, size_t> indices_to_refine;
+      msat_term tmp_idx;
+      for (auto ax : timed_axioms_to_refine)
+      {
+        tmp_idx = aae.get_index(ax);
+        indices_to_refine[u.untime(tmp_idx)] = time_of_index.at(ax);
+      }
+
+      std::cout << "Found " << indices_to_refine.size() << " indices which need to be refined." << std::endl;
+      for (auto elem : indices_to_refine)
+      {
+        std::cout << "\t" << msat_to_smtlib2_term(msat_env_, elem.first) << ":" << elem.second << std::endl;
+      }
+      std::cout << "Haven't implemented history variables yet -- will fail for now." << std::endl;
+      throw std::exception();
+    }
+    timed_axioms_to_refine.clear();
+
   }
   // TODO: do this correctly
   return MSAT_FALSE;
