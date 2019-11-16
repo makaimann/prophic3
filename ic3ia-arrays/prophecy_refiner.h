@@ -7,34 +7,58 @@
 namespace ic3ia_array {
 class ProphecyRefiner {
 public:
-  ProphecyRefiner(msat_env e, const msat_term p, const ic3ia::TermSet & i, const ic3ia::TermMap & w)
-     : existing_prop_(p), existing_indices_(i), existing_witnesses_(w) {
+  ProphecyRefiner(msat_env e, const ic3ia::TermSet i)
+    : msat_env_(e), existing_indices_(i) {
 
-    msat_env_ = e;
-    compute_prophecy_prop();
+    proph_trans_ = msat_make_true(e);
+    num_prophs_ = 0;
 
   }
 
-  /* Returns the property with prophecy variables added */
-  msat_term prophecy_prop() { return prophecy_prop_; };
+  /**
+   * Creates prophecy vars for all indices in property
+   */
+  msat_term prophesize_prop(msat_term prop);
 
-  /* Returns all created prophecy variables */
-  ic3ia::TermMap &prophecy_vars() { return prophecy_vars_; };
+  /* Returns all latest prophecy variables and targets
+     and then clears the map
+  */
+  ic3ia::TermMap latest_proph_targets()
+  {
+    ic3ia::TermMap m = proph_targets_;
+    proph_targets_.clear();
+    return m;
+  };
+
+
+  /* Returns all latest created prophecy variables
+     and then clears the map
+   */
+  ic3ia::TermMap latest_proph_vars()
+  {
+    ic3ia::TermMap m = next_proph_vars_;
+    next_proph_vars_.clear();
+    return m;
+  };
+
+  /* Returns the latest addition to trans and resets it to true */
+  msat_term latest_proph_trans()
+  {
+    msat_term t = proph_trans_;
+    proph_trans_ = msat_make_true(msat_env_);
+    return t;
+  }
 
 protected:
   msat_env msat_env_;
-  msat_term prophecy_prop_;
-  ic3ia::TermMap prophecy_vars_;
+  size_t num_prophs_;
+  ic3ia::TermMap proph_targets_;
+  ic3ia::TermMap next_proph_vars_;
 
-  const msat_term existing_prop_;
-  const ic3ia::TermSet & existing_indices_;
-  const ic3ia::TermMap & existing_witnesses_;
+  const ic3ia::TermSet existing_indices_;
 
-  /*
-   * Creates a new version of property with prophecy variables
-   * for each array index
-   */
-  void compute_prophecy_prop();
+  msat_term proph_trans_;
+
 };
 
 } // namespace ic3ia_array

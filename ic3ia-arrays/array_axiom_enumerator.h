@@ -41,6 +41,8 @@ public:
   // structs for each type of equality) then have methods to enumerate different
   // kinds of axioms
 
+  ic3ia::TermSet orig_indices() const { return orig_indices_set_; };
+
   // Note: not differentiating between zero-step and one-step axioms
   //       just enumerating them all together
   ic3ia::TermSet init_eq_axioms();

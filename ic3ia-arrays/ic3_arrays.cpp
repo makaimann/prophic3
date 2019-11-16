@@ -28,39 +28,33 @@ msat_truth_value IC3Array::prove()
   //       but if it is needed and we wait, we'll have to enumerate a lot axioms
   //       before we even get to prophecy vars
   ProphecyRefiner pr(abs_ts_.get_env(),
-                     abs_ts_.prop(),
-                     aa.indices(),
-                     aa.witnesses());
+                     aae.orig_indices());
 
   TermSet proph_vars;
+  msat_term new_prop = pr.prophesize_prop(abs_ts_.prop());
 
-  // create state variables for prophecy vars and ass as indices
-  TermTypeMap &orig_types = aa.orig_types();
-  for (auto elem : pr.prophecy_vars()) {
-    msat_term proph = elem.first;
-    proph_vars.insert(proph);
-    msat_decl proph_declN = msat_declare_function(
-        msat_env_, (std::string(msat_term_repr(proph)) + ".next").c_str(),
-        msat_term_get_type(proph));
-    msat_term prophN = msat_make_constant(msat_env_, proph_declN);
-    // add the prophecy variable to the transition system
-    // and make it frozen
-    abs_ts_.add_statevar(proph, prophN);
-    abs_ts_.add_trans(msat_make_equal(msat_env_, prophN, proph));
-    // save the original sort of the variable -- for the axiom enumerator
-    orig_types[proph] = orig_types.at(elem.second);
+  // update variables and type maps
+  for (auto elem : pr.latest_proph_vars())
+  {
+    proph_vars.insert(elem.first);
+    abs_ts_.add_statevar(elem.first, elem.second);
   }
 
-  // treat each of these prophecy variables as an index
-  // want to generate lemmas over them
-  for (auto elem : pr.prophecy_vars()) {
-    aae.add_index(orig_types.at(elem.first), elem.first);
+  abs_ts_.add_trans(pr.latest_proph_trans());
+
+  TermTypeMap & orig_types = aa.orig_types();
+  msat_type _type;
+  for (auto elem : pr.latest_proph_targets())
+  {
+    _type = orig_types.at(elem.second);
+    orig_types[elem.first] = _type;
+    aae.add_index(_type, elem.first);
   }
 
   // set the new property
-  abs_ts_.set_prop(pr.prophecy_prop(), false); // always safety property for now
+  abs_ts_.set_prop(new_prop, false); // always safety property for now
 
-  std::cout << "Created " << pr.prophecy_vars().size();
+  std::cout << "Created " << proph_vars.size();
   std::cout << " prophecy variables for the property" << std::endl;
 
   bool found_untimed_axioms = false;
