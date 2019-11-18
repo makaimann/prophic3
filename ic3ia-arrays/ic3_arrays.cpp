@@ -251,6 +251,9 @@ msat_truth_value IC3Array::prove()
       for (auto elem : indices_to_refine)
       {
         msat_term v = hr.hist_var(elem.first, witness_length - elem.second);
+        // update type maps -- need to keep track of this for proph var indices
+        _type = orig_types.at(elem.first);
+        orig_types[v] = _type;
         hist_vars.insert(v);
       }
 
@@ -268,6 +271,27 @@ msat_truth_value IC3Array::prove()
         abs_ts_.add_statevar(v, next_hist_vars.at(v));
         abs_ts_.add_trans(hist_trans.at(v));
       }
+
+      TermSet proph_hist_vars = pr.prophesize_prop(abs_ts_.prop(), hist_vars);
+
+      // Note: next_proph_vars and proph_targets are references -- they've been updated
+      for(auto v : proph_hist_vars)
+      {
+        nv = next_proph_vars.at(v);
+        abs_ts_.add_statevar(v, nv);
+        abs_ts_.add_trans(msat_make_eq(msat_env_, nv, v));
+      }
+
+      // update type maps
+      for (auto elem : proph_targets)
+      {
+        _type = orig_types.at(elem.second);
+        orig_types[elem.first] = _type;
+        aae.add_index(_type, elem.first);
+      }
+
+      // set the new property
+      abs_ts_.set_prop(pr.prop(), false); // always safety property for now
 
       std::cout << "Haven't implemented history variables yet -- will fail for now." << std::endl;
       throw std::exception();
