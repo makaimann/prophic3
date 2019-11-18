@@ -207,10 +207,22 @@ msat_truth_value IC3Array::prove()
       throw std::exception();
     }
 
-    std::cout << "Adding " << axioms_to_add.size() << " axioms to trans."
+    std::cout << "Found " << axioms_to_add.size() << " axioms."
               << std::endl;
+
+    TermSet *axioms = NULL;
+    TermSet red_axioms;
+    if (reduce_axioms(reached_k, u, axioms_to_add, red_axioms)) {
+      std::cout << "Reduced to " << red_axioms.size() << " axioms."
+		<< std::endl;
+      axioms = &red_axioms;
+    } else {
+      axioms = &axioms_to_add;
+    }
+
     size_t cnt = 0;
-    for (auto ax : axioms_to_add) {
+    for (auto ax : *(axioms)) {
+      //std::cout << msat_to_smtlib2_term(msat_env_, ax) << std::endl;
       abs_ts_.add_trans(ax);
 
       // if there's no next-state variables, add next version to trans
@@ -233,8 +245,10 @@ msat_truth_value IC3Array::prove()
 
     }
     std::cout << "Added " << cnt << " axioms to init." << std::endl;
+    std::cout << "Added " << axioms->size() << " axioms to trans." << std::endl;
     axioms_to_add.clear();
-
+    red_axioms.clear();
+    
     // increment reached_k
     reached_k++;
   }
@@ -356,4 +370,73 @@ bool IC3Array::contains_vars(msat_term term, const TermSet &vars) const {
   msat_visit_term(msat_env_, term, visit, &data);
   return data.contains_var;
 }
+
+bool IC3Array::reduce_axioms(int k, Unroller un, const TermSet & axioms, TermSet & out)
+{
+  msat_config cfg = get_config(NO_MODEL);
+  msat_env reducer = msat_create_shared_env(cfg, abs_ts_.get_env());
+  msat_destroy_config(cfg);
+  //msat_reset_env(reducer);
+  
+  // bmc problem
+  msat_assert_formula(reducer, un.at_time(abs_ts_.init(), 0));
+  for (int i = 0; i < k; ++i) {
+    msat_assert_formula(reducer, un.at_time(abs_ts_.trans(), i));
+    msat_assert_formula(reducer, un.at_time(abs_ts_.prop(), i));
+  }
+  msat_assert_formula(reducer,
+		      un.at_time(msat_make_not(reducer, abs_ts_.prop()), k));
+  
+  auto lbl = [=](msat_term p) -> msat_term
+      {
+	std::ostringstream buf;
+	buf << ".axiom_red_lbl{" << msat_term_id(p) << "}";
+	std::string name = buf.str();
+	msat_decl d = msat_declare_function(abs_ts_.get_env(), name.c_str(),
+					    msat_get_bool_type(abs_ts_.get_env()));
+	return msat_make_constant(abs_ts_.get_env(), d);
+      };
+  TermList labels;
+
+  TermList cur_axioms(axioms.begin(), axioms.end());
+  std::cout << "reduce_axioms: axioms size " << cur_axioms.size()
+	    << std::endl;
+  
+  for (msat_term a : cur_axioms) {
+    msat_term l = lbl(a);
+    labels.push_back(l);
+
+    msat_term aa = un.at_time(a, 0);
+    for (int i = 1; i <= k; ++i) {
+      aa = msat_make_and(reducer, aa, un.at_time(a, i));
+    }
+    //std::cout << msat_to_smtlib2_term(abs_ts_.get_env(), aa) << std::endl;
+    msat_assert_formula(reducer, msat_make_iff(reducer, l, aa));
+  };
+
+  msat_result s = msat_solve_with_assumptions(reducer, &labels[0], labels.size());
+  if (s = MSAT_UNSAT) {
+    size_t ucsz = 0;
+    msat_term *uc = msat_get_unsat_assumptions(reducer, &ucsz);
+    assert(uc);
+    TermSet core(uc, uc+ucsz);
+    msat_free(uc);
+
+    out.clear();
+    for (size_t i = 0; i < cur_axioms.size(); ++i) {
+      msat_term a = cur_axioms[i];
+      msat_term l = labels[i];
+      if (core.find(l) != core.end()) {
+	out.insert(a);
+      }
+    }
+    
+    return true;
+  } else {
+    std::cout << "FAILED REDUCING" << std::endl;
+    return false;
+  }
+}
+
+
 }

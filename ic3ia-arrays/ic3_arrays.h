@@ -32,6 +32,7 @@ namespace ic3ia_array
     int witness(std::vector<ic3ia::TermList> & out);
 
   protected:
+
     msat_env msat_env_;
     const ic3ia::TransitionSystem & conc_ts_;
     ic3ia::TransitionSystem abs_ts_;
@@ -46,7 +47,11 @@ namespace ic3ia_array
 
     /* returns true if t contains any var from vars */
     bool contains_vars(msat_term term, const ic3ia::TermSet &vars) const;
+
+    bool reduce_axioms(int k, ic3ia::Unroller un, const ic3ia::TermSet & axioms, ic3ia::TermSet & out);
   };
 }
+
+    
 
 #endif
