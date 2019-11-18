@@ -212,7 +212,7 @@ msat_truth_value IC3Array::prove()
 
     TermSet *axioms = NULL;
     TermSet red_axioms;
-    if (reduce_axioms(reached_k, u, axioms_to_add, red_axioms)) {
+    if (reduce_axioms(reached_k, axioms_to_add, red_axioms)) {
       std::cout << "Reduced to " << red_axioms.size() << " axioms."
 		<< std::endl;
       axioms = &red_axioms;
@@ -371,10 +371,11 @@ bool IC3Array::contains_vars(msat_term term, const TermSet &vars) const {
   return data.contains_var;
 }
 
-bool IC3Array::reduce_axioms(int k, Unroller un, const TermSet & axioms, TermSet & out)
+bool IC3Array::reduce_axioms(int k, const TermSet & axioms, TermSet & out)
 {
   msat_config cfg = get_config(NO_MODEL);
   msat_env reducer = msat_create_shared_env(cfg, abs_ts_.get_env());
+  Unroller un(abs_ts_);
   msat_destroy_config(cfg);
   //msat_reset_env(reducer);
   
@@ -385,23 +386,21 @@ bool IC3Array::reduce_axioms(int k, Unroller un, const TermSet & axioms, TermSet
     msat_assert_formula(reducer, un.at_time(abs_ts_.prop(), i));
   }
   msat_assert_formula(reducer,
-		      un.at_time(msat_make_not(reducer, abs_ts_.prop()), k));
+                      un.at_time(msat_make_not(reducer, abs_ts_.prop()), k));
   
   auto lbl = [=](msat_term p) -> msat_term
-      {
-	std::ostringstream buf;
-	buf << ".axiom_red_lbl{" << msat_term_id(p) << "}";
-	std::string name = buf.str();
-	msat_decl d = msat_declare_function(abs_ts_.get_env(), name.c_str(),
-					    msat_get_bool_type(abs_ts_.get_env()));
-	return msat_make_constant(abs_ts_.get_env(), d);
-      };
+             {
+               std::ostringstream buf;
+               buf << ".axiom_red_lbl{" << msat_term_id(p) << "}";
+               std::string name = buf.str();
+               msat_decl d = msat_declare_function(abs_ts_.get_env(), name.c_str(),
+                                                   msat_get_bool_type(abs_ts_.get_env()));
+               return msat_make_constant(abs_ts_.get_env(), d);
+             };
   TermList labels;
 
   TermList cur_axioms(axioms.begin(), axioms.end());
-  std::cout << "reduce_axioms: axioms size " << cur_axioms.size()
-	    << std::endl;
-  
+
   for (msat_term a : cur_axioms) {
     msat_term l = lbl(a);
     labels.push_back(l);
@@ -427,7 +426,7 @@ bool IC3Array::reduce_axioms(int k, Unroller un, const TermSet & axioms, TermSet
       msat_term a = cur_axioms[i];
       msat_term l = labels[i];
       if (core.find(l) != core.end()) {
-	out.insert(a);
+        out.insert(a);
       }
     }
     

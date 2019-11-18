@@ -48,7 +48,7 @@ namespace ic3ia_array
     /* returns true if t contains any var from vars */
     bool contains_vars(msat_term term, const ic3ia::TermSet &vars) const;
 
-    bool reduce_axioms(int k, ic3ia::Unroller un, const ic3ia::TermSet & axioms, ic3ia::TermSet & out);
+    bool reduce_axioms(int k, const ic3ia::TermSet & axioms, ic3ia::TermSet & out);
   };
 }
 
