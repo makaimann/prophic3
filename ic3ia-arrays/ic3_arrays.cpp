@@ -258,6 +258,15 @@ msat_truth_value IC3Array::prove()
         std::cout << "\t" << msat_to_smtlib2_term(msat_env_, v) << std::endl;
       }
 
+      // after these calls, the latest trans values are reset
+      const TermMap & next_hist_vars = hr.next_hist_vars();
+      const TermMap & hist_trans = hr.hist_trans();
+      for (auto v : hist_vars)
+      {
+        abs_ts_.add_statevar(v, next_hist_vars.at(v));
+        abs_ts_.add_trans(hist_trans.at(v));
+      }
+
       std::cout << "Haven't implemented history variables yet -- will fail for now." << std::endl;
       throw std::exception();
     }

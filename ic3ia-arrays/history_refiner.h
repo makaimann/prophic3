@@ -12,15 +12,13 @@ public:
   // occur outside of this class
   // it only queries the transition system
   HistoryRefiner(const ic3ia::TransitionSystem &ts)
-    : msat_env_(ts.get_env()), abs_ts_(ts) {
-    hist_trans_ = msat_make_true(msat_env_);
-  }
+    : msat_env_(ts.get_env()), abs_ts_(ts) {}
 
-  // return latest trans updates and reset it to true
-  msat_term latest_hist_trans();
+  // maps history variables to their update logic
+  ic3ia::TermMap & hist_trans() { return hist_trans_; };
 
   // return latest history variable mappings and reset it
-  ic3ia::TermMap latest_hist_vars();
+  ic3ia::TermMap & next_hist_vars() { return next_hist_vars_; };
 
   /**
    * Takes an arbitrary term and returns the history variable for it which
@@ -44,7 +42,7 @@ protected:
   //                   repeating the same constraints from
   //                   a previous refinement step
 
-  msat_term hist_trans_;
+  ic3ia::TermMap hist_trans_;
   ic3ia::TermMap next_hist_vars_;
 };
 

@@ -5,18 +5,6 @@ using namespace ic3ia;
 
 namespace ic3ia_array {
 
-msat_term HistoryRefiner::latest_hist_trans() {
-  msat_term tmp = hist_trans_;
-  hist_trans_ = msat_make_true(msat_env_);
-  return tmp;
-}
-
-TermMap HistoryRefiner::latest_hist_vars() {
-  TermMap tmp = next_hist_vars_;
-  next_hist_vars_.clear();
-  return tmp;
-}
-
 msat_term HistoryRefiner::hist_var(msat_term t, size_t d) {
   t = abs_ts_.cur(t);
   msat_type _type = msat_term_get_type(t);
@@ -50,13 +38,10 @@ msat_term HistoryRefiner::hist_var(msat_term t, size_t d) {
     // update trans
     if (num_existing_hist_vars == 1) {
       // hist_var_1' = var
-      hist_trans_ = msat_make_and(msat_env_, hist_trans_,
-                                  msat_make_eq(msat_env_, hist_var_next, t));
+      hist_trans_[hist_var] = msat_make_eq(msat_env_, hist_var_next, t);
     } else {
       // hist_var_{n+1}' = hist_var_{n}
-      hist_trans_ = msat_make_and(
-          msat_env_, hist_trans_,
-          msat_make_eq(msat_env_, hist_var_next, hist_vars_[t].back()));
+      hist_trans_[hist_var] = msat_make_eq(msat_env_, hist_var_next, hist_vars_[t].back());
     }
 
     // store in relevant data structures
