@@ -288,12 +288,10 @@ msat_truth_value IC3Array::prove()
 
       // set the new property
       abs_ts_.set_prop(pr.prop(), abs_ts_.live_prop());
-
-      std::cout << "Haven't implemented history variables yet -- will fail for now." << std::endl;
-      throw std::exception();
     }
     timed_axioms_to_refine.clear();
-
+    // reset the flag
+    found_timed_axioms = false;
   }
   // TODO: do this correctly
   return MSAT_FALSE;
