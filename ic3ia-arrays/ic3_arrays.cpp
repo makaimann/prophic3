@@ -56,7 +56,7 @@ msat_truth_value IC3Array::prove()
   }
 
   // set the new property
-  abs_ts_.set_prop(pr.prop(), false); // always safety property for now
+  abs_ts_.set_prop(pr.prop(), abs_ts_.live_prop());
 
   std::cout << "Created " << proph_vars.size();
   std::cout << " prophecy variables for the property" << std::endl;
@@ -291,7 +291,7 @@ msat_truth_value IC3Array::prove()
       }
 
       // set the new property
-      abs_ts_.set_prop(pr.prop(), false); // always safety property for now
+      abs_ts_.set_prop(pr.prop(), abs_ts_.live_prop());
 
       std::cout << "Haven't implemented history variables yet -- will fail for now." << std::endl;
       throw std::exception();
