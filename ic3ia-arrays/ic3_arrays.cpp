@@ -86,6 +86,7 @@ msat_truth_value IC3Array::prove()
       std::vector<TermList> witness;
       ic3.witness(witness);
       reached_k = witness.size();
+      std::cout << "Found Abstract CEX of length " << witness.size() - 1 << std::endl;
     }
     else
     {
@@ -212,7 +213,7 @@ msat_truth_value IC3Array::prove()
 
     TermSet *axioms = NULL;
     TermSet red_axioms;
-    if (reduce_axioms(reached_k, axioms_to_add, red_axioms)) {
+    if (reduce_axioms(reached_k - 1, axioms_to_add, red_axioms)) {
       std::cout << "Reduced to " << red_axioms.size() << " axioms."
 		<< std::endl;
       axioms = &red_axioms;
@@ -383,7 +384,6 @@ bool IC3Array::reduce_axioms(int k, const TermSet & axioms, TermSet & out)
   msat_assert_formula(reducer, un.at_time(abs_ts_.init(), 0));
   for (int i = 0; i < k; ++i) {
     msat_assert_formula(reducer, un.at_time(abs_ts_.trans(), i));
-    msat_assert_formula(reducer, un.at_time(abs_ts_.prop(), i));
   }
   msat_assert_formula(reducer,
                       un.at_time(msat_make_not(reducer, abs_ts_.prop()), k));
