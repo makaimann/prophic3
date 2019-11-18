@@ -19,6 +19,11 @@ public:
    */
   ic3ia::TermSet prophesize_prop(msat_term prop);
 
+  /**
+   * Creates prophecy vars for all the targets
+   */
+  ic3ia::TermSet prophesize_prop(msat_term prop, ic3ia::TermSet & targets);
+
   /* Returns all latest prophecy variables and targets
      and then clears the map
   */
