@@ -37,22 +37,21 @@ msat_truth_value IC3Array::prove()
   // update variables and type maps
   const TermMap & next_proph_vars = pr.next_proph_vars();
   const TermMap & proph_targets = pr.proph_targets();
+  TermTypeMap & orig_types = aa.orig_types();
+  msat_type _type;
 
   msat_term nv;
   for (auto v : proph_vars)
   {
     nv = next_proph_vars.at(v);
     abs_ts_.add_statevar(v, nv);
+    // frozenvar: proph' = proph
     abs_ts_.add_trans(msat_make_eq(msat_env_, nv, v));
-  }
 
-  TermTypeMap & orig_types = aa.orig_types();
-  msat_type _type;
-  for (auto elem : proph_targets)
-  {
-    _type = orig_types.at(elem.second);
-    orig_types[elem.first] = _type;
-    aae.add_index(_type, elem.first);
+    // update type maps and add as index
+    _type = orig_types.at(proph_targets.at(v));
+    orig_types[v] = _type;
+    aae.add_index(_type, v);
   }
 
   // set the new property
@@ -263,7 +262,6 @@ msat_truth_value IC3Array::prove()
         std::cout << "\t" << msat_to_smtlib2_term(msat_env_, v) << std::endl;
       }
 
-      // after these calls, the latest trans values are reset
       const TermMap & next_hist_vars = hr.next_hist_vars();
       const TermMap & hist_trans = hr.hist_trans();
       for (auto v : hist_vars)
@@ -279,15 +277,13 @@ msat_truth_value IC3Array::prove()
       {
         nv = next_proph_vars.at(v);
         abs_ts_.add_statevar(v, nv);
+        // frozenvar: proph' = proph
         abs_ts_.add_trans(msat_make_eq(msat_env_, nv, v));
-      }
 
-      // update type maps
-      for (auto elem : proph_targets)
-      {
-        _type = orig_types.at(elem.second);
-        orig_types[elem.first] = _type;
-        aae.add_index(_type, elem.first);
+        // update type maps and add as index
+        _type = orig_types.at(proph_targets.at(v));
+        orig_types[v] = _type;
+        aae.add_index(_type, v);
       }
 
       // set the new property
