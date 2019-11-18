@@ -15,10 +15,10 @@ public:
     : msat_env_(ts.get_env()), abs_ts_(ts) {}
 
   // maps history variables to their update logic
-  ic3ia::TermMap & hist_trans() { return hist_trans_; };
+  const ic3ia::TermMap & hist_trans() { return hist_trans_; };
 
   // return latest history variable mappings and reset it
-  ic3ia::TermMap & next_hist_vars() { return next_hist_vars_; };
+  const ic3ia::TermMap & next_hist_vars() { return next_hist_vars_; };
 
   /**
    * Takes an arbitrary term and returns the history variable for it which

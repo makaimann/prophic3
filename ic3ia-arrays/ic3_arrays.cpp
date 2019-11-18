@@ -32,21 +32,23 @@ msat_truth_value IC3Array::prove()
 
   HistoryRefiner hr(abs_ts_);
 
-  TermSet proph_vars;
-  msat_term new_prop = pr.prophesize_prop(abs_ts_.prop());
+  TermSet proph_vars = pr.prophesize_prop(abs_ts_.prop());
 
   // update variables and type maps
-  for (auto elem : pr.latest_proph_vars())
-  {
-    proph_vars.insert(elem.first);
-    abs_ts_.add_statevar(elem.first, elem.second);
-  }
+  const TermMap & next_proph_vars = pr.next_proph_vars();
+  const TermMap & proph_targets = pr.proph_targets();
 
-  abs_ts_.add_trans(pr.latest_proph_trans());
+  msat_term nv;
+  for (auto v : proph_vars)
+  {
+    nv = next_proph_vars.at(v);
+    abs_ts_.add_statevar(v, nv);
+    abs_ts_.add_trans(msat_make_eq(msat_env_, nv, v));
+  }
 
   TermTypeMap & orig_types = aa.orig_types();
   msat_type _type;
-  for (auto elem : pr.latest_proph_targets())
+  for (auto elem : proph_targets)
   {
     _type = orig_types.at(elem.second);
     orig_types[elem.first] = _type;
@@ -54,7 +56,7 @@ msat_truth_value IC3Array::prove()
   }
 
   // set the new property
-  abs_ts_.set_prop(new_prop, false); // always safety property for now
+  abs_ts_.set_prop(pr.prop(), false); // always safety property for now
 
   std::cout << "Created " << proph_vars.size();
   std::cout << " prophecy variables for the property" << std::endl;

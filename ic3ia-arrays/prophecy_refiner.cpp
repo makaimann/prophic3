@@ -5,14 +5,17 @@ using namespace ic3ia;
 
 namespace ic3ia_array {
 
-msat_term ProphecyRefiner::prophesize_prop(msat_term prop)
+TermSet ProphecyRefiner::prophesize_prop(msat_term prop)
 {
+
+  prop_ = prop;
+
   struct Data {
-    size_t & num_prophs;
+    size_t num_prophs;
     const TermSet &indices;
     TermMap prophecy_targets; // maps proph vars to their target
     TermMap next_proph; // maps proph vars to next proph vars
-    Data(size_t & n, const TermSet &i) : num_prophs(n), indices(i) {};
+    Data(size_t n, const TermSet &i) : num_prophs(n), indices(i) {};
   };
 
   auto visit = [](msat_env e, msat_term t, int preorder,
@@ -37,14 +40,17 @@ msat_term ProphecyRefiner::prophesize_prop(msat_term prop)
                  return MSAT_VISIT_PROCESS;
                };
 
-  Data data(num_prophs_, existing_indices_);
+  Data data(proph_targets_.size(), existing_indices_);
   msat_visit_term(msat_env_, prop, visit, &data);
 
   msat_term _true = msat_make_true(msat_env_);
   msat_term proph_equalities = _true;
 
+  TermSet proph_vars;
+
   for (auto elem : data.prophecy_targets)
   {
+    proph_vars.insert(elem.first);
     proph_equalities = msat_make_and(msat_env_, proph_equalities,
                                      msat_make_eq(msat_env_, elem.first, elem.second));
     proph_targets_[elem.first] = elem.second;
@@ -52,24 +58,19 @@ msat_term ProphecyRefiner::prophesize_prop(msat_term prop)
 
   for (auto elem : data.next_proph)
   {
-    // add proph' = proph;
-    proph_trans_ = msat_make_and(msat_env_, proph_trans_,
-                                 msat_make_eq(msat_env_,
-                                              elem.second, elem.first));
     // store in member variable -- note this gets reset every time the getter is called
     next_proph_vars_[elem.first] = elem.second;
   }
 
   if (proph_equalities != _true)
   {
-    prop = msat_make_or(msat_env_,
-                        msat_make_not(msat_env_, proph_equalities),
-                        prop);
+    prop_ = msat_make_or(msat_env_,
+                         msat_make_not(msat_env_, proph_equalities),
+                         prop);
 
   }
 
-  return prop;
-
+  return proph_vars;
 }
 
 } // namespace ic3ia_array
