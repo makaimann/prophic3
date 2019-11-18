@@ -30,6 +30,8 @@ msat_truth_value IC3Array::prove()
   ProphecyRefiner pr(abs_ts_.get_env(),
                      aae.orig_indices());
 
+  HistoryRefiner hr(abs_ts_);
+
   TermSet proph_vars;
   msat_term new_prop = pr.prophesize_prop(abs_ts_.prop());
 
@@ -242,6 +244,20 @@ msat_truth_value IC3Array::prove()
       {
         std::cout << "\t" << msat_to_smtlib2_term(msat_env_, elem.first) << ":" << elem.second << std::endl;
       }
+
+      TermSet hist_vars;
+      for (auto elem : indices_to_refine)
+      {
+        msat_term v = hr.hist_var(elem.first, witness_length - elem.second);
+        hist_vars.insert(v);
+      }
+
+      std::cout << "Created the following history variables:" << std::endl;
+      for (auto v : hist_vars)
+      {
+        std::cout << "\t" << msat_to_smtlib2_term(msat_env_, v) << std::endl;
+      }
+
       std::cout << "Haven't implemented history variables yet -- will fail for now." << std::endl;
       throw std::exception();
     }

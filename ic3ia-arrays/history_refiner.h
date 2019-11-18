@@ -11,9 +11,9 @@ public:
   // as a design decision, all updates to the transition system
   // occur outside of this class
   // it only queries the transition system
-  HistoryRefiner(msat_env e, ic3ia::TransitionSystem &ts)
-      : msat_env_(e), abs_ts_(ts) {
-    hist_trans_ = msat_make_true(e);
+  HistoryRefiner(const ic3ia::TransitionSystem &ts)
+    : msat_env_(ts.get_env()), abs_ts_(ts) {
+    hist_trans_ = msat_make_true(msat_env_);
   }
 
   // return latest trans updates and reset it to true
@@ -30,7 +30,7 @@ public:
 
 protected:
   msat_env msat_env_;
-  ic3ia::TransitionSystem &abs_ts_;
+  const ic3ia::TransitionSystem &abs_ts_;
   // maps cur state terms to history variables
   // the index of the vector corresponds to the delay (+ 1)
   // e.g. hist_vars_[x][1] is the history variable that delays x by 2

@@ -40,7 +40,7 @@ msat_term HistoryRefiner::hist_var(msat_term t, size_t d) {
     num_existing_hist_vars++;
 
     name =
-        string("hist_") + msat_term_repr(t) + to_string(num_existing_hist_vars);
+        string("hist_") + msat_term_repr(t) + "_" + to_string(num_existing_hist_vars);
     decl = msat_declare_function(msat_env_, name.c_str(), _type);
     hist_var = msat_make_constant(msat_env_, decl);
     decl_next =
