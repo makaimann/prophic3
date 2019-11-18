@@ -322,6 +322,8 @@ void ArrayAbstractor::create_lambdas() {
         }
       }
       abs_ts_.add_trans(alldiff);
+      // add next version (should be different in all time-steps)
+      abs_ts_.add_trans(abs_ts_.next(alldiff));
 
       // store original sort (might be the same if it's already an integer)
       orig_types_[lambda] = _type;
