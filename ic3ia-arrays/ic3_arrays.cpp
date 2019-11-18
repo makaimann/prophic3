@@ -415,7 +415,7 @@ bool IC3Array::reduce_axioms(int k, Unroller un, const TermSet & axioms, TermSet
   };
 
   msat_result s = msat_solve_with_assumptions(reducer, &labels[0], labels.size());
-  if (s = MSAT_UNSAT) {
+  if (s == MSAT_UNSAT) {
     size_t ucsz = 0;
     msat_term *uc = msat_get_unsat_assumptions(reducer, &ucsz);
     assert(uc);
