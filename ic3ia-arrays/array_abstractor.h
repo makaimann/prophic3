@@ -45,6 +45,7 @@ public:
     TermTypeMap &orig_types() { return orig_types_; };
     ic3ia::TermSet &const_arrs() { return const_arrs_; };
     ic3ia::TermSet &stores() { return stores_; };
+    ic3ia::TermSet &lambdas() { return lambdas_; };
     ic3ia::TermSet &finite_domain_lambdas() { return finite_domain_lambdas_; };
 
   private:
@@ -87,6 +88,7 @@ public:
     // removed variables from concrete transition system -- internal use only
     ic3ia::TermSet removed_vars_;
 
+    ic3ia::TermSet lambdas_;
     ic3ia::TermSet finite_domain_lambdas_;
 };
 

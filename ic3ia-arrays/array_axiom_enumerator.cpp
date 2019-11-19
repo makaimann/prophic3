@@ -226,6 +226,29 @@ ic3ia::TermSet ArrayAxiomEnumerator::store_axioms()
   return axioms;
 }
 
+ic3ia::TermSet ArrayAxiomEnumerator::lambda_alldiff_axioms()
+{
+  TermSet axioms;
+
+  TermTypeMap & orig_types = abstractor_.orig_types();
+  TermSet & lambdas = abstractor_.lambdas();
+  std::string typestr;
+  for (auto l : lambdas)
+  {
+    typestr = msat_type_repr(orig_types.at(l));
+    for (auto i : all_indices_.at(typestr))
+    {
+      if (i != l)
+      {
+        axioms.insert(msat_make_not(msat_env_,
+                                    msat_make_eq(msat_env_, i, l)));
+      }
+    }
+  }
+
+  return axioms;
+}
+
 vector<TermSet> ArrayAxiomEnumerator::equality_axioms_all_indices(Unroller &un,
                                                           size_t k) {
   const ic3ia::TermMap &witnesses = abstractor_.witnesses();

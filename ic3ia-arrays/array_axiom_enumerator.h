@@ -52,6 +52,8 @@ public:
   ic3ia::TermSet const_array_axioms();
   ic3ia::TermSet store_axioms();
 
+  ic3ia::TermSet lambda_alldiff_axioms();
+
   /** Enumerate equality axioms over indices at all times
    *  un - the unroller to use for timing
    *  k - the maximum time-step (exclusive e.g. the length of the CEX)

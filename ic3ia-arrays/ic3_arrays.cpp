@@ -246,8 +246,32 @@ msat_truth_value IC3Array::prove()
         found_timed_axioms = violated_axioms.size();
       }
 
-      if (!found_untimed_axioms & !found_timed_axioms) {
+      // if there weren't any regular timed axioms or
+      // history refinements possible,
+      // try the lambda refinement (this is untime-able)
+      if (!found_untimed_axioms && !found_timed_axioms)
+      {
+        std::cout << "Trying lazy lambda all different refinement!" << std::endl;
+        for (auto ax : aae.lambda_alldiff_axioms())
+        {
+          for(size_t k = 0; k <= reached_k; k++)
+          {
+            timed_axiom = un_.at_time(ax, k);
+            untime_cache[timed_axiom] = ax;
+            val = msat_model_eval(model, timed_axiom);
+
+            if (val == f) {
+              violated_axioms.insert(timed_axiom);
+              untimed_axioms_to_add.insert(ax);
+            }
+          }
+        }
+        found_untimed_axioms = violated_axioms.size();
+      }
+
+      if (!found_untimed_axioms && !found_timed_axioms) {
         print_witness(model, reached_k, aae);
+
         // TODO: Use real exceptions
         std::cout << "It looks like there's a concrete counter-example (or some axioms are missing)" << std::endl;
         return MSAT_FALSE;
