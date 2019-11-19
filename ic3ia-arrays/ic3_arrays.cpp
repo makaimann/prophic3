@@ -62,7 +62,7 @@ msat_truth_value IC3Array::prove()
 
   bool found_untimed_axioms = false;
   bool found_timed_axioms = false;
-  unsigned int witness_length = 0;
+  unsigned int reached_k = 0;
 
   // TODO: Figure out how to handle False cases someday
   while (res != MSAT_TRUE)
@@ -82,7 +82,7 @@ msat_truth_value IC3Array::prove()
     {
       std::vector<TermList> witness;
       ic3.witness(witness);
-      witness_length = witness.size();
+      reached_k = witness.size() - 1;
     }
     else
     {
@@ -93,7 +93,7 @@ msat_truth_value IC3Array::prove()
     // Run bmc
     Bmc bmc(abs_ts_, opts_);
     Unroller &u = bmc.get_unroller();
-    bool broken = !bmc.check_until(witness_length);
+    bool broken = !bmc.check_until(reached_k);
     assert((res != MSAT_FALSE) || broken);
 
     // TODO: filter axioms with unsat core
@@ -127,7 +127,7 @@ msat_truth_value IC3Array::prove()
         if (i == 0) {
           max_k = 0;
         } else {
-          max_k = witness_length;
+          max_k = reached_k;
         }
 
         // Need to check up to (and include) max_k for single-time
@@ -160,9 +160,9 @@ msat_truth_value IC3Array::prove()
       if (!found_untimed_axioms)
       {
         vector<vector<TermSet>> timed_axioms;
-        timed_axioms.push_back(aae.equality_axioms_all_indices(u, witness_length));
-        timed_axioms.push_back(aae.store_axioms_all_indices(u, witness_length));
-        timed_axioms.push_back(aae.const_array_axioms_all_indices(u, witness_length));
+        timed_axioms.push_back(aae.equality_axioms_all_indices(u, reached_k));
+        timed_axioms.push_back(aae.store_axioms_all_indices(u, reached_k));
+        timed_axioms.push_back(aae.const_array_axioms_all_indices(u, reached_k));
 
         for(auto axiom_vec : timed_axioms)
         {
@@ -197,7 +197,7 @@ msat_truth_value IC3Array::prove()
       }
 
       bmc.add_assumptions(violated_axioms);
-      broken = !bmc.check_until(witness_length);
+      broken = !bmc.check_until(reached_k);
       violated_axioms.clear();
     }
 
@@ -218,7 +218,7 @@ msat_truth_value IC3Array::prove()
       //       Not even sure if this is right or why we need it
       //       but without it, it fails to find an interpolant
       //       for hard-array.vmt and hard-array-false.vmt
-      if (abs_ts_.only_cur(ax) && (witness_length == 1 || contains_vars(ax, proph_vars))) {
+      if (abs_ts_.only_cur(ax) && (reached_k == 0 || contains_vars(ax, proph_vars))) {
         // only add axioms to init if the counterexample is length 1
         // or it involves prophecy variables
         abs_ts_.add_init(ax);
@@ -229,7 +229,6 @@ msat_truth_value IC3Array::prove()
     std::cout << "Added " << cnt << " axioms to init." << std::endl;
     untimed_axioms_to_add.clear();
 
-    // haven't implemented history variables yet
     if (found_timed_axioms)
     {
       unordered_map<msat_term, size_t> indices_to_refine;
@@ -249,7 +248,7 @@ msat_truth_value IC3Array::prove()
       TermSet hist_vars;
       for (auto elem : indices_to_refine)
       {
-        msat_term v = hr.hist_var(elem.first, witness_length - elem.second);
+        msat_term v = hr.hist_var(elem.first, reached_k - elem.second);
         // update type maps -- need to keep track of this for proph var indices
         _type = orig_types.at(elem.first);
         orig_types[v] = _type;
