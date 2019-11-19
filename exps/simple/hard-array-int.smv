@@ -1,0 +1,28 @@
+MODULE main
+
+VAR
+  mem : array integer of integer;
+  x : integer;
+  y : integer;
+  inc_x : boolean;
+  inc_y : boolean;
+
+FROZENVAR
+  data0 : integer;
+  data1 : integer;
+
+INIT x = 0
+
+INIT y = 1
+
+INIT mem = CONSTARRAY(typeof(mem), 0)
+
+TRANS next(x) = (inc_x ? x + 1 : x)
+
+TRANS next(y) = (inc_y ? y + 1 : y)
+
+INVAR (x = y) -> !inc_x
+
+TRANS next(mem) = WRITE(mem, y, y > 10 ? data1 : data0);
+
+INVARSPEC x > 10 -> READ(mem, x) = data1
