@@ -55,6 +55,9 @@ public:
    */
   std::vector<ic3ia::TermSet> const_array_axioms_all_indices(ic3ia::Unroller &un, size_t k);
 
+  /* Lazily instantiate all different axioms for lambdas */
+  ic3ia::TermSet lambda_alldiff_axioms();
+
   /* Adds an index to the index set (mostly used for adding prophecy vars) */
   void add_index(msat_type _type, msat_term i);
 

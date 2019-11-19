@@ -45,6 +45,7 @@ public:
     TermTypeMap &orig_types() { return orig_types_; };
     ic3ia::TermSet &const_arrs() { return const_arrs_; };
     ic3ia::TermSet &stores() { return stores_; };
+    ic3ia::TermSet &lambdas() { return lambdas_; };
     ic3ia::TermSet &finite_domain_lambdas() { return finite_domain_lambdas_; };
 
   private:
@@ -91,6 +92,7 @@ public:
     // maps array types to abstract write UFs
     std::unordered_map<std::string, msat_decl> store_ufs_;
 
+    ic3ia::TermSet lambdas_;
     ic3ia::TermSet finite_domain_lambdas_;
 };
 
