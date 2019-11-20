@@ -11,6 +11,29 @@ namespace ic3ia_array
 {
 // TODO Implement these
 
+IC3Array::IC3Array(const ic3ia::TransitionSystem &ts, const ic3ia::Options &opts,
+		   ic3ia::LiveEncoder &l2s, unsigned int verbosity)
+  : msat_env_(ts.get_env()), conc_ts_(ts), abs_ts_(msat_env_), l2s_(l2s),
+    opts_(opts), un_(abs_ts_) {
+  ic3ia::Logger & l = ic3ia::Logger::get();
+  l.set_verbosity(verbosity);
+
+  msat_config cfg = get_config(FULL_MODEL);
+  refiner_ = msat_create_shared_env(cfg, abs_ts_.get_env());
+  msat_destroy_config(cfg);
+
+  cfg = get_config(NO_MODEL);
+  reducer_ = msat_create_shared_env(cfg, abs_ts_.get_env());
+  msat_destroy_config(cfg);
+
+}
+
+IC3Array::~IC3Array()
+{
+  msat_destroy_env(refiner_);
+  msat_destroy_env(reducer_);
+}
+  
 msat_truth_value IC3Array::prove()
 {
   ArrayFlattener af(conc_ts_);
@@ -92,20 +115,15 @@ msat_truth_value IC3Array::prove()
     }
 
     // Run bmc
-    msat_config cfg = get_config(FULL_MODEL);
-    msat_env refiner = msat_create_shared_env(cfg, abs_ts_.get_env());
-    Unroller u(abs_ts_);
-    msat_destroy_config(cfg);
-    //Bmc bmc(abs_ts_, opts_);
-    //Unroller &u = bmc.get_unroller();
-    msat_assert_formula(refiner, u.at_time(abs_ts_.init(), 0));
+    msat_reset_env(refiner_);
+    msat_assert_formula(refiner_, un_.at_time(abs_ts_.init(), 0));
     for (int i = 0; i < reached_k; ++i) {
-      msat_assert_formula(refiner, u.at_time(abs_ts_.trans(), i));
+      msat_assert_formula(refiner_, un_.at_time(abs_ts_.trans(), i));
     }
-    msat_assert_formula(refiner,
-			u.at_time(msat_make_not(refiner, abs_ts_.prop()),
+    msat_assert_formula(refiner_,
+			un_.at_time(msat_make_not(refiner_, abs_ts_.prop()),
 				  reached_k));
-    bool broken = msat_solve(refiner) == MSAT_SAT;
+    bool broken = msat_solve(refiner_) == MSAT_SAT;
     //bmc.check_until(reached_k);
     assert((res != MSAT_FALSE) || broken);
 
@@ -117,7 +135,7 @@ msat_truth_value IC3Array::prove()
     TermSet timed_axioms_to_refine;
 
     while (broken) {
-      msat_model model = msat_get_model(refiner);
+      msat_model model = msat_get_model(refiner_);
 
       // Run refinements
       msat_term timed_axiom;
@@ -147,7 +165,7 @@ msat_truth_value IC3Array::prove()
         // e.g. if it has no next, then need to include last time step
         for (size_t k = 0; k <= max_k; ++k) {
           for (auto ax : axiom_sets[i]) {
-            timed_axiom = u.at_time(ax, k);
+            timed_axiom = un_.at_time(ax, k);
             // TODO: See if it's faster to just overwrite or to check the cache
             // first
             untime_cache[timed_axiom] = ax;
@@ -173,9 +191,9 @@ msat_truth_value IC3Array::prove()
       if (!found_untimed_axioms)
       {
         vector<vector<TermSet>> timed_axioms;
-        timed_axioms.push_back(aae.equality_axioms_all_indices(u, reached_k));
-        timed_axioms.push_back(aae.store_axioms_all_indices(u, reached_k));
-        timed_axioms.push_back(aae.const_array_axioms_all_indices(u, reached_k));
+        timed_axioms.push_back(aae.equality_axioms_all_indices(un_, reached_k));
+        timed_axioms.push_back(aae.store_axioms_all_indices(un_, reached_k));
+        timed_axioms.push_back(aae.const_array_axioms_all_indices(un_, reached_k));
 
         for(auto axiom_vec : timed_axioms)
         {
@@ -210,9 +228,9 @@ msat_truth_value IC3Array::prove()
       }
 
       for (auto ax : violated_axioms) {
-	msat_assert_formula(refiner, ax);
+	msat_assert_formula(refiner_, ax);
       }
-      broken = msat_solve(refiner) == MSAT_SAT;
+      broken = msat_solve(refiner_) == MSAT_SAT;
       violated_axioms.clear();
     }
 
@@ -223,7 +241,7 @@ msat_truth_value IC3Array::prove()
     TermSet *timed_axioms = NULL;
     TermSet red_untimed_axioms;
     TermSet red_timed_axioms;
-    if (reduce_axioms(reached_k, u, untimed_axioms_to_add, timed_axioms_to_refine, red_untimed_axioms, red_timed_axioms)) {
+    if (reduce_axioms(reached_k, untimed_axioms_to_add, timed_axioms_to_refine, red_untimed_axioms, red_timed_axioms)) {
       std::cout << "Reduced Untimed Axioms to "
 		<< red_untimed_axioms.size() << " axioms."
                 << std::endl;
@@ -274,7 +292,7 @@ msat_truth_value IC3Array::prove()
       for (auto ax : *(timed_axioms))
       {
         tmp_idx = aae.get_index(ax);
-        indices_to_refine[u.untime(tmp_idx)] = time_of_index.at(ax);
+        indices_to_refine[un_.untime(tmp_idx)] = time_of_index.at(ax);
       }
 
       std::cout << "Found " << indices_to_refine.size() << " indices which need to be refined." << std::endl;
@@ -383,7 +401,7 @@ void IC3Array::debug_print_witness(Bmc &bmc,
     string typestr = msat_type_repr(orig_types.at(arr));
     for (auto i : aae.all_indices().at(typestr)) {
       for (size_t k = 0; k < witness.size(); ++k) {
-        indices.insert(msat_model_eval(model, u.at_time(i, k)));
+        indices.insert(msat_model_eval(model, un_.at_time(i, k)));
       }
     }
 
@@ -392,13 +410,13 @@ void IC3Array::debug_print_witness(Bmc &bmc,
         continue;
       }
       for (size_t k = 0; k < witness.size(); ++k) {
-        indices.insert(msat_model_eval(model, u.at_time(w.second, k)));
+        indices.insert(msat_model_eval(model, un_.at_time(w.second, k)));
       }
     }
 
     for (auto i : indices) {
       for (size_t k = 0; k < witness.size(); ++k) {
-        msat_term timed_arr = u.at_time(arr, k);
+        msat_term timed_arr = un_.at_time(arr, k);
         msat_term args[2] = {timed_arr, i};
         msat_term read = msat_make_uf(msat_env_, fun, args);
         std::cout << msat_to_smtlib2_term(msat_env_, read) << " := ";
@@ -450,20 +468,18 @@ bool IC3Array::contains_vars(msat_term term, const TermSet &vars) const {
   return data.contains_var;
 }
 
-  bool IC3Array::reduce_axioms(int k, Unroller & un, const TermSet & untimed_axioms, const TermSet & timed_axioms, TermSet & out_untimed, TermSet & out_timed)
+bool IC3Array::reduce_axioms(int k, const TermSet & untimed_axioms,
+			     const TermSet & timed_axioms,
+			     TermSet & out_untimed, TermSet & out_timed)
 {
-  msat_config cfg = get_config(NO_MODEL);
-  msat_env reducer = msat_create_shared_env(cfg, abs_ts_.get_env());
-  msat_destroy_config(cfg);
-  //msat_reset_env(reducer);
-  
+  msat_reset_env(reducer_);
   // bmc problem
-  msat_assert_formula(reducer, un.at_time(abs_ts_.init(), 0));
+  msat_assert_formula(reducer_, un_.at_time(abs_ts_.init(), 0));
   for (int i = 0; i < k; ++i) {
-    msat_assert_formula(reducer, un.at_time(abs_ts_.trans(), i));
+    msat_assert_formula(reducer_, un_.at_time(abs_ts_.trans(), i));
   }
-  msat_assert_formula(reducer,
-                      un.at_time(msat_make_not(reducer, abs_ts_.prop()), k));
+  msat_assert_formula(reducer_,
+                      un_.at_time(msat_make_not(reducer_, abs_ts_.prop()), k));
   
   auto lbl = [=](msat_term p) -> msat_term
              {
@@ -481,25 +497,25 @@ bool IC3Array::contains_vars(msat_term term, const TermSet &vars) const {
     msat_term l = lbl(a);
     labels.push_back(l);
 
-    msat_term aa = un.at_time(a, 0);
+    msat_term aa = un_.at_time(a, 0);
     for (int i = 1; i <= k; ++i) {
-      aa = msat_make_and(reducer, aa, un.at_time(a, i));
+      aa = msat_make_and(reducer_, aa, un_.at_time(a, i));
     }
     //std::cout << msat_to_smtlib2_term(abs_ts_.get_env(), aa) << std::endl;
-    msat_assert_formula(reducer, msat_make_iff(reducer, l, aa));
+    msat_assert_formula(reducer_, msat_make_iff(reducer_, l, aa));
   };
 
   TermList cur_timed_axioms(timed_axioms.begin(), timed_axioms.end());
   for (msat_term a : cur_timed_axioms) {
     msat_term l = lbl(a);
     labels.push_back(l);
-    msat_assert_formula(reducer, msat_make_iff(reducer, l, a));
+    msat_assert_formula(reducer_, msat_make_iff(reducer_, l, a));
   }
   
-  msat_result s = msat_solve_with_assumptions(reducer, &labels[0], labels.size());
+  msat_result s = msat_solve_with_assumptions(reducer_, &labels[0], labels.size());
   if (s == MSAT_UNSAT) {
     size_t ucsz = 0;
-    msat_term *uc = msat_get_unsat_assumptions(reducer, &ucsz);
+    msat_term *uc = msat_get_unsat_assumptions(reducer_, &ucsz);
     assert(uc);
     TermSet core(uc, uc+ucsz);
     msat_free(uc);
