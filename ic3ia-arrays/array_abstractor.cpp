@@ -144,33 +144,33 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
         msat_decl decl_arrint =
             msat_declare_function(e, name.c_str(), msat_get_integer_type(e));
         msat_term arr_int = msat_make_constant(e, decl_arrint);
-        msat_decl decl_arrintN = msat_declare_function(
-            e, (name + ".next").c_str(), msat_get_integer_type(e));
-        msat_term arr_intN = msat_make_constant(e, decl_arrintN);
         d->cache[t] = arr_int;
-        d->new_vars[arr_int] = arr_intN;
         d->removed_vars.insert(t);
-
-        if (d->conc_ts.is_statevar(t))
-        {
-          d->cache[d->conc_ts.next(t)] = arr_intN;
-        }
 
         // create a read function for these arrays
         msat_type param_types[2] = {msat_get_integer_type(e),
                                     msat_get_integer_type(e)};
         msat_type funtype =
-            msat_get_function_type(e, &param_types[0], 2, arrelemtype);
+          msat_get_function_type(e, &param_types[0], 2, arrelemtype);
         std::string readname = "read_" + std::to_string(d->read_id++);
         msat_decl readfun = msat_declare_function(e, readname.c_str(), funtype);
         d->read_ufs[arr_int] = readfun;
-        // use the same read function for the next-state
-        // added to map for convenience
-        d->read_ufs[arr_intN] = readfun;
-
         // keep track of the original index sort
         d->orig_types[arr_int] = arridxtype;
-        d->orig_types[arr_intN] = arridxtype;
+
+        if (d->conc_ts.is_statevar(t))
+        {
+          msat_decl decl_arrintN = msat_declare_function(
+                                                         e, (name + ".next").c_str(), msat_get_integer_type(e));
+          msat_term arr_intN = msat_make_constant(e, decl_arrintN);
+          d->new_vars[arr_int] = arr_intN;
+          d->cache[d->conc_ts.next(t)] = arr_intN;
+          // use the same read function for the next-state
+          // added to map for convenience
+          d->read_ufs[arr_intN] = readfun;
+          // map next to type
+          d->orig_types[arr_intN] = arridxtype;
+        }
 
       }
       // check if it's an array equality
@@ -272,8 +272,36 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
           for (size_t i = 0; i < msat_term_arity(t); ++i) {
             args.push_back(d->cache.at(msat_term_get_arg(t, i)));
           }
-          res = msat_make_term(e, s, &args[0]);
+
+          // special-case for ite (this gets typed for it's output)
+          // need to update it
+          if (msat_term_is_term_ite(e, t))
+          {
+            assert(args.size() == 3);
+            res = msat_make_term_ite(e, args[0], args[1], args[2]);
+
+            // create a read function for this ite array
+            // TODO: when we transition to uninterpreted sorts for arrays,
+            // have only one read function
+            // then we can remove this section
+            if (msat_is_array_type(e, _type, nullptr, nullptr))
+            {
+              // create a read function for these arrays
+              msat_type param_types[2] = {msat_get_integer_type(e),
+                                          msat_get_integer_type(e)};
+              msat_type funtype =
+                msat_get_function_type(e, &param_types[0], 2, arrelemtype);
+              std::string readname = "read_" + std::to_string(d->read_id++);
+              msat_decl readfun = msat_declare_function(e, readname.c_str(), funtype);
+              d->read_ufs[res] = readfun;
+            }
+          }
+          else
+          {
+            res = msat_make_term(e, s, &args[0]);
+          }
         }
+        assert(!MSAT_ERROR_TERM(res));
         d->cache[t] = res;
       }
     }
