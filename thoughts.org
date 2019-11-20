@@ -1,4 +1,20 @@
 * Current things to consider
+** TODOS
+*** add history variables to index set
+*** lazy lambda disequalities
+*** uninterpreted sorts for arrays (single read function)
+*** on-the-fly index set computation
+** Known issues
+*** Interpolants fail sometimes
+*** In current format where each array gets its own read function, array ites need their own read
+    for example, say the ite is ite(c, arr0, arr1)
+    and we have an equality
+    eq(arr2, ite(c, arr0, arr1))
+
+    we can't add axioms over it correctly without making a new read function for the ite
+    -- I'll do this for now, but ultimately it'll be easier not to do this
+    Soon, we'll switch to uninterpreted sorts for arrays and have only one read function
+
 ** Do we actually need a witness for each disequality?
 *** Probably do. Because these lemmas are not enough
     eq(a, b) -> a[i] = b[i] for all i in index set

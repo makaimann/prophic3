@@ -279,6 +279,22 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
           {
             assert(args.size() == 3);
             res = msat_make_term_ite(e, args[0], args[1], args[2]);
+
+            // create a read function for this ite array
+            // TODO: when we transition to uninterpreted sorts for arrays,
+            // have only one read function
+            // then we can remove this section
+            if (msat_is_array_type(e, _type, nullptr, nullptr))
+            {
+              // create a read function for these arrays
+              msat_type param_types[2] = {msat_get_integer_type(e),
+                                          msat_get_integer_type(e)};
+              msat_type funtype =
+                msat_get_function_type(e, &param_types[0], 2, arrelemtype);
+              std::string readname = "read_" + std::to_string(d->read_id++);
+              msat_decl readfun = msat_declare_function(e, readname.c_str(), funtype);
+              d->read_ufs[res] = readfun;
+            }
           }
           else
           {
