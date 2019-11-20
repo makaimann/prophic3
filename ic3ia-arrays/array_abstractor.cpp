@@ -272,8 +272,20 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
           for (size_t i = 0; i < msat_term_arity(t); ++i) {
             args.push_back(d->cache.at(msat_term_get_arg(t, i)));
           }
-          res = msat_make_term(e, s, &args[0]);
+
+          // special-case for ite (this gets typed for it's output)
+          // need to update it
+          if (msat_term_is_term_ite(e, t))
+          {
+            assert(args.size() == 3);
+            res = msat_make_term_ite(e, args[0], args[1], args[2]);
+          }
+          else
+          {
+            res = msat_make_term(e, s, &args[0]);
+          }
         }
+        assert(!MSAT_ERROR_TERM(res));
         d->cache[t] = res;
       }
     }
