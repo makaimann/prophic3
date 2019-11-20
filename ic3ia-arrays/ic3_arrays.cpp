@@ -132,7 +132,7 @@ msat_truth_value IC3Array::prove()
       //                                         "Const Array Axioms",
       //                                         "Store Axioms"};
 
-      TermList violated_axioms;
+      TermSet violated_axioms;
 
       msat_term f = msat_make_false(msat_env_);
       for (size_t i = 0; i < axiom_sets.size(); ++i) {
@@ -158,7 +158,7 @@ msat_truth_value IC3Array::prove()
               // std::cout << "violated axiom ";
               // std::cout << msat_to_smtlib2_term(msat_env_, timed_axiom) <<
               // std::endl;
-              violated_axioms.push_back(timed_axiom);
+              violated_axioms.insert(timed_axiom);
               untimed_axioms_to_add.insert(ax);
             }
           }
@@ -188,7 +188,7 @@ msat_truth_value IC3Array::prove()
 
               if (val == f)
               {
-                violated_axioms.push_back(timed_axiom);
+                violated_axioms.insert(timed_axiom);
                 time_of_index[timed_axiom] = i;
                 timed_axioms_to_refine.insert(timed_axiom);
               }
