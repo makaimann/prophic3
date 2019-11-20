@@ -7,34 +7,51 @@
 namespace ic3ia_array {
 class ProphecyRefiner {
 public:
-  ProphecyRefiner(msat_env e, const msat_term p, const ic3ia::TermSet & i, const ic3ia::TermMap & w)
-     : existing_prop_(p), existing_indices_(i), existing_witnesses_(w) {
+  ProphecyRefiner(msat_env e, const ic3ia::TermSet i)
+    : msat_env_(e), existing_indices_(i) {
 
-    msat_env_ = e;
-    compute_prophecy_prop();
+    MSAT_MAKE_ERROR_TERM(prop_);
 
   }
 
-  /* Returns the property with prophecy variables added */
-  msat_term prophecy_prop() { return prophecy_prop_; };
+  /**
+   * Creates prophecy vars for all indices in property
+   */
+  ic3ia::TermSet prophesize_prop(msat_term prop);
 
-  /* Returns all created prophecy variables */
-  ic3ia::TermMap &prophecy_vars() { return prophecy_vars_; };
+  /**
+   * Creates prophecy vars for all the targets
+   */
+  ic3ia::TermSet prophesize_prop(msat_term prop, ic3ia::TermSet & targets);
+
+  /* Returns all latest prophecy variables and targets
+     and then clears the map
+  */
+  const ic3ia::TermMap & proph_targets()
+  {
+    return proph_targets_;
+  };
+
+
+  /* Returns all latest created prophecy variables
+     and then clears the map
+   */
+  const ic3ia::TermMap & next_proph_vars()
+  {
+    return next_proph_vars_;
+  };
+
+  msat_term prop() { return prop_; };
 
 protected:
   msat_env msat_env_;
-  msat_term prophecy_prop_;
-  ic3ia::TermMap prophecy_vars_;
+  ic3ia::TermMap proph_targets_;
+  ic3ia::TermMap next_proph_vars_;
 
-  const msat_term existing_prop_;
-  const ic3ia::TermSet & existing_indices_;
-  const ic3ia::TermMap & existing_witnesses_;
+  const ic3ia::TermSet existing_indices_;
 
-  /*
-   * Creates a new version of property with prophecy variables
-   * for each array index
-   */
-  void compute_prophecy_prop();
+  msat_term prop_;
+
 };
 
 } // namespace ic3ia_array

@@ -440,17 +440,26 @@ void ArrayAxiomEnumerator::add_index(msat_type _type, msat_term i) {
   all_indices_[typestr].insert(ts_.next(i));
 }
 
+msat_term ArrayAxiomEnumerator::get_index(msat_term ax) const
+{
+  return axioms_to_index_.at(ax);
+}
+
 // protected helper functions
 void ArrayAxiomEnumerator::enumerate_store_equalities(TermSet &axioms, msat_decl read0, msat_term arr0,
                                                       msat_decl read1, msat_term arr1, msat_type _type,
                                                       msat_term idx, msat_term val, TermSet &indices,
                                                       msat_term lambda) {
+
+  // temporary variable to be used throughout function
+  msat_term ax;
   msat_term args0[2] = {arr0, idx};
   msat_term args1[2] = {arr1, idx};
 
   // equals expected value at the write index
-  axioms.insert(msat_make_equal(
-      msat_env_, msat_make_uf(msat_env_, read0, &args0[0]), val));
+  ax = msat_make_equal(msat_env_, msat_make_uf(msat_env_, read0, &args0[0]), val);
+  axioms.insert(ax);
+  axioms_to_index_[ax] = idx;
 
   // equal at every index except for the write index
   for (auto i : indices)
@@ -465,7 +474,9 @@ void ArrayAxiomEnumerator::enumerate_store_equalities(TermSet &axioms, msat_decl
       msat_term consequent =
           msat_make_equal(msat_env_, msat_make_uf(msat_env_, read0, &args0[0]),
                           msat_make_uf(msat_env_, read1, &args1[0]));
-      axioms.insert(implies(antecedent, consequent));
+      ax = implies(antecedent, consequent);
+      axioms.insert(ax);
+      axioms_to_index_[ax] = i;
     }
   }
 
@@ -476,7 +487,6 @@ void ArrayAxiomEnumerator::enumerate_store_equalities(TermSet &axioms, msat_decl
       // expecting a bitvector type (because finite)
       assert(false);
     }
-    msat_term lambda = get_lambda_from_type(_type);
 
     msat_term args0[2] = {arr0, lambda};
     msat_term args1[2] = {arr1, lambda};
@@ -486,7 +496,9 @@ void ArrayAxiomEnumerator::enumerate_store_equalities(TermSet &axioms, msat_decl
     msat_term consequent =
         msat_make_equal(msat_env_, msat_make_uf(msat_env_, read0, &args0[0]),
                         msat_make_uf(msat_env_, read1, &args1[0]));
-    axioms.insert(implies(antecedent, consequent));
+    ax = implies(antecedent, consequent);
+    axioms.insert(ax);
+    axioms_to_index_[ax] = lambda;
   } else {
     // TODO: Handle other values
     // only handling bv and int for now
@@ -501,12 +513,16 @@ void ArrayAxiomEnumerator::enumerate_const_array_axioms(TermSet & axioms,
                                                         msat_term val,
                                                         TermSet & indices)
 {
+  // temporary variable to be used throughout function
+  msat_term ax;
+
   // equals value at every index
   for (auto i : indices)
   {
     msat_term args[2] = {arr, i};
-    axioms.insert(msat_make_equal(
-        msat_env_, msat_make_uf(msat_env_, read, &args[0]), val));
+    ax = msat_make_equal(msat_env_, msat_make_uf(msat_env_, read, &args[0]), val);
+    axioms.insert(ax);
+    axioms_to_index_[ax] = i;
   }
 
   // add it for lambda too in the finite domain case
@@ -516,10 +532,11 @@ void ArrayAxiomEnumerator::enumerate_const_array_axioms(TermSet & axioms,
 
     msat_term lambda = get_lambda_from_type(_type);
     msat_term args[2] = {arr, lambda};
-    axioms.insert(
-        implies(bound_lambda(lambda, width),
-                msat_make_equal(msat_env_,
-                                msat_make_uf(msat_env_, read, &args[0]), val)));
+    ax = implies(bound_lambda(lambda, width),
+                 msat_make_equal(msat_env_,
+                                 msat_make_uf(msat_env_, read, &args[0]), val));
+    axioms.insert(ax);
+    axioms_to_index_[ax] = lambda;
   } else {
     // TODO: Handle other values
     // only handling bv and int for now
@@ -531,6 +548,9 @@ void ArrayAxiomEnumerator::enumerate_eq_uf_axioms(
     ic3ia::TermSet &axioms, msat_decl read0, msat_decl read1, msat_type _type,
     msat_term eq_uf, msat_term witness, ic3ia::TermSet &indices,
     msat_term lambda) {
+
+  // temporary variable to be used throughout function
+  msat_term ax;
 
   msat_term arr0 = msat_term_get_arg(eq_uf, 0);
   msat_term arr1 = msat_term_get_arg(eq_uf, 1);
@@ -550,13 +570,16 @@ void ArrayAxiomEnumerator::enumerate_eq_uf_axioms(
     eq_reads = msat_make_equal(msat_env_, msat_make_uf(msat_env_, read0, &args0[0]),
                                msat_make_uf(msat_env_, read1, &args1[0]));
     // eq(arr0, arr1) -> arr0[i] = arr1[i]
-    axioms.insert(implies(eq_uf,
-                          eq_reads));
+    ax = implies(eq_uf, eq_reads);
+    axioms.insert(ax);
+    axioms_to_index_[ax] = i;
 
     // arr0[i] != arr1[i] -> !eq(arr0, arr1)
-    axioms.insert(implies(msat_make_not(msat_env_,
-                                        eq_reads),
-                          msat_make_not(msat_env_, eq_uf)));
+    ax = implies(msat_make_not(msat_env_,
+                               eq_reads),
+                 msat_make_not(msat_env_, eq_uf));
+    axioms.insert(ax);
+    axioms_to_index_[ax] = i;
   }
 
   if (!MSAT_ERROR_TERM(lambda)) {
@@ -573,14 +596,19 @@ void ArrayAxiomEnumerator::enumerate_eq_uf_axioms(
                                msat_make_uf(msat_env_, read1, &args1[0]));
     msat_term antecedent1 =
         msat_make_and(msat_env_, eq_uf, bound_lambda(lambda, width));
-    axioms.insert(implies(antecedent1, eq_reads));
+    ax = implies(antecedent1, eq_reads);
+    axioms.insert(ax);
+    axioms_to_index_[ax] = lambda;
+
     msat_term antecedent2 =
       msat_make_and(msat_env_,
                     bound_lambda(lambda, width),
                     msat_make_not(msat_env_, eq_reads)
                     );
     msat_term consequent2 = msat_make_not(msat_env_, eq_uf);
-    axioms.insert(implies(antecedent2, consequent2));
+    ax = implies(antecedent2, consequent2);
+    axioms.insert(ax);
+    axioms_to_index_[ax] = lambda;
   } else {
     // TODO: Handle other values
     // only handling bv and int for now
@@ -594,7 +622,9 @@ void ArrayAxiomEnumerator::enumerate_eq_uf_axioms(
   args1[1] = witness;
   eq_reads = msat_make_equal(msat_env_, msat_make_uf(msat_env_, read0, &args0[0]),
                              msat_make_uf(msat_env_, read1, &args1[0]));
-  axioms.insert(implies(eq_reads, eq_uf));
+  ax = implies(eq_reads, eq_uf);
+  axioms.insert(ax);
+  axioms_to_index_[ax] = witness;
 }
 
 void ArrayAxiomEnumerator::collect_equalities(msat_term term, ic3ia::TermSet & s)

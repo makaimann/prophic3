@@ -28,39 +28,36 @@ msat_truth_value IC3Array::prove()
   //       but if it is needed and we wait, we'll have to enumerate a lot axioms
   //       before we even get to prophecy vars
   ProphecyRefiner pr(abs_ts_.get_env(),
-                     abs_ts_.prop(),
-                     aa.indices(),
-                     aa.witnesses());
+                     aae.orig_indices());
 
-  TermSet proph_vars;
+  HistoryRefiner hr(abs_ts_);
 
-  // create state variables for prophecy vars and ass as indices
-  TermTypeMap &orig_types = aa.orig_types();
-  for (auto elem : pr.prophecy_vars()) {
-    msat_term proph = elem.first;
-    proph_vars.insert(proph);
-    msat_decl proph_declN = msat_declare_function(
-        msat_env_, (std::string(msat_term_repr(proph)) + "N").c_str(),
-        msat_term_get_type(proph));
-    msat_term prophN = msat_make_constant(msat_env_, proph_declN);
-    // add the prophecy variable to the transition system
-    // and make it frozen
-    abs_ts_.add_statevar(proph, prophN);
-    abs_ts_.add_trans(msat_make_equal(msat_env_, prophN, proph));
-    // save the original sort of the variable -- for the axiom enumerator
-    orig_types[proph] = orig_types.at(elem.second);
-  }
+  TermSet proph_vars = pr.prophesize_prop(abs_ts_.prop());
 
-  // treat each of these prophecy variables as an index
-  // want to generate lemmas over them
-  for (auto elem : pr.prophecy_vars()) {
-    aae.add_index(orig_types.at(elem.first), elem.first);
+  // update variables and type maps
+  const TermMap & next_proph_vars = pr.next_proph_vars();
+  const TermMap & proph_targets = pr.proph_targets();
+  TermTypeMap & orig_types = aa.orig_types();
+  msat_type _type;
+
+  msat_term nv;
+  for (auto v : proph_vars)
+  {
+    nv = next_proph_vars.at(v);
+    abs_ts_.add_statevar(v, nv);
+    // frozenvar: proph' = proph
+    abs_ts_.add_trans(msat_make_eq(msat_env_, nv, v));
+
+    // update type maps and add as index
+    _type = orig_types.at(proph_targets.at(v));
+    orig_types[v] = _type;
+    aae.add_index(_type, v);
   }
 
   // set the new property
-  abs_ts_.set_prop(pr.prophecy_prop(), false); // always safety property for now
+  abs_ts_.set_prop(pr.prop(), abs_ts_.live_prop());
 
-  std::cout << "Created " << pr.prophecy_vars().size();
+  std::cout << "Created " << proph_vars.size();
   std::cout << " prophecy variables for the property" << std::endl;
 
   bool found_untimed_axioms = false;
@@ -85,15 +82,13 @@ msat_truth_value IC3Array::prove()
     {
       std::vector<TermList> witness;
       ic3.witness(witness);
-      reached_k = witness.size();
-      std::cout << "Found Abstract CEX of length " << witness.size() - 1 << std::endl;
+      reached_k = witness.size() - 1;
+      std::cout << "Found Abstract CEX of length " << reached_k << std::endl;
     }
     else
     {
       std::cout << "IC3 returned undefined...by construction this should not happen! oops..." << std::endl;
       throw std::exception();
-      // try a deeper k
-      reached_k++;
     }
 
     // Run bmc
@@ -103,7 +98,11 @@ msat_truth_value IC3Array::prove()
     assert((res != MSAT_FALSE) || broken);
 
     // TODO: filter axioms with unsat core
-    TermSet axioms_to_add;
+    TermSet untimed_axioms_to_add;
+    // maps timed lemmas to the time of the index involved in the lemma
+    unordered_map<msat_term, size_t> time_of_index;
+    // stores timed axioms that need to be refined
+    TermSet timed_axioms_to_refine;
 
     while (broken) {
       msat_model model = bmc.get_model();
@@ -148,7 +147,7 @@ msat_truth_value IC3Array::prove()
               // std::cout << msat_to_smtlib2_term(msat_env_, timed_axiom) <<
               // std::endl;
               violated_axioms.push_back(timed_axiom);
-              axioms_to_add.insert(ax);
+              untimed_axioms_to_add.insert(ax);
             }
           }
         }
@@ -178,6 +177,8 @@ msat_truth_value IC3Array::prove()
               if (val == f)
               {
                 violated_axioms.push_back(timed_axiom);
+                time_of_index[timed_axiom] = i;
+                timed_axioms_to_refine.insert(timed_axiom);
               }
             }
           }
@@ -201,24 +202,17 @@ msat_truth_value IC3Array::prove()
       violated_axioms.clear();
     }
 
-    // haven't implemented history variables yet
-    if (found_timed_axioms)
-    {
-      std::cout << "Haven't implemented history variables yet -- will fail for now." << std::endl;
-      throw std::exception();
-    }
-
-    std::cout << "Found " << axioms_to_add.size() << " axioms."
+    std::cout << "Found " << untimed_axioms_to_add.size() << " axioms to trans."
               << std::endl;
 
     TermSet *axioms = NULL;
     TermSet red_axioms;
-    if (reduce_axioms(reached_k - 1, axioms_to_add, red_axioms)) {
+    if (reduce_axioms(reached_k, untimed_axioms_to_add, red_axioms)) {
       std::cout << "Reduced to " << red_axioms.size() << " axioms."
-		<< std::endl;
+                << std::endl;
       axioms = &red_axioms;
     } else {
-      axioms = &axioms_to_add;
+      axioms = &untimed_axioms_to_add;
     }
 
     size_t cnt = 0;
@@ -237,7 +231,7 @@ msat_truth_value IC3Array::prove()
       //       Not even sure if this is right or why we need it
       //       but without it, it fails to find an interpolant
       //       for hard-array.vmt and hard-array-false.vmt
-      if (abs_ts_.only_cur(ax) && (reached_k == 1 || contains_vars(ax, proph_vars))) {
+      if (abs_ts_.only_cur(ax) && (reached_k == 0 || contains_vars(ax, proph_vars))) {
         // only add axioms to init if the counterexample is length 1
         // or it involves prophecy variables
         abs_ts_.add_init(ax);
@@ -245,13 +239,74 @@ msat_truth_value IC3Array::prove()
       }
 
     }
-    std::cout << "Added " << cnt << " axioms to init." << std::endl;
     std::cout << "Added " << axioms->size() << " axioms to trans." << std::endl;
-    axioms_to_add.clear();
+    std::cout << "Added " << cnt << " axioms to init." << std::endl;
+
+    untimed_axioms_to_add.clear();
     red_axioms.clear();
-    
-    // increment reached_k
-    reached_k++;
+
+    if (found_timed_axioms)
+    {
+      unordered_map<msat_term, size_t> indices_to_refine;
+      msat_term tmp_idx;
+      for (auto ax : timed_axioms_to_refine)
+      {
+        tmp_idx = aae.get_index(ax);
+        indices_to_refine[u.untime(tmp_idx)] = time_of_index.at(ax);
+      }
+
+      std::cout << "Found " << indices_to_refine.size() << " indices which need to be refined." << std::endl;
+      for (auto elem : indices_to_refine)
+      {
+        std::cout << "\t" << msat_to_smtlib2_term(msat_env_, elem.first) << ":" << elem.second << std::endl;
+      }
+
+      TermSet hist_vars;
+      for (auto elem : indices_to_refine)
+      {
+        msat_term v = hr.hist_var(elem.first, reached_k - elem.second);
+        // update type maps -- need to keep track of this for proph var indices
+        _type = orig_types.at(elem.first);
+        orig_types[v] = _type;
+        hist_vars.insert(v);
+      }
+
+      std::cout << "Created the following history variables:" << std::endl;
+      for (auto v : hist_vars)
+      {
+        std::cout << "\t" << msat_to_smtlib2_term(msat_env_, v) << std::endl;
+      }
+
+      const TermMap & next_hist_vars = hr.next_hist_vars();
+      const TermMap & hist_trans = hr.hist_trans();
+      for (auto v : hist_vars)
+      {
+        abs_ts_.add_statevar(v, next_hist_vars.at(v));
+        abs_ts_.add_trans(hist_trans.at(v));
+      }
+
+      TermSet proph_hist_vars = pr.prophesize_prop(abs_ts_.prop(), hist_vars);
+
+      // Note: next_proph_vars and proph_targets are references -- they've been updated
+      for(auto v : proph_hist_vars)
+      {
+        nv = next_proph_vars.at(v);
+        abs_ts_.add_statevar(v, nv);
+        // frozenvar: proph' = proph
+        abs_ts_.add_trans(msat_make_eq(msat_env_, nv, v));
+
+        // update type maps and add as index
+        _type = orig_types.at(proph_targets.at(v));
+        orig_types[v] = _type;
+        aae.add_index(_type, v);
+      }
+
+      // set the new property
+      abs_ts_.set_prop(pr.prop(), abs_ts_.live_prop());
+    }
+    timed_axioms_to_refine.clear();
+    // reset the flag
+    found_timed_axioms = false;
   }
   // TODO: do this correctly
   return MSAT_FALSE;

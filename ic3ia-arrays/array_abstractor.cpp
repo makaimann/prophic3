@@ -145,7 +145,7 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
             msat_declare_function(e, name.c_str(), msat_get_integer_type(e));
         msat_term arr_int = msat_make_constant(e, decl_arrint);
         msat_decl decl_arrintN = msat_declare_function(
-            e, (name + "N").c_str(), msat_get_integer_type(e));
+            e, (name + ".next").c_str(), msat_get_integer_type(e));
         msat_term arr_intN = msat_make_constant(e, decl_arrintN);
         d->cache[t] = arr_int;
         d->new_vars[arr_int] = arr_intN;
@@ -223,7 +223,7 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
             msat_declare_function(e, witness_name.c_str(), idx_type);
         msat_term witness = msat_make_constant(e, decl_witness);
         msat_decl decl_witnessN =
-            msat_declare_function(e, (witness_name + "N").c_str(), idx_type);
+            msat_declare_function(e, (witness_name + ".next").c_str(), idx_type);
         msat_term witnessN = msat_make_constant(e, decl_witnessN);
         d->witnesses[eq_uf] = idx_to_int(e, witness);
         d->orig_types[idx_to_int(e, witness)] = idx_type;
@@ -302,7 +302,7 @@ void ArrayAbstractor::create_lambdas() {
           msat_env_, name.c_str(), msat_get_integer_type(msat_env_));
       msat_term lambda = msat_make_constant(msat_env_, lambda_decl);
       msat_decl lambda_declN = msat_declare_function(
-          msat_env_, (name + "N").c_str(), msat_get_integer_type(msat_env_));
+          msat_env_, (name + ".next").c_str(), msat_get_integer_type(msat_env_));
       msat_term lambdaN = msat_make_constant(msat_env_, lambda_declN);
       abs_ts_.add_statevar(lambda, lambdaN);
       abs_ts_.add_trans(msat_make_equal(msat_env_, lambda,
@@ -322,6 +322,8 @@ void ArrayAbstractor::create_lambdas() {
         }
       }
       abs_ts_.add_trans(alldiff);
+      // add next version (should be different in all time-steps)
+      abs_ts_.add_trans(abs_ts_.next(alldiff));
 
       // store original sort (might be the same if it's already an integer)
       orig_types_[lambda] = _type;
