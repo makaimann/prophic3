@@ -202,7 +202,7 @@ msat_truth_value IC3Array::prove()
       violated_axioms.clear();
     }
 
-    std::cout << "Found " << untimed_axioms_to_add.size() << " axioms to trans."
+    std::cout << "Found " << untimed_axioms_to_add.size() << " untimed axioms"
               << std::endl;
 
     TermSet *axioms = NULL;
