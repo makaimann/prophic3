@@ -9,7 +9,36 @@ using namespace std;
 
 namespace ic3ia_array
 {
-// TODO Implement these
+
+// For debugging
+TermList conjunctive_partition(msat_env e, msat_term top)
+{
+  TermSet visited;
+  TermList to_process({top});
+  TermList partition;
+
+  msat_term t;
+  while(to_process.size())
+  {
+    t = to_process.back();
+    to_process.pop_back();
+    if (visited.find(t) == visited.end())
+    {
+      if (msat_term_is_and(e, t))
+      {
+        for (size_t i = 0; i < msat_term_arity(t); i++)
+        {
+          to_process.push_back(msat_term_get_arg(t, i));
+        }
+      }
+      else
+      {
+        partition.push_back(t);
+      }
+    }
+  }
+  return partition;
+}
 
 IC3Array::IC3Array(const ic3ia::TransitionSystem &ts, const ic3ia::Options &opts,
 		   ic3ia::LiveEncoder &l2s, unsigned int verbosity)
