@@ -301,31 +301,34 @@ msat_truth_value IC3Array::prove()
         std::cout << "\t" << msat_to_smtlib2_term(msat_env_, elem.first) << ":" << elem.second << std::endl;
       }
 
-      TermSet hist_vars;
+      // just the history variables that need to be refined over
+      TermSet hist_vars_to_refine;
+      // all created history variables (including intermediate ones)
+      TermSet all_created_hist_vars;
       for (auto elem : indices_to_refine)
       {
-        msat_term v = hr.hist_var(elem.first, reached_k - elem.second);
+        msat_term v = hr.hist_var(elem.first, reached_k - elem.second, all_created_hist_vars);
         // update type maps -- need to keep track of this for proph var indices
         _type = orig_types.at(elem.first);
         orig_types[v] = _type;
-        hist_vars.insert(v);
+        hist_vars_to_refine.insert(v);
       }
 
       std::cout << "Created the following history variables:" << std::endl;
-      for (auto v : hist_vars)
+      for (auto v : hist_vars_to_refine)
       {
         std::cout << "\t" << msat_to_smtlib2_term(msat_env_, v) << std::endl;
       }
 
       const TermMap & next_hist_vars = hr.next_hist_vars();
       const TermMap & hist_trans = hr.hist_trans();
-      for (auto v : hist_vars)
+      for (auto v : all_created_hist_vars)
       {
         abs_ts_.add_statevar(v, next_hist_vars.at(v));
         abs_ts_.add_trans(hist_trans.at(v));
       }
 
-      TermSet proph_hist_vars = pr.prophesize_prop(abs_ts_.prop(), hist_vars);
+      TermSet proph_hist_vars = pr.prophesize_prop(abs_ts_.prop(), hist_vars_to_refine);
 
       // Note: next_proph_vars and proph_targets are references -- they've been updated
       for(auto v : proph_hist_vars)

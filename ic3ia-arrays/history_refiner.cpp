@@ -5,7 +5,7 @@ using namespace ic3ia;
 
 namespace ic3ia_array {
 
-msat_term HistoryRefiner::hist_var(msat_term t, size_t d) {
+msat_term HistoryRefiner::hist_var(msat_term t, size_t d, TermSet & created_vars) {
   t = abs_ts_.cur(t);
   msat_type _type = msat_term_get_type(t);
 
@@ -17,8 +17,6 @@ msat_term HistoryRefiner::hist_var(msat_term t, size_t d) {
   if (hist_vars_.find(t) == hist_vars_.end()) {
     hist_vars_[t] = TermList();
   }
-
-  msat_term htrans = msat_make_true(msat_env_);
 
   string name;
   msat_decl decl;
@@ -37,21 +35,16 @@ msat_term HistoryRefiner::hist_var(msat_term t, size_t d) {
         msat_declare_function(msat_env_, (name + ".next").c_str(), _type);
     hist_var_next = msat_make_constant(msat_env_, decl_next);
 
+    created_vars.insert(hist_var);
+
     // update trans
     if (num_existing_hist_vars == 1) {
       // hist_var_1' = var
-      htrans = msat_make_and(msat_env_, htrans,
-                             msat_make_eq(msat_env_, hist_var_next, t));
+      hist_trans_[hist_var] = msat_make_eq(msat_env_, hist_var_next, t);
     } else {
       // hist_var_{n+1}' = hist_var_{n}
-      htrans = msat_make_and(msat_env_, htrans,
-                             msat_make_eq(msat_env_, hist_var_next, hist_vars_[t].back()));
+      hist_trans_[hist_var] = msat_make_eq(msat_env_, hist_var_next, hist_vars_[t].back());
     }
-
-    // just set trans to true
-    // if it's an intermediate history variable, the equality
-    // will be added in the last one (e.g. it's tracked in htrans)
-    hist_trans_[hist_var] = msat_make_true(msat_env_);
 
     // store in relevant data structures
     hist_vars_[t].push_back(hist_var);
@@ -60,8 +53,6 @@ msat_term HistoryRefiner::hist_var(msat_term t, size_t d) {
 
   // get the desired history variable (even if above loop never ran)
   hist_var = hist_vars_.at(t).at(d-1);
-  // update history trans for the returned history variable
-  hist_trans_[hist_var] = htrans;
 
   assert(d > 0);
 

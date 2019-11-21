@@ -23,8 +23,10 @@ public:
   /**
    * Takes an arbitrary term and returns the history variable for it which
    * delays by d steps.
+   * all created variables are added to created_vars (e.g. including
+   * intermediate history variables)
    */
-  msat_term hist_var(msat_term t, size_t d);
+  msat_term hist_var(msat_term t, size_t d, ic3ia::TermSet & created_vars);
 
 protected:
   msat_env msat_env_;
