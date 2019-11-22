@@ -114,6 +114,12 @@
 **** The current approach is more general, but maybe we should follow it up with a top-level propagator that's also aware of the axioms to be generated
 *** Possibly speed things up with additional equality lemmas
 **** e.g. eq(arr0, arr1) -> arr0 = arr1 (or maybe we should just use = to begin with. Why bother with the UF?)
+* Rationale
+** for not adding untimed axioms if there are timed axioms to be refined
+   history variables do not preserve monotonicity. i.e. if you fix a counter-example at time 5, there could be a counterexample at time 4
+   Thus, there's no point adding untimed axioms from the old transition system.
+   So, if there are any timed axioms, do the history + prophecy refinement and then just find untimed axioms again next time
+   Implemented with 21e23a517f9fa4f45701a13c62bfa1c37e11fd38
 * Identifying Broken Array Axioms
 ** Have Array tracker for every array in the system
 ** Need to examine a bmc trace and find missing axioms
