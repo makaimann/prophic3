@@ -158,7 +158,7 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
             msat_get_function_type(e, &param_types[0], 2, arrelemtype);
           std::string readname = "read_" + std::to_string(d->read_id++);
           msat_decl readfun = msat_declare_function(e, readname.c_str(), funtype);
-          d->read_ufs[typestr] = readfun;
+          d->read_ufs[msat_type_repr(abs_type)] = readfun;
         }
         else
         {
