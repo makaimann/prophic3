@@ -431,6 +431,16 @@ void IC3Array::print_witness(msat_model model,
     msat_term arr = elem.first;
     msat_decl fun = elem.second;
 
+    // skip if not a variable
+    // a variable is a term with no children and no built-in
+    // interpretation
+    if (!(msat_term_arity(arr) == 0 &&
+          msat_decl_get_tag(msat_env_, msat_term_get_decl(arr)) == MSAT_TAG_UNKNOWN &&
+          !msat_term_is_number(msat_env_, arr)))
+    {
+      continue;
+    }
+
     TermSet indices;
     string typestr = msat_type_repr(orig_types.at(arr));
     for (auto i : aae.all_indices().at(typestr)) {
