@@ -41,7 +41,7 @@ public:
     ic3ia::TermMap &cache() { return cache_; };
     const ic3ia::TermSet &indices() { return indices_; };
     const ic3ia::TermMap &witnesses() { return witnesses_; };
-    TermDeclMap &read_ufs() { return read_ufs_; };
+    std::unordered_map<std::string, msat_decl> &read_ufs() { return read_ufs_; };
     TermTypeMap &orig_types() { return orig_types_; };
     ic3ia::TermSet &const_arrs() { return const_arrs_; };
     ic3ia::TermSet &stores() { return stores_; };
@@ -62,7 +62,6 @@ public:
     const ic3ia::TransitionSystem &conc_ts_;
     ic3ia::TransitionSystem abs_ts_;
 
-    unsigned int eq_id_{0};
     unsigned int read_id_{0};
     unsigned int lambda_id_{0};
 
@@ -70,10 +69,10 @@ public:
     ic3ia::TermMap cache_;
     // set of array indices
     ic3ia::TermSet indices_;
-    // map from equality UF to a witness for disequality
+    // map from array equalities to a witness for disequality
     ic3ia::TermMap witnesses_;
-    // map from abstract arrays to their read UF
-    TermDeclMap read_ufs_;
+    // map from abstract array types to their read UF
+    std::unordered_map<std::string, msat_decl> read_ufs_;
     // TODO: Figure out if we still even need this
     // the original sort for terms
     TermTypeMap orig_types_;

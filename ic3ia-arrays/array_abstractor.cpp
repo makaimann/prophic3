@@ -84,20 +84,20 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
     TermMap &new_vars;
     TermSet &removed_vars;
     TermMap &witnesses;
-    TermDeclMap &read_ufs;
+    std::unordered_map<std::string, msat_decl> &read_ufs;
     TermTypeMap &orig_types;
     TermSet &const_arrs;
     TermSet &stores;
     TermMap &cache;
-    unsigned int &eq_id;
     unsigned int &read_id;
     const TransitionSystem &conc_ts;
+    std::unordered_map<std::string, msat_type> type_map; // maps array types to abstract array type
     AbstractionData(TermSet &i, TermMap &nv, TermSet &rv, TermMap &w,
-                    TermDeclMap &r, TermTypeMap &o, TermSet &ca, TermSet &s,
-                    TermMap &c, unsigned int &e, unsigned int &ri,
-                    const TransitionSystem &cts)
+                    std::unordered_map<std::string, msat_decl> &r, TermTypeMap &o,
+                    TermSet &ca, TermSet &s, TermMap &c,
+                    unsigned int &ri, const TransitionSystem &cts)
         : indices(i), new_vars(nv), removed_vars(rv), witnesses(w), read_ufs(r),
-          orig_types(o), const_arrs(ca), stores(s), cache(c), eq_id(e),
+          orig_types(o), const_arrs(ca), stores(s), cache(c),
           read_id(ri), conc_ts(cts) {}
   };
 
@@ -112,6 +112,7 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
 
     if (!preorder) {
       msat_type _type = msat_term_get_type(t);
+      std::string typestr = msat_type_repr(_type);
       msat_decl s = msat_term_get_decl(t);
 
       // TODO: Figure out if we need to normalize. I think mathsat
@@ -130,10 +131,9 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
       if (msat_is_array_type(e, _type, &arridxtype, &arrelemtype) &&
           (is_variable(e, t) || msat_term_is_array_const(e, t))) {
 
-        // turn arrays to integers (but use slightly nicer name for const arrays)
+        // turn arrays to uninterpreted sorts (but use slightly nicer name for const arrays)
 
-        std::string name = msat_term_repr(t);
-        name += "_int";
+        std::string name = std::string("abs_") + msat_term_repr(t);
 
         if (msat_term_is_array_const(e, t)) {
           d->const_arrs.insert(t);
@@ -141,52 +141,60 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
           name += msat_to_smtlib2_term(e, msat_term_get_arg(t, 0));
         }
 
-        msat_decl decl_arrint =
-            msat_declare_function(e, name.c_str(), msat_get_integer_type(e));
-        msat_term arr_int = msat_make_constant(e, decl_arrint);
-        d->cache[t] = arr_int;
+        msat_type abs_type;
+        if (d->type_map.find(typestr) == d->type_map.end())
+        {
+          abs_type = msat_get_simple_type(e, ("abs_" + typestr).c_str());
+
+          // update type map
+          d->type_map[typestr] = abs_type;
+
+          // create a read function for these arrays
+          msat_type param_types[2] = {abs_type,
+                                      // always has integer index (map bv to int)
+                                      // doesn't handle reals yet
+                                      msat_get_integer_type(e)};
+          msat_type funtype =
+            msat_get_function_type(e, &param_types[0], 2, arrelemtype);
+          std::string readname = "read_" + std::to_string(d->read_id++);
+          msat_decl readfun = msat_declare_function(e, readname.c_str(), funtype);
+          d->read_ufs[typestr] = readfun;
+        }
+        else
+        {
+          abs_type = d->type_map.at(typestr);
+        }
+
+        msat_decl decl_arrabs =
+            msat_declare_function(e, name.c_str(), abs_type);
+        msat_term arr_abs = msat_make_constant(e, decl_arrabs);
+        d->cache[t] = arr_abs;
         d->removed_vars.insert(t);
 
-        // create a read function for these arrays
-        msat_type param_types[2] = {msat_get_integer_type(e),
-                                    msat_get_integer_type(e)};
-        msat_type funtype =
-          msat_get_function_type(e, &param_types[0], 2, arrelemtype);
-        std::string readname = "read_" + std::to_string(d->read_id++);
-        msat_decl readfun = msat_declare_function(e, readname.c_str(), funtype);
-        d->read_ufs[arr_int] = readfun;
         // keep track of the original index sort
-        d->orig_types[arr_int] = arridxtype;
+        d->orig_types[arr_abs] = arridxtype;
 
         if (d->conc_ts.is_statevar(t))
         {
-          msat_decl decl_arrintN = msat_declare_function(
-                                                         e, (name + ".next").c_str(), msat_get_integer_type(e));
-          msat_term arr_intN = msat_make_constant(e, decl_arrintN);
-          d->new_vars[arr_int] = arr_intN;
-          d->cache[d->conc_ts.next(t)] = arr_intN;
-          // use the same read function for the next-state
-          // added to map for convenience
-          d->read_ufs[arr_intN] = readfun;
+          msat_decl decl_arrabsN = msat_declare_function(e,
+                                                         (name + ".next").c_str(),
+                                                         abs_type);
+          msat_term arr_absN = msat_make_constant(e, decl_arrabsN);
+          d->new_vars[arr_abs] = arr_absN;
+          d->cache[d->conc_ts.next(t)] = arr_absN;
           // map next to type
-          d->orig_types[arr_intN] = arridxtype;
+          d->orig_types[arr_absN] = arridxtype;
         }
 
       }
       // check if it's an array equality
       else if (is_array_equality(e, t)) {
-        // replace array equality with uninterpreted functions
-
-        if (d->cache.find(t) != d->cache.end()) {
-          // cache hit
-          return MSAT_VISIT_PROCESS;
-        }
-
         msat_term lhs = msat_term_get_arg(t, 0);
         msat_term rhs = msat_term_get_arg(t, 1);
 
         // assuming arrays have already been flattened
         // thus store equalities are all top-level (e.g. definitions)
+        // we just remove those and do nothing else
         if (msat_term_is_array_write(e, lhs) ||
             msat_term_is_array_write(e, rhs)) {
           // remove the store equality and keep it for refinement
@@ -195,44 +203,47 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
           return MSAT_VISIT_PROCESS;
         }
 
+        // if equality doesn't contain a store
+        // still use an equality between the two uninterpreted sorts
+        // but we require a witness index
+
+        // TODO: can probably remove this?
+        if (d->cache.find(t) != d->cache.end()) {
+          // cache hit
+          return MSAT_VISIT_PROCESS;
+        }
+
         // otherwise create an uninterpreted function for this equality
         // the version converted into an integer
         msat_term lhs_cache = d->cache.at(lhs);
         msat_term rhs_cache = d->cache.at(rhs);
 
-        assert(msat_is_integer_type(e, msat_term_get_type(lhs_cache)));
-        assert(msat_is_integer_type(e, msat_term_get_type(rhs_cache)));
+        msat_term arr_eq = msat_make_eq(e, lhs_cache, rhs_cache);
+        d->cache[t] = arr_eq;
 
-        std::string eqname = "arreq" + std::to_string(d->eq_id);
-        std::string witness_name = "witness_" + std::to_string(d->eq_id++);
-
-        msat_type param_types[2] = {msat_get_integer_type(e),
-                                    msat_get_integer_type(e)};
-        msat_type funtype = msat_get_function_type(e, &param_types[0], 2,
-                                                   msat_get_bool_type(e));
-        msat_decl eqfun = msat_declare_function(e, eqname.c_str(), funtype);
-
-        msat_term cached_args[2] = {lhs_cache, rhs_cache};
-        msat_term eq_uf = msat_make_uf(e, eqfun, &cached_args[0]);
-
-        d->cache[t] = eq_uf;
+        std::string witness_name = "witness_" + std::to_string(d->witnesses.size());
 
         msat_type idx_type;
-        msat_is_array_type(e, msat_term_get_type(lhs), &idx_type, nullptr);
+        bool is_array = msat_is_array_type(e, msat_term_get_type(lhs), &idx_type, nullptr);
+        assert(is_array);
+
+        // TODO: figure out if witness needs to be a state variable?
         msat_decl decl_witness =
             msat_declare_function(e, witness_name.c_str(), idx_type);
         msat_term witness = msat_make_constant(e, decl_witness);
         msat_decl decl_witnessN =
             msat_declare_function(e, (witness_name + ".next").c_str(), idx_type);
         msat_term witnessN = msat_make_constant(e, decl_witnessN);
-        d->witnesses[eq_uf] = idx_to_int(e, witness);
-        d->orig_types[idx_to_int(e, witness)] = idx_type;
-        d->indices.insert(idx_to_int(e, witness));
+        // update state variables
+        d->new_vars[witness] = witnessN;
+
+        msat_term converted_witness = idx_to_int(e, witness);
+        d->witnesses[arr_eq] = converted_witness;
+        d->orig_types[converted_witness] = idx_type;
+        d->indices.insert(converted_witness);
         // TODO: figure out cleanest way to get next-state version of lemmas as well
         // e.g. equal(next(arr), next(arr2)) -> ...
 
-        // update state variables
-        d->new_vars[witness] = witnessN;
       } else if (msat_term_is_array_read(e, t)) {
         // replace array reads with uninterpreted functions
         msat_term arr = msat_term_get_arg(t, 0);
@@ -240,27 +251,29 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
 
         // turn idx into an integer
         msat_term idx = msat_term_get_arg(t, 1);
-        msat_term int_idx = idx_to_int(e, d->cache[idx]);
+        msat_term int_idx_cache = idx_to_int(e, d->cache[idx]);
         msat_type orig_idx_sort = msat_term_get_type(idx);
-        d->indices.insert(int_idx);
-        d->orig_types[int_idx] = orig_idx_sort;
+        d->indices.insert(int_idx_cache);
+        d->orig_types[int_idx_cache] = orig_idx_sort;
 
-        msat_type arridxtype;
-        msat_type arrelemtype;
-        msat_type arrtype = msat_term_get_type(arr);
-        // populate arridxtype and arrelemtype
-        assert(msat_is_array_type(e, arrtype, &arridxtype, &arrelemtype));
+        msat_type abs_type = msat_term_get_type(arr_cache);
+        std::string abs_typestr = msat_type_repr(abs_type);
 
-        msat_decl readfun = d->read_ufs.at(arr_cache);
-        msat_term cached_args[2] = {arr_cache, int_idx};
+        msat_decl readfun = d->read_ufs.at(abs_typestr);
+        msat_term cached_args[2] = {arr_cache, int_idx_cache};
         msat_term read_uf = msat_make_uf(e, readfun, &cached_args[0]);
         d->cache[t] = read_uf;
+
       } else if (msat_term_is_array_write(e, t)) {
+        // save index
+        // but otherwise do nothing -- will be removed later
+        // e.g. all stores at top-level because flattening and arr = store(...)
+        // terms are removed from system and saved for refinement
         msat_term idx = msat_term_get_arg(t, 1);
-        msat_term int_idx = idx_to_int(e, d->cache[idx]);
+        msat_term int_idx_cache = idx_to_int(e, d->cache[idx]);
         msat_type orig_idx_sort = msat_term_get_type(idx);
-        d->indices.insert(int_idx);
-        d->orig_types[int_idx] = orig_idx_sort;
+        d->indices.insert(int_idx_cache);
+        d->orig_types[int_idx_cache] = orig_idx_sort;
       } else {
         // rebuild the term
         size_t arity = msat_term_arity(t);
@@ -273,28 +286,11 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
             args.push_back(d->cache.at(msat_term_get_arg(t, i)));
           }
 
-          // special-case for ite (this gets typed for it's output)
-          // need to update it
+          // special-case for ite
           if (msat_term_is_term_ite(e, t))
           {
             assert(args.size() == 3);
             res = msat_make_term_ite(e, args[0], args[1], args[2]);
-
-            // create a read function for this ite array
-            // TODO: when we transition to uninterpreted sorts for arrays,
-            // have only one read function
-            // then we can remove this section
-            if (msat_is_array_type(e, _type, nullptr, nullptr))
-            {
-              // create a read function for these arrays
-              msat_type param_types[2] = {msat_get_integer_type(e),
-                                          msat_get_integer_type(e)};
-              msat_type funtype =
-                msat_get_function_type(e, &param_types[0], 2, arrelemtype);
-              std::string readname = "read_" + std::to_string(d->read_id++);
-              msat_decl readfun = msat_declare_function(e, readname.c_str(), funtype);
-              d->read_ufs[res] = readfun;
-            }
           }
           else
           {
@@ -311,7 +307,7 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
 
   AbstractionData data = AbstractionData(
       indices_, new_vars_, removed_vars_, witnesses_, read_ufs_, orig_types_,
-      const_arrs_, stores_, cache_, eq_id_, read_id_, conc_ts_);
+      const_arrs_, stores_, cache_, read_id_, conc_ts_);
   msat_visit_term(msat_env_, term, visit, &data);
   return data.cache.at(term);
 }
