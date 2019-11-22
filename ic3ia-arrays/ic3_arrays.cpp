@@ -429,7 +429,13 @@ void IC3Array::print_witness(msat_model model,
   {
     for (auto s : symbs)
     {
-      if (msat_is_array_type(msat_env_, orig_types.at(s), nullptr, nullptr))
+      if (orig_types.find(s) == orig_types.end())
+      {
+        // all arrays should have an entry in orig_types (because they were removed)
+        assert(!msat_is_array_type(msat_env_, msat_term_get_type(s), nullptr, nullptr));
+        continue;
+      }
+      else if (msat_is_array_type(msat_env_, orig_types.at(s), nullptr, nullptr))
       {
         arrays.push_back(s);
       }
