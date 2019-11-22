@@ -4,6 +4,12 @@
 *** lazy lambda disequalities
 *** uninterpreted sorts for arrays (single read function)
 *** on-the-fly index set computation
+*** TODO: figure out if witness needs to be a state variable?
+**** maybe we don't need it to be 
+**** but what about equality with a next? Would get different witnesses anyway
+**** One other issue though
+     What about mapping it to next state version
+     next(arr0)[witness] = next(arr1)[witness] -> next(arr0) = next(arr1) is unsound
 ** Known issues
 *** Interpolants fail sometimes
 *** In current format where each array gets its own read function, array ites need their own read
