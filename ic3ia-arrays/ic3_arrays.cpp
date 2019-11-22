@@ -302,7 +302,7 @@ msat_truth_value IC3Array::prove()
         //       Not even sure if this is right or why we need it
         //       but without it, it fails to find an interpolant
         //       for hard-array.vmt and hard-array-false.vmt
-        if (abs_ts_.only_cur(ax) && (reached_k == 0 || contains_vars(ax, proph_vars))) {
+        if (abs_ts_.only_cur(ax) && reached_k == 0) {
           // only add axioms to init if the counterexample is length 1
           // or it involves prophecy variables
           abs_ts_.add_init(ax);
