@@ -91,15 +91,16 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
     TermSet &stores;
     TermMap &cache;
     unsigned int &read_id;
+    std::unordered_map<std::string, msat_type> & type_map;
     const TransitionSystem &conc_ts;
-    std::unordered_map<std::string, msat_type> type_map; // maps array types to abstract array type
     AbstractionData(TermSet &i, TermMap &nv, TermSet &rv, TermMap &w,
                     std::unordered_map<std::string, msat_decl> &r, TermTypeMap &o,
-                    TermSet &ca, TermSet &s, TermMap &c,
-                    unsigned int &ri, const TransitionSystem &cts)
+                    TermSet &ca, TermSet &s, TermMap &c, unsigned int &ri,
+                    std::unordered_map<std::string, msat_type> & tm,
+                    const TransitionSystem &cts)
         : indices(i), new_vars(nv), removed_vars(rv), witnesses(w), read_ufs(r),
           orig_types(o), const_arrs(ca), stores(s), cache(c),
-          read_id(ri), conc_ts(cts) {}
+          read_id(ri), type_map(tm), conc_ts(cts) {}
   };
 
   auto visit = [](msat_env e, msat_term t, int preorder,
@@ -312,7 +313,7 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
 
   AbstractionData data = AbstractionData(
       indices_, new_vars_, removed_vars_, witnesses_, read_ufs_, orig_types_,
-      const_arrs_, stores_, cache_, read_id_, conc_ts_);
+      const_arrs_, stores_, cache_, read_id_, type_map_, conc_ts_);
   msat_visit_term(msat_env_, term, visit, &data);
   return data.cache.at(term);
 }
