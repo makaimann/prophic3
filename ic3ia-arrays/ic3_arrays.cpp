@@ -561,7 +561,7 @@ bool IC3Array::reduce_axioms(int k, const TermSet & untimed_axioms,
       }
     }
 
-    const size_t offset = cur_untimed_axioms.size() - 1;
+    const size_t offset = cur_untimed_axioms.size();
     out_timed.clear();
     for (size_t i = 0; i < cur_timed_axioms.size(); ++i) {
       msat_term a = cur_timed_axioms[i];
