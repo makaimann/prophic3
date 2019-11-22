@@ -43,8 +43,9 @@ namespace ic3ia_array
     // TODO: Look into using unroller's untime feature
     ic3ia::TermMap untime_cache;
 
-    void debug_print_witness(ic3ia::Bmc &bmc,
-                             ArrayAxiomEnumerator &aae);
+    void print_witness(msat_model model,
+                       size_t reached_k,
+                       ArrayAxiomEnumerator &aae);
 
     /* returns true if t contains any var from vars x*/
     bool contains_vars(msat_term term, const ic3ia::TermSet &vars) const;
