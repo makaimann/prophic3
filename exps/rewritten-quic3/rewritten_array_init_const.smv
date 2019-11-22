@@ -24,9 +24,7 @@ TRANS pos = 2 -> next(i) = 0
 TRANS next(pos) = ((pos = 0) ? ((i = size - 1) ? 1 : 0) :
                   ((pos = 1) ? (i = size - 1 ? 2 : 1) : pos))
 
-TRANS pos = 0 -> next(a) = WRITE(a, i, c)
-
-TRANS next(a) = (pos = 0 ? WRITE(a, i ,c) : a)
+TRANS next(a) = ((pos = 0) ? WRITE(a, i ,c) : a)
 
 INVARSPEC pos = 1 -> READ(a, i) = c
                               
