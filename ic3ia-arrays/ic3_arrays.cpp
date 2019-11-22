@@ -398,6 +398,7 @@ void IC3Array::print_witness(msat_model model,
                              ArrayAxiomEnumerator &aae) {
 
   ArrayAbstractor &abstractor = aae.get_abstractor();
+  std::unordered_map<std::string, msat_decl> & read_ufs = abstractor.read_ufs();
   TermTypeMap &orig_types = abstractor.orig_types();
 
   std::cout << "+++++++++++++++++++++ FAILED +++++++++++++++++++" << std::endl;
@@ -424,21 +425,25 @@ void IC3Array::print_witness(msat_model model,
 
 
   std::cout << std::endl;
-  std::cout << "+++++++++++++++++++++ UF values ++++++++++++++++++++"
+  std::cout << "+++++++++++++++++++++ Array Reads ++++++++++++++++++++"
             << std::endl;
-  for (auto elem : abstractor.read_ufs()) {
-    msat_term arr = elem.first;
-    msat_decl fun = elem.second;
 
-    // skip if not a variable
-    // a variable is a term with no children and no built-in
-    // interpretation
-    if (!(msat_term_arity(arr) == 0 &&
-          msat_decl_get_tag(msat_env_, msat_term_get_decl(arr)) == MSAT_TAG_UNKNOWN &&
-          !msat_term_is_number(msat_env_, arr)))
+  // first, collect arrays
+  TermList arrays;
+  for (auto symbs : {abs_ts_.statevars(), abs_ts_.inputvars()})
+  {
+    for (auto s : symbs)
     {
-      continue;
+      if (msat_is_array_type(msat_env_, orig_types.at(s), nullptr, nullptr))
+      {
+        arrays.push_back(s);
+      }
     }
+  }
+
+  msat_decl readfun;
+  for (auto arr : arrays) {
+    readfun = read_ufs.at(msat_type_repr(msat_term_get_type(arr)));
 
     TermSet indices;
     string typestr = msat_type_repr(orig_types.at(arr));
@@ -461,7 +466,7 @@ void IC3Array::print_witness(msat_model model,
       for (size_t k = 0; k <= reached_k; ++k) {
         msat_term timed_arr = un_.at_time(arr, k);
         msat_term args[2] = {timed_arr, i};
-        msat_term read = msat_make_uf(msat_env_, fun, args);
+        msat_term read = msat_make_uf(msat_env_, readfun, args);
         std::cout << msat_to_smtlib2_term(msat_env_, read) << " := ";
         std::cout << msat_to_smtlib2_term(msat_env_,
                                           msat_model_eval(model, read))
