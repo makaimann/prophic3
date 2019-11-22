@@ -247,17 +247,17 @@ msat_truth_value IC3Array::prove()
       }
 
       if (!found_untimed_axioms & !found_timed_axioms) {
-        //debug_print_witness(bmc, aae);
+        print_witness(model, reached_k, aae);
         // TODO: Use real exceptions
         std::cout << "It looks like there's a concrete counter-example (or some axioms are missing)" << std::endl;
-        throw std::exception();
+        return MSAT_FALSE;
       }
       else if (!found_untimed_axioms) {
         std::cout << "Found " << violated_axioms.size() << " violated TIMED axioms!" << std::endl;
       }
 
       for (auto ax : violated_axioms) {
-	msat_assert_formula(refiner_, ax);
+        msat_assert_formula(refiner_, ax);
       }
       broken = msat_solve(refiner_) == MSAT_SAT;
       violated_axioms.clear();
@@ -297,14 +297,8 @@ msat_truth_value IC3Array::prove()
         }
 
         // add to init if there's only current variables (no inputs or next)
-        // + a couple other conditions
-        // TODO: Understand this better
-        //       Not even sure if this is right or why we need it
-        //       but without it, it fails to find an interpolant
-        //       for hard-array.vmt and hard-array-false.vmt
-        if (abs_ts_.only_cur(ax) && (reached_k == 0 || contains_vars(ax, proph_vars))) {
+        if (abs_ts_.only_cur(ax) && reached_k == 0) {
           // only add axioms to init if the counterexample is length 1
-          // or it involves prophecy variables
           abs_ts_.add_init(ax);
           cnt++;
         }
@@ -394,14 +388,12 @@ int IC3Array::witness(std::vector<TermList> & out)
   throw "Not implemented";
 }
 
-void IC3Array::debug_print_witness(Bmc &bmc,
-                                   ArrayAxiomEnumerator &aae) {
-  Unroller &u = bmc.get_unroller();
+void IC3Array::print_witness(msat_model model,
+                             size_t reached_k,
+                             ArrayAxiomEnumerator &aae) {
+
   ArrayAbstractor &abstractor = aae.get_abstractor();
   TermTypeMap &orig_types = abstractor.orig_types();
-  std::vector<TermList> witness;
-  bmc.witness(witness);
-  msat_model model = bmc.get_model();
 
   std::cout << "+++++++++++++++++++++ FAILED +++++++++++++++++++" << std::endl;
   std::cout << "prop: " << msat_to_smtlib2_term(msat_env_, abs_ts_.prop())
@@ -433,10 +425,20 @@ void IC3Array::debug_print_witness(Bmc &bmc,
     msat_term arr = elem.first;
     msat_decl fun = elem.second;
 
+    // skip if not a variable
+    // a variable is a term with no children and no built-in
+    // interpretation
+    if (!(msat_term_arity(arr) == 0 &&
+          msat_decl_get_tag(msat_env_, msat_term_get_decl(arr)) == MSAT_TAG_UNKNOWN &&
+          !msat_term_is_number(msat_env_, arr)))
+    {
+      continue;
+    }
+
     TermSet indices;
     string typestr = msat_type_repr(orig_types.at(arr));
     for (auto i : aae.all_indices().at(typestr)) {
-      for (size_t k = 0; k < witness.size(); ++k) {
+      for (size_t k = 0; k <= reached_k; ++k) {
         indices.insert(msat_model_eval(model, un_.at_time(i, k)));
       }
     }
@@ -445,13 +447,13 @@ void IC3Array::debug_print_witness(Bmc &bmc,
       if (!msat_type_equals(orig_types.at(arr), orig_types.at(w.second))) {
         continue;
       }
-      for (size_t k = 0; k < witness.size(); ++k) {
+      for (size_t k = 0; k <= reached_k; ++k) {
         indices.insert(msat_model_eval(model, un_.at_time(w.second, k)));
       }
     }
 
     for (auto i : indices) {
-      for (size_t k = 0; k < witness.size(); ++k) {
+      for (size_t k = 0; k <= reached_k; ++k) {
         msat_term timed_arr = un_.at_time(arr, k);
         msat_term args[2] = {timed_arr, i};
         msat_term read = msat_make_uf(msat_env_, fun, args);
@@ -466,11 +468,28 @@ void IC3Array::debug_print_witness(Bmc &bmc,
   std::cout << std::endl;
 
   std::cout << "+++++++++++++++++++++ witness ++++++++++++++++++" << std::endl;
-  for (size_t i = 0; i < witness.size(); ++i) {
-    TermList timestep = witness[i];
-    for (auto a : timestep) {
-      std::cout << i << ": " << msat_to_smtlib2_term(msat_env_, a) << std::endl;
+  msat_term timed_symbol;
+  msat_term val;
+  for (size_t i = 0; i <= reached_k; i++)
+  {
+    std::cout << "=================== STATES ===================" << std::endl;
+    for (auto s : abs_ts_.statevars())
+    {
+      timed_symbol = un_.at_time(s, i);
+      val = msat_model_eval(model, timed_symbol);
+      std::cout << msat_to_smtlib2_term(msat_env_, timed_symbol) << " := "
+                << msat_to_smtlib2_term(msat_env_, val) << std::endl;
     }
+    std::cout << std::endl;
+    std::cout << "=================== INPUTS ===================" << std::endl;
+    for (auto in : abs_ts_.inputvars())
+    {
+      timed_symbol = un_.at_time(in, i);
+      val = msat_model_eval(model, timed_symbol);
+      std::cout << msat_to_smtlib2_term(msat_env_, timed_symbol) << " := "
+                << msat_to_smtlib2_term(msat_env_, val) << std::endl;
+    }
+    std::cout << std::endl;
   }
 }
 
