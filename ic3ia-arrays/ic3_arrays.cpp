@@ -285,31 +285,35 @@ msat_truth_value IC3Array::prove()
     }
 
     size_t cnt = 0;
-    for (auto ax : *(untimed_axioms)) {
-      //std::cout << msat_to_smtlib2_term(msat_env_, ax) << std::endl;
-      abs_ts_.add_trans(ax);
+    if (timed_axioms->size() == 0)
+    {
+      for (auto ax : *(untimed_axioms)) {
+        //std::cout << msat_to_smtlib2_term(msat_env_, ax) << std::endl;
+        abs_ts_.add_trans(ax);
 
-      // if there's no next-state variables, add next version to trans
-      if (!abs_ts_.contains_next(ax)) {
-        abs_ts_.add_trans(abs_ts_.next(ax));
+        // if there's no next-state variables, add next version to trans
+        if (!abs_ts_.contains_next(ax)) {
+          abs_ts_.add_trans(abs_ts_.next(ax));
+        }
+
+        // add to init if there's only current variables (no inputs or next)
+        // + a couple other conditions
+        // TODO: Understand this better
+        //       Not even sure if this is right or why we need it
+        //       but without it, it fails to find an interpolant
+        //       for hard-array.vmt and hard-array-false.vmt
+        if (abs_ts_.only_cur(ax) && (reached_k == 0 || contains_vars(ax, proph_vars))) {
+          // only add axioms to init if the counterexample is length 1
+          // or it involves prophecy variables
+          abs_ts_.add_init(ax);
+          cnt++;
+        }
+
       }
 
-      // add to init if there's only current variables (no inputs or next)
-      // + a couple other conditions
-      // TODO: Understand this better
-      //       Not even sure if this is right or why we need it
-      //       but without it, it fails to find an interpolant
-      //       for hard-array.vmt and hard-array-false.vmt
-      if (abs_ts_.only_cur(ax) && (reached_k == 0 || contains_vars(ax, proph_vars))) {
-        // only add axioms to init if the counterexample is length 1
-        // or it involves prophecy variables
-        abs_ts_.add_init(ax);
-        cnt++;
-      }
-
+      std::cout << "Added " << untimed_axioms->size() << " axioms to trans." << std::endl;
+      std::cout << "Added " << cnt << " axioms to init." << std::endl;
     }
-    std::cout << "Added " << untimed_axioms->size() << " axioms to trans." << std::endl;
-    std::cout << "Added " << cnt << " axioms to init." << std::endl;
 
     untimed_axioms_to_add.clear();
     red_untimed_axioms.clear();
