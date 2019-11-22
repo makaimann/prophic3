@@ -1,0 +1,32 @@
+MODULE main
+
+VAR
+  a : array integer of integer;
+  i : integer;
+  pos : integer;
+
+FROZENVAR
+  size : integer;
+  c : integer;
+
+INIT pos = 0
+
+INIT i = 0
+
+INVAR size > 1
+
+TRANS pos = 0 -> next(i) = (i < size - 1 ? i + 1 : 0)
+
+TRANS pos = 1 -> next(i) = (i < size - 1 ? i + 1 : 0)
+
+TRANS pos = 2 -> next(i) = 0
+
+TRANS next(pos) = ((pos = 0) ? ((i = size - 1) ? 1 : 0) :
+                  ((pos = 1) ? (i = size - 1 ? 2 : 1) : pos))
+
+TRANS pos = 0 -> next(a) = WRITE(a, i, c)
+
+TRANS next(a) = (pos = 0 ? WRITE(a, i ,c) : a)
+
+INVARSPEC pos = 1 -> READ(a, i) = c
+                              
