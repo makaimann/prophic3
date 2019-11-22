@@ -250,7 +250,7 @@ msat_truth_value IC3Array::prove()
         print_witness(model, reached_k, aae);
         // TODO: Use real exceptions
         std::cout << "It looks like there's a concrete counter-example (or some axioms are missing)" << std::endl;
-        throw std::exception();
+        return MSAT_FALSE;
       }
       else if (!found_untimed_axioms) {
         std::cout << "Found " << violated_axioms.size() << " violated TIMED axioms!" << std::endl;
