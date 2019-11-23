@@ -175,17 +175,43 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
         // keep track of the original index sort
         d->orig_types[arr_abs] = arridxtype;
 
+        // TODO: Investigate this further -- being conservative for correctness
+        //          and making all arrays state variables
+        //       getting an incorrect proof of array-int-trans-pipeline-false.vmt
+        //       seems like it might be because a flattened array was left as
+        //       an input
+        // then we got
+        //       read_0(abs_arr_flatten_2, y) = y - 3
+        //     AND
+        //       read_0(abs_arr_flatten_2, y.next) = y.next - 3
+        //
+        //     which, when unrolled would give
+        //       read_0(abs_arr_flatten_2@1, y@1) = y@1 - 3
+        //       read_0(abs_arr_flatten_2@1, y@2) = y@2 - 3
+        //     which might not hold
+        //
+        //     Note: I believe this wasn't an issue before,
+        //           because every array had it's own UF
+        //           so if we didn't force them to be equivalent at an index,
+        //             it wasn't a constraint
+        //           now there's an implicit constraint (UF constraints)
+        //              that are making it unsat
+        // if (d->conc_ts.is_statevar(t))
+        // {
+        msat_decl decl_arrabsN = msat_declare_function(e,
+                                                       (name + ".next").c_str(),
+                                                       abs_type);
+        msat_term arr_absN = msat_make_constant(e, decl_arrabsN);
+        d->new_vars[arr_abs] = arr_absN;
         if (d->conc_ts.is_statevar(t))
         {
-          msat_decl decl_arrabsN = msat_declare_function(e,
-                                                         (name + ".next").c_str(),
-                                                         abs_type);
-          msat_term arr_absN = msat_make_constant(e, decl_arrabsN);
-          d->new_vars[arr_abs] = arr_absN;
+          // don't map from next if it wasn't a state variable
           d->cache[d->conc_ts.next(t)] = arr_absN;
-          // map next to type
-          d->orig_types[arr_absN] = arridxtype;
         }
+
+        // map next to type
+        d->orig_types[arr_absN] = arridxtype;
+        // }
 
       }
       // check if it's an array equality
