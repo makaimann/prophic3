@@ -124,18 +124,19 @@ private:
   /* Bound a lambda that's representing a bit-vector */
   msat_term bound_lambda(msat_term lambda, size_t width);
 
-  /* Enumerate store axioms on all indices: arr0[idx] = val, forall i != val.
-   * arr0[i] = arr1[i]
+  /* Enumerate store axioms on all indices:
+   * forall a, b, i, v . a = store(b, i, v) ->
+                                              (forall j . j = i -> a[j] = v &
+                                                          j != i -> a[j] = b[j])
    * Important Note: lambda argument can be an error term (if there is no finite
    * domain lambda)
    */
-  void enumerate_store_equalities(ic3ia::TermSet &axioms, msat_decl read, msat_term arr0,
-                                  msat_term arr1, msat_type _type, msat_term idx,
-                                  msat_term val, ic3ia::TermSet &indices, msat_term lambda);
+  void enumerate_store_equalities(ic3ia::TermSet &axioms, msat_decl read, msat_term store_eq,
+                                  msat_type orig_idx_type, ic3ia::TermSet &indices, msat_term lambda);
 
   /* Enumerate store axioms on all indices: forall i . arr[i] = val */
   void enumerate_const_array_axioms(ic3ia::TermSet &axioms, msat_decl read, msat_term arr,
-                                    msat_type _type, msat_term val, ic3ia::TermSet &indices);
+                                    msat_type orig_idx_type, msat_term val, ic3ia::TermSet &indices);
 
   // TODO: Figure out if we can remove some of these lemmas
   //       probably don't need them all
@@ -155,7 +156,7 @@ private:
    * domain lambda)
    */
   void enumerate_eq_axioms(ic3ia::TermSet &axioms, msat_decl read,
-                           msat_type _type, msat_term eq_uf,
+                           msat_type orig_idx_type, msat_term eq_uf,
                            msat_term witness, ic3ia::TermSet &indices,
                            msat_term lambda);
 
