@@ -291,7 +291,7 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
         // replace write with uninterpreted function
         msat_type abs_type = msat_term_get_type(arr_cache);
         std::string abs_typestr = msat_type_repr(abs_type);
-        msat_decl write;
+        msat_decl writefun;
         if (d->store_ufs.find(abs_typestr) == d->store_ufs.end())
         {
           msat_type param_types[3] = {abs_type,
@@ -299,16 +299,16 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
                                       msat_term_get_type(val_cache)};
           msat_type funtype = msat_get_function_type(e, &param_types[0], 3, abs_type);
           std::string writename = "write_" + std::to_string(d->write_id++);
-          write = msat_declare_function(e, writename.c_str(), funtype);
-          d->store_ufs[abs_typestr] = write;
+          writefun = msat_declare_function(e, writename.c_str(), funtype);
+          d->store_ufs[abs_typestr] = writefun;
         }
         else
         {
-          write = d->store_ufs.at(abs_typestr);
+          writefun = d->store_ufs.at(abs_typestr);
         }
 
         msat_term args[3] = {arr_cache, int_idx_cache, val_cache};
-        msat_term arr_write = msat_make_uf(e, write, &args[0]);
+        msat_term arr_write = msat_make_uf(e, writefun, &args[0]);
         d->cache[t] = arr_write;
       } else {
         // rebuild the term
