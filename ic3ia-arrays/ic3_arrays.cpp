@@ -261,6 +261,11 @@ msat_truth_value IC3Array::prove()
       }
       broken = msat_solve(refiner_) == MSAT_SAT;
       violated_axioms.clear();
+
+      if (!MSAT_ERROR_MODEL(model))
+      {
+        msat_destroy_model(model);
+      }
     }
 
     std::cout << "Found " << untimed_axioms_to_add.size() << " untimed axioms"
