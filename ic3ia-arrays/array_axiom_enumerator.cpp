@@ -61,11 +61,6 @@ ic3ia::TermSet ArrayAxiomEnumerator::init_eq_axioms()
   std::unordered_map<std::string, msat_decl> &read_ufs = abstractor_.read_ufs();
   TermTypeMap &orig_types = abstractor_.orig_types();
 
-  if (init_eq_axioms_.size())
-  {
-    return init_eq_axioms_;
-  }
-
   const ic3ia::TermMap & witnesses = abstractor_.witnesses();
   ic3ia::TermSet axioms;
 
@@ -92,11 +87,6 @@ ic3ia::TermSet ArrayAxiomEnumerator::trans_eq_axioms()
 {
   std::unordered_map<std::string, msat_decl> &read_ufs = abstractor_.read_ufs();
   TermTypeMap &orig_types = abstractor_.orig_types();
-
-  if (trans_eq_axioms_.size())
-  {
-    return trans_eq_axioms_;
-  }
 
   const ic3ia::TermMap & witnesses = abstractor_.witnesses();
   ic3ia::TermSet axioms;
@@ -125,11 +115,6 @@ ic3ia::TermSet ArrayAxiomEnumerator::prop_eq_axioms()
   std::unordered_map<std::string, msat_decl> &read_ufs = abstractor_.read_ufs();
   TermTypeMap &orig_types = abstractor_.orig_types();
 
-  if (prop_eq_axioms_.size())
-  {
-    return prop_eq_axioms_;
-  }
-
   const ic3ia::TermMap & witnesses = abstractor_.witnesses();
   ic3ia::TermSet axioms;
 
@@ -154,11 +139,6 @@ ic3ia::TermSet ArrayAxiomEnumerator::prop_eq_axioms()
 
 ic3ia::TermSet ArrayAxiomEnumerator::const_array_axioms()
 {
-  if (const_array_axioms_.size())
-  {
-    return const_array_axioms_;
-  }
-
   ic3ia::TermSet axioms;
   ic3ia::TermMap & cache = abstractor_.cache();
   std::unordered_map<std::string, msat_decl> &read_ufs = abstractor_.read_ufs();
@@ -192,11 +172,6 @@ ic3ia::TermSet ArrayAxiomEnumerator::const_array_axioms()
 
 ic3ia::TermSet ArrayAxiomEnumerator::store_axioms()
 {
-  if (store_axioms_.size())
-  {
-    return store_axioms_;
-  }
-
   ic3ia::TermSet axioms;
   ic3ia::TermSet & stores = abstractor_.stores();
   std::unordered_map<std::string, msat_decl> &read_ufs = abstractor_.read_ufs();
