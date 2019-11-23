@@ -98,13 +98,6 @@ private:
   // equality ufs present in prop
   ic3ia::TermSet prop_equalities_;
 
-  // cache the various kinds of axioms
-  ic3ia::TermSet init_eq_axioms_;
-  ic3ia::TermSet trans_eq_axioms_;
-  ic3ia::TermSet prop_eq_axioms_;
-  ic3ia::TermSet const_array_axioms_;
-  ic3ia::TermSet store_axioms_;
-
   // map axioms to the index that was being refined over
   ic3ia::TermMap axioms_to_index_;
 
