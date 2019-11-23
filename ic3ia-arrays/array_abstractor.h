@@ -63,6 +63,7 @@ public:
     ic3ia::TransitionSystem abs_ts_;
 
     unsigned int read_id_{0};
+    unsigned int write_id_{0};
     unsigned int lambda_id_{0};
 
     // the abstraction cache
@@ -87,6 +88,8 @@ public:
     ic3ia::TermSet removed_vars_;
     // maps array types to abstract array type
     std::unordered_map<std::string, msat_type> type_map_;
+    // maps array types to abstract write UFs
+    std::unordered_map<std::string, msat_decl> store_ufs_;
 
     ic3ia::TermSet finite_domain_lambdas_;
 };
