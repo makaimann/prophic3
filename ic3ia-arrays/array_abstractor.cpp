@@ -177,7 +177,7 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
         d->removed_vars.insert(t);
 
         // keep track of the original index sort
-        d->orig_types[arr_abs] = arridxtype;
+        d->orig_types[arr_abs] = _type;
 
         msat_decl decl_arrabsN = msat_declare_function(e,
                                                        (name + ".next").c_str(),
@@ -185,7 +185,7 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
         msat_term arr_absN = msat_make_constant(e, decl_arrabsN);
         d->new_vars[arr_abs] = arr_absN;
         // map next to type
-        d->orig_types[arr_absN] = arridxtype;
+        d->orig_types[arr_absN] = _type;
 
         if (d->conc_ts.is_statevar(t))
         {
@@ -351,57 +351,78 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
 void ArrayAbstractor::create_lambdas() {
   // create lambda indices for each index sort
   // represents an index which hasn't been seen yet
-  std::vector<msat_type> types; // msat_type not hashable
+
+  // gather all array types from original system
+  // msat_type not hashable -- using map from string to prevent multiple entries
+  std::unordered_map<std::string, msat_type> idx_types;
+  for (auto sv : conc_ts_.statevars())
+  {
+    msat_type _type = msat_term_get_type(sv);
+    msat_type idx_type;
+    if (msat_is_array_type(msat_env_, _type, &idx_type, nullptr))
+    {
+      idx_types[msat_type_repr(idx_type)] = idx_type;
+    }
+  }
+  for (auto iv : conc_ts_.inputvars())
+  {
+    msat_type _type = msat_term_get_type(iv);
+    msat_type idx_type;
+    if (msat_is_array_type(msat_env_, _type, &idx_type, nullptr))
+    {
+      idx_types[msat_type_repr(idx_type)] = idx_type;
+    }
+  }
+
   TermTypeMap lambdas;
-  for (auto elem : orig_types_) {
+  for (auto elem : idx_types) {
     msat_type _type = elem.second;
-    if (std::find(types.begin(), types.end(), _type) == types.end()) {
-      types.push_back(_type);
-      std::string name = "arrlambda_" + std::to_string(lambda_id_);
-      msat_decl lambda_decl = msat_declare_function(
-          msat_env_, name.c_str(), msat_get_integer_type(msat_env_));
-      msat_term lambda = msat_make_constant(msat_env_, lambda_decl);
-      msat_decl lambda_declN = msat_declare_function(
-          msat_env_, (name + ".next").c_str(), msat_get_integer_type(msat_env_));
-      msat_term lambdaN = msat_make_constant(msat_env_, lambda_declN);
-      abs_ts_.add_statevar(lambda, lambdaN);
-      abs_ts_.add_trans(msat_make_equal(msat_env_, lambda,
-                                        lambdaN)); // lambda is a frozen var
+    std::string name = "arrlambda_" + std::to_string(lambda_id_);
+    msat_decl lambda_decl = msat_declare_function(msat_env_,
+                                                  name.c_str(),
+                                                  msat_get_integer_type(msat_env_));
+    msat_term lambda = msat_make_constant(msat_env_, lambda_decl);
+    msat_decl lambda_declN = msat_declare_function(msat_env_,
+                                                   (name + ".next").c_str(),
+                                                   msat_get_integer_type(msat_env_));
+    msat_term lambdaN = msat_make_constant(msat_env_, lambda_declN);
+    abs_ts_.add_statevar(lambda, lambdaN);
+    abs_ts_.add_trans(msat_make_equal(msat_env_, lambda,
+                                      lambdaN)); // lambda is a frozen var
 
-      // enforce that it's different from all other indices
-      // TODO: optimization idea -- use strictly less than instead of not equals
-      // for unbounded domains
-      //       can always find a value in that case
-      msat_term alldiff = msat_make_true(msat_env_);
-      for (auto i : indices_) {
-        // only if the sorts match
-        if (orig_types_[i] == _type) {
-          alldiff = msat_make_and(
-              msat_env_, alldiff,
-              msat_make_not(msat_env_, msat_make_equal(msat_env_, lambda, i)));
-        }
+    // enforce that it's different from all other indices
+    // TODO: optimization idea -- use strictly less than instead of not equals
+    // for unbounded domains
+    //       can always find a value in that case
+    msat_term alldiff = msat_make_true(msat_env_);
+    for (auto i : indices_) {
+      // only if the sorts match
+      if (orig_types_[i] == _type) {
+        alldiff = msat_make_and(
+                                msat_env_, alldiff,
+                                msat_make_not(msat_env_, msat_make_equal(msat_env_, lambda, i)));
       }
-      abs_ts_.add_trans(alldiff);
-      // add next version (should be different in all time-steps)
-      abs_ts_.add_trans(abs_ts_.next(alldiff));
+    }
+    abs_ts_.add_trans(alldiff);
+    // add next version (should be different in all time-steps)
+    abs_ts_.add_trans(abs_ts_.next(alldiff));
 
-      // store original sort (might be the same if it's already an integer)
-      orig_types_[lambda] = _type;
+    // store original sort (might be the same if it's already an integer)
+    orig_types_[lambda] = _type;
 
-      // if it's an infinite domain index, can just add it to index sets
-      // otherwise keep it separate
-      // for now, only handle int and bit-vector
-      if (msat_is_integer_type(msat_env_, _type)) {
-        indices_.insert(lambda);
-        // TODO: optimization, don't need next(lambda) because lambda is a
-        // frozenvar
-        //       in refinement, don't use ever use next(lambda) (currently it
-        //       would because lambda is bundled with other indices)
-      } else if (msat_is_bv_type(msat_env_, _type, nullptr)) {
-        finite_domain_lambdas_.insert(lambda);
-      } else {
-        throw "UNHANDLED_TYPE";
-      }
+    // if it's an infinite domain index, can just add it to index sets
+    // otherwise keep it separate
+    // for now, only handle int and bit-vector
+    if (msat_is_integer_type(msat_env_, _type)) {
+      indices_.insert(lambda);
+      // TODO: optimization, don't need next(lambda) because lambda is a
+      // frozenvar
+      //       in refinement, don't use ever use next(lambda) (currently it
+      //       would because lambda is bundled with other indices)
+    } else if (msat_is_bv_type(msat_env_, _type, nullptr)) {
+      finite_domain_lambdas_.insert(lambda);
+    } else {
+      throw "UNHANDLED_TYPE";
     }
   }
 }
