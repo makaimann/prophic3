@@ -19,7 +19,6 @@ ArrayAbstractor::~ArrayAbstractor()
 void ArrayAbstractor::do_abstraction()
 {
   msat_term new_init = abstract(conc_ts_.init());
-  msat_term new_trans = abstract(conc_ts_.trans());
   msat_term new_prop = abstract(conc_ts_.prop());
 
   // add all old state elements unless they've been removed
@@ -29,6 +28,8 @@ void ArrayAbstractor::do_abstraction()
       new_vars_[sv] = conc_ts_.next(sv);
     }
   }
+
+  msat_term new_trans = abstract(conc_ts_.trans());
 
   abs_ts_.initialize(new_vars_, new_init, new_trans, new_prop,
                      conc_ts_.live_prop());
@@ -158,18 +159,22 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
         // keep track of the original index sort
         d->orig_types[arr_int] = arridxtype;
 
+        msat_decl decl_arrintN = msat_declare_function(
+                                                       e, (name + ".next").c_str(), msat_get_integer_type(e));
+        msat_term arr_intN = msat_make_constant(e, decl_arrintN);
+        d->new_vars[arr_int] = arr_intN;
+        // use the same read function for the next-state
+        // added to map for convenience
+        d->read_ufs[arr_intN] = readfun;
+        // map next to type
+        d->orig_types[arr_intN] = arridxtype;
+
         if (d->conc_ts.is_statevar(t))
         {
-          msat_decl decl_arrintN = msat_declare_function(
-                                                         e, (name + ".next").c_str(), msat_get_integer_type(e));
-          msat_term arr_intN = msat_make_constant(e, decl_arrintN);
-          d->new_vars[arr_int] = arr_intN;
+          // if it wasn't already a state variable, then we don't
+          // want to overwrite the cache entry
+          // because next(input) -> input
           d->cache[d->conc_ts.next(t)] = arr_intN;
-          // use the same read function for the next-state
-          // added to map for convenience
-          d->read_ufs[arr_intN] = readfun;
-          // map next to type
-          d->orig_types[arr_intN] = arridxtype;
         }
 
       }
