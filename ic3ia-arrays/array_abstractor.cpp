@@ -19,7 +19,6 @@ ArrayAbstractor::~ArrayAbstractor()
 void ArrayAbstractor::do_abstraction()
 {
   msat_term new_init = abstract(conc_ts_.init());
-  msat_term new_trans = abstract(conc_ts_.trans());
   msat_term new_prop = abstract(conc_ts_.prop());
 
   // add all old state elements unless they've been removed
@@ -29,6 +28,8 @@ void ArrayAbstractor::do_abstraction()
       new_vars_[sv] = conc_ts_.next(sv);
     }
   }
+
+  msat_term new_trans = abstract(conc_ts_.trans());
 
   abs_ts_.initialize(new_vars_, new_init, new_trans, new_prop,
                      conc_ts_.live_prop());
@@ -178,16 +179,20 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
         // keep track of the original index sort
         d->orig_types[arr_abs] = arridxtype;
 
+        msat_decl decl_arrabsN = msat_declare_function(e,
+                                                       (name + ".next").c_str(),
+                                                       abs_type);
+        msat_term arr_absN = msat_make_constant(e, decl_arrabsN);
+        d->new_vars[arr_abs] = arr_absN;
+        // map next to type
+        d->orig_types[arr_absN] = arridxtype;
+
         if (d->conc_ts.is_statevar(t))
         {
-          msat_decl decl_arrabsN = msat_declare_function(e,
-                                                         (name + ".next").c_str(),
-                                                         abs_type);
-          msat_term arr_absN = msat_make_constant(e, decl_arrabsN);
-          d->new_vars[arr_abs] = arr_absN;
+          // if it wasn't already a state variable, then we don't
+          // want to overwrite the cache entry
+          // because next(input) -> input
           d->cache[d->conc_ts.next(t)] = arr_absN;
-          // map next to type
-          d->orig_types[arr_absN] = arridxtype;
         }
       }
       // check if it's an array equality
