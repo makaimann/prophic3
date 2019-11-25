@@ -65,10 +65,16 @@ IC3Array::~IC3Array()
   
 msat_truth_value IC3Array::prove()
 {
+  assert(conc_ts_.only_cur(conc_ts_.init()));
+  assert(conc_ts_.only_cur(conc_ts_.prop()));
   ArrayFlattener af(conc_ts_);
   abs_ts_ = af.flatten_transition_system();
+  assert(abs_ts_.only_cur(abs_ts_.init()));
+  assert(abs_ts_.only_cur(abs_ts_.prop()));
   ArrayAbstractor aa(abs_ts_);
   abs_ts_ = aa.abstract_transition_system();
+  assert(abs_ts_.only_cur(abs_ts_.init()));
+  assert(abs_ts_.only_cur(abs_ts_.prop()));
   ArrayAxiomEnumerator aae =
       ArrayAxiomEnumerator(abs_ts_, aa);
 
@@ -378,7 +384,12 @@ msat_truth_value IC3Array::prove()
 
       // set the new property
       abs_ts_.set_prop(pr.prop(), abs_ts_.live_prop());
+
     }
+
+    assert(abs_ts_.only_cur(abs_ts_.init()));
+    assert(abs_ts_.only_cur(abs_ts_.prop()));
+
     timed_axioms_to_refine.clear();
     red_timed_axioms.clear();
     // reset the flag
