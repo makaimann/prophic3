@@ -40,7 +40,7 @@ public:
     // getters
     ic3ia::TermMap &cache() { return cache_; };
     const ic3ia::TermSet &indices() { return indices_; };
-    const ic3ia::TermMap &witnesses() { return witnesses_; };
+    const ic3ia::TermSet &array_equalities() { return array_equalities_; };
     std::unordered_map<std::string, msat_decl> &read_ufs() { return read_ufs_; };
     TermTypeMap &orig_types() { return orig_types_; };
     ic3ia::TermSet &const_arrs() { return const_arrs_; };
@@ -71,7 +71,7 @@ public:
     // set of array indices
     ic3ia::TermSet indices_;
     // map from array equalities to a witness for disequality
-    ic3ia::TermMap witnesses_;
+    ic3ia::TermSet array_equalities_;
     // map from abstract array types to their read UF
     std::unordered_map<std::string, msat_decl> read_ufs_;
     // TODO: Figure out if we still even need this

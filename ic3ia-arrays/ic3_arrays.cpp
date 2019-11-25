@@ -227,7 +227,6 @@ msat_truth_value IC3Array::prove()
       if (!found_untimed_axioms)
       {
         vector<vector<TermSet>> timed_axioms;
-        timed_axioms.push_back(aae.equality_axioms_all_indices(un_, reached_k));
         timed_axioms.push_back(aae.store_axioms_all_indices(un_, reached_k));
         timed_axioms.push_back(aae.const_array_axioms_all_indices(un_, reached_k));
 
@@ -473,15 +472,6 @@ void IC3Array::print_witness(msat_model model,
     for (auto i : aae.all_indices().at(typestr)) {
       for (size_t k = 0; k <= reached_k; ++k) {
         indices.insert(msat_model_eval(model, un_.at_time(i, k)));
-      }
-    }
-
-    for (auto w : abstractor.witnesses()) {
-      if (!msat_type_equals(orig_types.at(arr), orig_types.at(w.second))) {
-        continue;
-      }
-      for (size_t k = 0; k <= reached_k; ++k) {
-        indices.insert(msat_model_eval(model, un_.at_time(w.second, k)));
       }
     }
 

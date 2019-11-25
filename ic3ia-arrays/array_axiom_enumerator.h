@@ -30,11 +30,6 @@ public:
       all_indices_[typestr].insert(ts.cur(idx));
       all_indices_[typestr].insert(ts.next(idx));
     }
-
-    // Find all the array equalities
-    collect_equalities(ts.init(), init_equalities_);
-    collect_equalities(ts.trans(), trans_equalities_);
-    collect_equalities(ts.prop(), prop_equalities_);
   }
 
   // TODO: adapt the private methods for the new representation (not using
@@ -45,18 +40,8 @@ public:
 
   // Note: not differentiating between zero-step and one-step axioms
   //       just enumerating them all together
-  ic3ia::TermSet init_eq_axioms();
-  ic3ia::TermSet trans_eq_axioms();
-  ic3ia::TermSet prop_eq_axioms();
-
   ic3ia::TermSet const_array_axioms();
   ic3ia::TermSet store_axioms();
-
-  /** Enumerate equality axioms over indices at all times
-   *  un - the unroller to use for timing
-   *  k - the maximum time-step (exclusive e.g. the length of the CEX)
-   */
-  std::vector<ic3ia::TermSet> equality_axioms_all_indices(ic3ia::Unroller &un, size_t k);
 
   /** Enumerate store axioms over indices at all times
    *  un - the unroller to use for timing
@@ -91,12 +76,6 @@ private:
   ic3ia::TermSet orig_indices_set_;
   std::unordered_map<std::string, ic3ia::TermSet> curr_indices_;
   std::unordered_map<std::string, ic3ia::TermSet> all_indices_;
-  // equality ufs present in init
-  ic3ia::TermSet init_equalities_;
-  // equality ufs present in trans
-  ic3ia::TermSet trans_equalities_;
-  // equality ufs present in prop
-  ic3ia::TermSet prop_equalities_;
 
   // map axioms to the index that was being refined over
   ic3ia::TermMap axioms_to_index_;
@@ -130,31 +109,6 @@ private:
   /* Enumerate store axioms on all indices: forall i . arr[i] = val */
   void enumerate_const_array_axioms(ic3ia::TermSet &axioms, msat_decl readfun, msat_term arr,
                                     msat_type orig_idx_type, msat_term val, ic3ia::TermSet &indices);
-
-  // TODO: Figure out if we can remove some of these lemmas
-  //       probably don't need them all
-  /* Enumerate equality axioms on all indices:
-   *  forall i .  eq(a, b) -> a[i] = b[i] AND
-   *  forall i .  a[i] != b[i] -> !eq(a, b) AND
-   *  a[witness] = b[witness] -> eq(a, b)
-   *    Last one is very important because it's the only one that forces the
-   *    arrays to be equal. Formally it's obtained from this lemma:
-   *    (forall i . a[i] = b[i]) -> a = b
-   *    !(forall i . a[i] = b[i]) | a = b
-   *    (exists i . a[i] != b[i]) | a = b
-   *    a[witness] != b[witness] | a = b
-   *    a[witness] = b[witness] -> a =b
-   *
-   * Important Note: lambda argument can be an error term (if there is no finite
-   * domain lambda)
-   */
-  void enumerate_eq_axioms(ic3ia::TermSet &axioms, msat_decl readfun,
-                           msat_type orig_idx_type, msat_term eq_uf,
-                           msat_term witness, ic3ia::TermSet &indices,
-                           msat_term lambda);
-
-  /* Collect all array equality UFs from the given term and add to set s */
-  void collect_equalities(msat_term term, ic3ia::TermSet & s);
 
 };
   } // namespace ic3ia_array
