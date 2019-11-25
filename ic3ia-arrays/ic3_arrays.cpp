@@ -175,10 +175,10 @@ msat_truth_value IC3Array::prove()
       // Run refinements
       msat_term timed_axiom;
       msat_term val;
-      std::vector<TermSet> axiom_sets = {
-          aae.init_eq_axioms(), aae.trans_eq_axioms(),
-          aae.prop_eq_axioms(), aae.const_array_axioms(),
-          aae.store_axioms()};
+      // relying on UF solver, so not using
+      // aae.init_eq_axioms(), aae.trans_eq_axioms(), aae.prop_eq_axioms(),
+      std::vector<TermSet> axiom_sets = {aae.const_array_axioms(),
+                                         aae.store_axioms()};
 
       TermSet violated_axioms;
 
