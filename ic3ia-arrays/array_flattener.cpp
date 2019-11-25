@@ -107,8 +107,7 @@ msat_term ArrayFlattener::flatten(const msat_term t) {
         rebuilt = msat_make_term(e, s, &args[0]);
       }
 
-      if (msat_term_is_array_write(e, rebuilt) ||
-          msat_term_is_array_const(e, rebuilt)) {
+      if (msat_term_is_array_write(e, rebuilt)) {
         // TODO: maybe auto-generate this name in another
         // way? Need to be sure it doesn't clash with
         // user-provided names
