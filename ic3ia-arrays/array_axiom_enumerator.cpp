@@ -141,7 +141,8 @@ ic3ia::TermSet ArrayAxiomEnumerator::lambda_alldiff_axioms()
     typestr = msat_type_repr(orig_types.at(l));
     for (auto i : all_indices_.at(typestr))
     {
-      if (i != l)
+      // lambda is a frozenvar, make sure index is not next version either
+      if (i != l && i != ts_.next(l))
       {
         axioms.insert(msat_make_not(msat_env_,
                                     msat_make_eq(msat_env_, i, l)));
