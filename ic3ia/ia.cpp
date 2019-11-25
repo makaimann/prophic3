@@ -255,6 +255,9 @@ PredRefMinimizer::PredRefMinimizer(const TransitionSystem &ts,
         msat_set_option(cfg, "debug.api_call_trace", "1");
         msat_set_option(cfg, "debug.api_call_trace_filename", name.c_str());
     }
+    // added by Makai
+    // to match change above by AI
+    msat_set_option(cfg, "theory.eq_propagation", "false");
     minsolver_ = msat_create_shared_env(cfg, ts_.get_env());
     msat_destroy_config(cfg);
 }
