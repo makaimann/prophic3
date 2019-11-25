@@ -179,11 +179,6 @@ msat_truth_value IC3Array::prove()
           aae.init_eq_axioms(), aae.trans_eq_axioms(),
           aae.prop_eq_axioms(), aae.const_array_axioms(),
           aae.store_axioms()};
-      // std::vector<std::string> axiom_names = {"Init Eq",
-      //                                         "Trans Eq",
-      //                                         "Prop Eq",
-      //                                         "Const Array Axioms",
-      //                                         "Store Axioms"};
 
       TermSet violated_axioms;
 
