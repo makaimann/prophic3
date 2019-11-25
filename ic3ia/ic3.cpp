@@ -28,45 +28,53 @@
 
 namespace ic3ia {
 
-IC3::IC3(TransitionSystem &ts, const Options &opts, LiveEncoder &l2s)
-    : ts_(ts), opts_(opts), vp_(ts.get_env()), rng_(opts.seed),
-      solver_(ts.get_env(), opts), abs_(ts), ref_(ts, opts, abs_), l2s_(l2s),
-      liveref_(ts, opts, abs_, l2s_) {
-  init_label_ = make_label("init");
-  trans_label_ = make_label("trans");
-  bad_label_ = make_label("bad");
-  wit_loopback_ = CEX_NO_LOOP;
+IC3::IC3(TransitionSystem &ts, const Options &opts, LiveEncoder &l2s):
+    ts_(ts),
+    opts_(opts),
+    vp_(ts.get_env()),
+    rng_(opts.seed),
+    solver_(ts.get_env(), opts),
+    abs_(ts),
+    ref_(ts, opts, abs_),
+    l2s_(l2s),
+    liveref_(ts, opts, abs_, l2s_)
+{
+    init_label_ = make_label("init");
+    trans_label_ = make_label("trans");
+    bad_label_ = make_label("bad");
+    wit_loopback_ = CEX_NO_LOOP;
 
-  last_reset_calls_ = 0;
-  try_gen_pre_ = opts_.generalize_pre;
-
-  num_solve_calls_ = 0;
-  num_solve_sat_calls_ = 0;
-  num_solve_unsat_calls_ = 0;
-  num_solver_reset_ = 0;
-  num_added_cubes_ = 0;
-  num_subsumed_cubes_ = 0;
-  num_block_ = 0;
-  num_generalize_pre_ = 0;
-  num_refinements_ = 0;
-  num_predicates_ = 0;
-  num_liveness_refinements_ = 0;
-  num_liveness_predicates_ = 0;
-  num_liveness_rankrels_ = 0;
-  max_cube_size_ = 0;
-  avg_cube_size_ = 0;
-  solve_time_ = 0;
-  solve_sat_time_ = 0;
-  solve_unsat_time_ = 0;
-  block_time_ = 0;
-  generalize_and_push_time_ = 0;
-  generalize_pre_time_ = 0;
-  rec_block_time_ = 0;
-  propagate_time_ = 0;
-  refinement_time_ = 0;
-  liveness_refinement_time_ = 0;
-  prove_time_ = 0;
+    last_reset_calls_ = 0;
+    try_gen_pre_ = opts_.generalize_pre;
+    
+    num_solve_calls_ = 0;
+    num_solve_sat_calls_ = 0;
+    num_solve_unsat_calls_ = 0;
+    num_solver_reset_ = 0;
+    num_added_cubes_ = 0;
+    num_subsumed_cubes_ = 0;
+    num_block_ = 0;
+    num_generalize_pre_ = 0;
+    num_refinements_ = 0;
+    num_predicates_ = 0;
+    num_liveness_refinements_ = 0;
+    num_liveness_predicates_ = 0;
+    num_liveness_rankrels_ = 0;
+    max_cube_size_ = 0;
+    avg_cube_size_ = 0;
+    solve_time_ = 0;
+    solve_sat_time_ = 0;
+    solve_unsat_time_ = 0;
+    block_time_ = 0;
+    generalize_and_push_time_ = 0;
+    generalize_pre_time_ = 0;
+    rec_block_time_ = 0;
+    propagate_time_ = 0;
+    refinement_time_ = 0;
+    liveness_refinement_time_ = 0;
+    prove_time_ = 0;
 }
+
 
 //-----------------------------------------------------------------------------
 // public methods
@@ -80,11 +88,11 @@ void IC3::set_initial_predicates(const TermList &preds)
 
 msat_truth_value IC3::prove()
 {
-  TimeKeeper t(prove_time_);
-
-  initialize();
-  if (!check_init()) {
-    return MSAT_FALSE;
+    TimeKeeper t(prove_time_);
+    
+    initialize();
+    if (!check_init()) {
+        return MSAT_FALSE;
     }
 
     while (true) {
@@ -133,7 +141,7 @@ void IC3::print_stats() const
     print_stat(num_subsumed_cubes);
     print_stat(num_block);
     if (opts_.generalize_pre) {
-      print_stat(num_generalize_pre);
+        print_stat(num_generalize_pre);
     }
     print_stat(num_refinements);
     print_stat(num_predicates);
@@ -150,7 +158,7 @@ void IC3::print_stats() const
     print_stat(block_time);
     print_stat(generalize_and_push_time);
     if (opts_.generalize_pre) {
-      print_stat(generalize_pre_time);
+        print_stat(generalize_pre_time);
     }
     print_stat(rec_block_time);
     print_stat(propagate_time);
@@ -190,19 +198,20 @@ bool IC3::check_init()
 
 bool IC3::get_bad(Cube &out)
 {
-  try_gen_pre_ = opts_.generalize_pre;
-  activate_frame(depth());
-  activate_bad();
+    try_gen_pre_ = opts_.generalize_pre;
+    activate_frame(depth());
+    activate_bad();
 
-  if (solve()) {
-    get_cube_from_model(out);
-    generalize_bad(out);
+    if (solve()) {
+        get_cube_from_model(out);
+        generalize_bad(out);
 
-    logger(3) << "got bad cube of size " << out.size() << ": ";
-    logcube(4, out);
-    logger(3) << endlog;
+        logger(3) << "got bad cube of size " << out.size()
+                  << ": ";
+        logcube(4, out);
+        logger(3) << endlog;
 
-    return true;
+        return true;
     } else {
         return false;
     }
@@ -219,11 +228,11 @@ inline void IC3::generalize_bad(Cube &c)
     solver_.add(prop, msat_make_true(ts_.get_env()));
     bool sat = solve();
     if (!sat) {
-      const TermSet &core = solver_.unsat_assumptions();
-      auto it = std::remove_if(c.begin(), c.end(), [&core](msat_term l) {
-        return core.find(l) == core.end();
-      });
-      c.resize(it - c.begin());
+        const TermSet &core = solver_.unsat_assumptions();
+        auto it = std::remove_if(c.begin(), c.end(),
+                                 [&core](msat_term l)
+                                 { return core.find(l) == core.end(); });
+        c.resize(it - c.begin());
     }
     solver_.pop();
 }
@@ -240,11 +249,10 @@ msat_truth_value IC3::rec_block(const Cube &bad)
         // periodically reset the solver -- clean up "garbage"
         // (e.g. subsumed/learned clauses, bad variable scores...)
         if (opts_.solver_reset_interval &&
-            num_solve_calls_ - last_reset_calls_ >
-                opts_.solver_reset_interval) {
-          reset_solver();
+            num_solve_calls_ - last_reset_calls_ > opts_.solver_reset_interval){
+            reset_solver();
         }
-
+        
         ProofObligation *p = queue.top();
 
         logger(3) << "looking at proof obligation of size " << p->cube.size()
@@ -491,9 +499,9 @@ bool IC3::block(const Cube &c, unsigned int idx, Cube *out, bool compute_cti)
         }
         solver_.pop();
         if (compute_cti) {
-          generalize_pre(primed, inputs, *out);
+            generalize_pre(primed, inputs, *out);
         }
-
+        
         return false;
     }
 }
@@ -681,18 +689,18 @@ msat_truth_value IC3::refine_abstraction(std::vector<TermList> &cex)
 
 void IC3::initialize()
 {
-  l2s_.initialize();
-  liveref_.initialize();
+    l2s_.initialize();
+    liveref_.initialize();
 
-  for (msat_term v : ts_.statevars()) {
-    if (msat_term_is_boolean_constant(ts_.get_env(), v)) {
-      state_vars_.push_back(v);
-      // fill the maps lbl2next_ and lbl2next_ also for Boolean state
-      // vars. This makes the implementation of get_next() and refine()
-      // simpler, as we do not need to check for special cases
-      lbl2next_[v] = ts_.next(v);
-      lbl2pred_[v] = v;
-    }
+    for (msat_term v : ts_.statevars()) {
+        if (msat_term_is_boolean_constant(ts_.get_env(), v)) {
+            state_vars_.push_back(v);
+            // fill the maps lbl2next_ and lbl2next_ also for Boolean state
+            // vars. This makes the implementation of get_next() and refine()
+            // simpler, as we do not need to check for special cases
+            lbl2next_[v] = ts_.next(v);
+            lbl2pred_[v] = v;
+        }
     }
 
     solver_.add(ts_.init(), init_label_);
@@ -731,7 +739,7 @@ void IC3::initialize()
             }
         }
     } else {
-      bad = lit(ts_.prop(), true);
+        bad = lit(ts_.prop(), true);
     }
     solver_.add(bad, bad_label_);
     
@@ -818,54 +826,59 @@ IC3::Cube IC3::get_next(const Cube &c)
     return ret;
 }
 
-void IC3::get_cube_from_model(Cube &out, Cube *inputs) {
-  out.clear();
-  for (msat_term v : state_vars_) {
-    out.push_back(lit(v, !solver_.model_value(v)));
-  }
-  std::sort(out.begin(), out.end());
-  if (inputs) {
-    auto env = ts_.get_env();
-    for (auto i : ts_.inputvars()) {
-      if (msat_term_is_boolean_constant(env, i)) {
-        inputs->push_back(lit(i, !solver_.model_value(i)));
-      }
+
+void IC3::get_cube_from_model(Cube &out, Cube *inputs)
+{
+    out.clear();
+    for (msat_term v : state_vars_) {
+        out.push_back(lit(v, !solver_.model_value(v)));
     }
-  }
+    std::sort(out.begin(), out.end());
+    if (inputs) {
+        auto env = ts_.get_env();
+        for (auto i : ts_.inputvars()) {
+            if (msat_term_is_boolean_constant(env, i)) {
+                inputs->push_back(lit(i, !solver_.model_value(i)));
+            }
+        }
+    }
 }
 
-void IC3::generalize_pre(const Cube &target, const Cube &inputs, Cube &out) {
-  if (!try_gen_pre_) {
-    return;
-  }
 
-  TimeKeeper tk(generalize_pre_time_);
-
-  for (auto i : inputs) {
-    solver_.assume(i);
-  }
-  for (auto l : out) {
-    solver_.assume(l);
-  }
-  activate_trans();
-  solver_.push();
-  solver_.add_cube_as_clause(target);
-  bool sat = solve();
-  if (!sat) {
-    const TermSet &core = solver_.unsat_assumptions();
-    size_t n = out.size();
-    auto it = std::remove_if(out.begin(), out.end(), [&core](msat_term l) {
-      return core.find(l) == core.end();
-    });
-    out.resize(it - out.begin());
-    if (out.size() < n) {
-      ++num_generalize_pre_;
+void IC3::generalize_pre(const Cube &target, const Cube &inputs, Cube &out)
+{
+    if (!try_gen_pre_) {
+        return;
     }
-  } else {
-    try_gen_pre_ = false;
-  }
-  solver_.pop();
+
+    TimeKeeper tk(generalize_pre_time_);
+    
+    for (auto i : inputs) {
+        solver_.assume(i);
+    }
+    for (auto l : out) {
+        solver_.assume(l);
+    }
+    activate_trans();
+    solver_.push();
+    solver_.add_cube_as_clause(target);
+    bool sat = solve();
+    if (!sat) {
+        const TermSet &core = solver_.unsat_assumptions();
+        size_t n = out.size();
+        auto it = std::remove_if(out.begin(), out.end(), 
+                                 [&core](msat_term l)
+                                 { return core.find(l) == core.end(); });
+        out.resize(it - out.begin());
+        if (out.size() < n) {
+            ++num_generalize_pre_;
+        }
+    } else {
+        try_gen_pre_ = false;
+    }
+    solver_.pop();
 }
+
 
 inline bool IC3::subsumes(const Cube &a, const Cube &b)
 {

@@ -22,13 +22,14 @@
 
 #pragma once
 
-#include "ia.h"
-#include "live.h"
 #include "prover.h"
-#include "solver.h"
 #include "ts.h"
+#include "ia.h"
+#include "solver.h"
+#include "live.h"
 #include <queue>
 #include <random>
+
 
 namespace ic3ia {
 
@@ -45,23 +46,23 @@ namespace ic3ia {
  */
 class IC3: public Prover {
 public:
-  IC3(TransitionSystem &ts, const Options &opts, LiveEncoder &l2s);
+    IC3(TransitionSystem &ts, const Options &opts, LiveEncoder &l2s);
+    
+    void set_initial_predicates(const TermList &preds);
+    ///< sets the intial set of predicates to use for implicit abstraction
+    
+    msat_truth_value prove();
+    ///< main method: check whether the property holds or not
+    
+    int witness(std::vector<TermList> &out);
+    ///< compute a witness for the property: a counterexample trace if the
+    ///< property is false (where each element of the vector is an assignment
+    ///< to state and input vars), or an inductive invariant if the property
+    ///< holds (in this case, each element of the vector is a clause that is
+    ///< part of the invariant)
 
-  void set_initial_predicates(const TermList &preds);
-  ///< sets the intial set of predicates to use for implicit abstraction
-
-  msat_truth_value prove();
-  ///< main method: check whether the property holds or not
-
-  int witness(std::vector<TermList> &out);
-  ///< compute a witness for the property: a counterexample trace if the
-  ///< property is false (where each element of the vector is an assignment
-  ///< to state and input vars), or an inductive invariant if the property
-  ///< holds (in this case, each element of the vector is a clause that is
-  ///< part of the invariant)
-
-  void print_stats() const;
-  ///< print search statistics on stdout
+    void print_stats() const;
+    ///< print search statistics on stdout
     
 private:
     //------------------------------------------------------------------------
@@ -202,13 +203,13 @@ private:
     
     Cube get_next(const Cube &c);
     ///< return the cube c'
-
-    void get_cube_from_model(Cube &out, Cube *inputs = nullptr);
+    
+    void get_cube_from_model(Cube &out, Cube *inputs=nullptr);
     ///< extract a cube from the satisfying assignment found by the SMT solver
     ///< for the last solve() call
 
     void generalize_pre(const Cube &target, const Cube &inputs, Cube &out);
-
+    
     bool subsumes(const Cube &a, const Cube &b);
     ///< checks whether a subsumes b
     

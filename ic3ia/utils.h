@@ -90,6 +90,7 @@ typedef std::unordered_set<msat_term> TermHashSet;
 typedef std::pair<msat_term, msat_term> TermPair;
 typedef std::vector<TermPair> TermPairList;
 
+
 // convenience methods for dealing with literals represented as msat_termS
 
 /** return the variable associated with the input literal l */
@@ -169,7 +170,7 @@ msat_term apply_substitution(msat_env env, msat_term term, TermMap &cache,
             if (d->cache.find(t) != d->cache.end()) {
                 // cache hit
                 assert(!MSAT_ERROR_TERM(d->cache[t]));
-
+                
                 return MSAT_VISIT_SKIP;
             }
 
@@ -187,13 +188,13 @@ msat_term apply_substitution(msat_env env, msat_term term, TermMap &cache,
                     // results of its children
                     TermList &args = d->args;
                     args.clear();
-                    // args.reserve(msat_term_arity(t));
+                    //args.reserve(msat_term_arity(t));
                     for (size_t i = 0; i < msat_term_arity(t); ++i) {
-                      msat_term c = msat_term_get_arg(t, i);
-                      assert(d->cache.find(c) != d->cache.end());
-                      msat_term cc = d->cache[c];
-                      assert(!MSAT_ERROR_TERM(cc));
-                      args.push_back(cc);
+                        msat_term c = msat_term_get_arg(t, i);
+                        assert(d->cache.find(c) != d->cache.end());
+                        msat_term cc = d->cache[c];
+                        assert(!MSAT_ERROR_TERM(cc));
+                        args.push_back(cc);
                     }
                     v = msat_make_term(e, s, &args[0]);
                 }
@@ -224,44 +225,47 @@ public:
      * debugging/display purposes: if not NULL, the symbol for new variable
      * will be ".name.ID", where ID is a numeric ID
      */
-    msat_term fresh_var(const std::string &name, msat_type tp) {
-      buf_.str("");
-      if (name.empty()) {
-        buf_ << ".fresh.";
-      } else if (name[0] == '.') {
-        buf_ << name << ".";
-      } else {
-        buf_ << "." << name << ".";
-      }
-      auto p = buf_.tellp();
-      std::string s;
-      while (true) {
-        buf_.seekp(p);
-        buf_ << (id_++);
-        s = buf_.str();
-        msat_decl d = msat_find_decl(env_, s.c_str());
-        if (MSAT_ERROR_DECL(d)) {
-          break;
+    msat_term fresh_var(const std::string &name, msat_type tp)
+    {
+        buf_.str("");
+        if (name.empty()) {
+            buf_ << ".fresh.";
+        } else if (name[0] == '.') {
+            buf_ << name << ".";
+        } else {
+            buf_ << "." << name << ".";
         }
-      }
-      msat_decl d = msat_declare_function(env_, s.c_str(), tp);
-      return msat_make_constant(env_, d);
+        auto p = buf_.tellp();
+        std::string s;
+        while (true) {
+            buf_.seekp(p);
+            buf_ << (id_++);
+            s = buf_.str();
+            msat_decl d = msat_find_decl(env_, s.c_str());
+            if (MSAT_ERROR_DECL(d)) {
+                break;
+            }
+        }
+        msat_decl d = msat_declare_function(env_, s.c_str(), tp);
+        return msat_make_constant(env_, d);
     }
 
-    msat_term fresh_var(const std::string &name = std::string()) {
-      return fresh_var(name, msat_get_bool_type(env_));
+    msat_term fresh_var(const std::string &name=std::string())
+    {
+        return fresh_var(name, msat_get_bool_type(env_));
     }
 
     msat_term fresh_var(msat_term base,
-                        const std::string &suffix = std::string()) {
-      msat_decl d = msat_term_get_decl(base);
-      char *n = msat_decl_get_name(d);
-      std::string name(n);
-      msat_free(n);
-      if (!suffix.empty()) {
-        name += suffix;
-      }
-      return fresh_var(name.c_str(), msat_term_get_type(base));
+                        const std::string &suffix=std::string())
+    {
+        msat_decl d = msat_term_get_decl(base);
+        char *n = msat_decl_get_name(d);
+        std::string name(n);
+        msat_free(n);
+        if (!suffix.empty()) {
+            name += suffix;
+        }
+        return fresh_var(name.c_str(), msat_term_get_type(base));
     }
 
 private:
