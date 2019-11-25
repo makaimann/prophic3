@@ -48,21 +48,7 @@ public:
     int witness(std::vector<TermList> &out);
     ///< generate a counterexample trace for falsified properties
 
-    Unroller& get_unroller() { return un_; };
-    ///< added by Makai -- returns the unroller
-
-    msat_model get_model() { return msat_get_model(env_); }
-    ///< added by Makai -- returns the latest model
-
-    int reached_k() { return reached_k_; };
-    ///< added by Makai
-
-    void add_assumptions(TermList assumptions);
-    ///< added by Makai
-    ///< adds timed assumptions to the underlying solver
-    ///< these assumptions cannot be removed
-
-  private:
+private:
     void initialize();
     ///< initialization of the internal state
     

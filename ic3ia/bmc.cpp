@@ -109,20 +109,20 @@ bool Bmc::step()
     msat_assert_formula(env_, un_.at_time(trans_, k));
 
     if (ts_.live_prop()) {
-      msat_term q = msat_make_not(env_, un_.at_time(ts_.prop(), k));
+        msat_term q = msat_make_not(env_, un_.at_time(ts_.prop(), k));
+    
+        msat_term next_loop_now = vp_.fresh_var(".live-bmc-loop-now");
+        msat_term next_loop_before = vp_.fresh_var(".live-bmc-loop-before");
+        msat_term next_loop_prop_violation = vp_.fresh_var(".live-bmc-bad");
 
-      msat_term next_loop_now = vp_.fresh_var(".live-bmc-loop-now");
-      msat_term next_loop_before = vp_.fresh_var(".live-bmc-loop-before");
-      msat_term next_loop_prop_violation = vp_.fresh_var(".live-bmc-bad");
-
-      // if the loop starts here, the state must be equal to the loop start
-      // state
-      msat_term pre = msat_make_not(env_, next_loop_now);
-      for (msat_term v : statevars_) {
-        msat_term vk = un_.at_time(v, k + 1);
-
-        msat_term e = make_eq(env_, v, vk);
-        msat_assert_formula(env_, msat_make_or(env_, pre, e));
+        // if the loop starts here, the state must be equal to the loop start
+        // state
+        msat_term pre = msat_make_not(env_, next_loop_now);
+        for (msat_term v : statevars_) {
+            msat_term vk = un_.at_time(v, k+1);
+            
+            msat_term e = make_eq(env_, v, vk);
+            msat_assert_formula(env_, msat_make_or(env_, pre, e));
         }
 
         // next_loop_before == loop_before_ or loop_now_
@@ -227,14 +227,14 @@ int Bmc::witness(std::vector<TermList> &out)
         // find the index of the loop start
         bool seen = false;
         for (int j = reached_k_; j > 0; --j) {
-          if (!seen) {
-            msat_term l = ts_.prop();
-            msat_term lj = un_.at_time(l, j);
-            msat_term val = msat_get_model_value(env_, lj);
-            if (msat_term_is_false(env_, val)) {
-              seen = true;
+            if (!seen) {
+                msat_term l = ts_.prop();
+                msat_term lj = un_.at_time(l, j);
+                msat_term val = msat_get_model_value(env_, lj);
+                if (msat_term_is_false(env_, val)) {
+                    seen = true;
+                }
             }
-          }
             if (seen) {
                 // we have seen a violation of the live signal. now look for a
                 // state equal to the last one
@@ -253,12 +253,6 @@ int Bmc::witness(std::vector<TermList> &out)
     } else {
         return CEX_NO_LOOP;
     }
-}
-
-void Bmc::add_assumptions(TermList assumptions) {
-  for (auto a : assumptions) {
-    msat_assert_formula(env_, a);
-  }
 }
 
 } // namespace ic3ia

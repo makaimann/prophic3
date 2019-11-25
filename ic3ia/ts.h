@@ -40,8 +40,9 @@ public:
     TransitionSystem(msat_env env);
     ///< constructor taking as input a MathSAT environment for building terms
 
-    bool initialize(const TermMap &statevars, msat_term init, msat_term trans,
-                    msat_term prop, bool live_prop);
+    bool initialize(const TermMap &statevars,
+                    msat_term init, msat_term trans, msat_term prop,
+                    bool live_prop);
     ///< initialization of the TS from the 3 formulas mentioned above and a
     ///< map from state variables to their primed version
 
@@ -82,8 +83,8 @@ public:
     // added by Makai -- makes it easier to update property
     // with new prophecy variables
     void set_prop(msat_term new_prop, bool live_prop) {
-      prop_ = new_prop;
-      live_prop_ = live_prop;
+        prop_ = new_prop;
+        live_prop_ = live_prop;
     };
     ///< sets the property to new_prop
     ///< live_prop tells whether the new property is a liveness prop
@@ -96,8 +97,7 @@ public:
     bool contains_next(msat_term t) const;
     ///< checks if term t has any next state variables
 
-
-  private:
+private:
     void reset();
     void collect_inputs();
     
