@@ -465,11 +465,14 @@ void IC3Array::print_witness(msat_model model,
   }
 
   msat_decl readfun;
+  msat_type idx_type;
   for (auto arr : arrays) {
     readfun = read_ufs.at(msat_type_repr(msat_term_get_type(arr)));
 
     TermSet indices;
-    string typestr = msat_type_repr(orig_types.at(arr));
+    bool is_array = msat_is_array_type(msat_env_, orig_types.at(arr), &idx_type, nullptr);
+    assert(is_array);
+    string typestr = msat_type_repr(idx_type);
     for (auto i : aae.all_indices().at(typestr)) {
       for (size_t k = 0; k <= reached_k; ++k) {
         indices.insert(msat_model_eval(model, un_.at_time(i, k)));
