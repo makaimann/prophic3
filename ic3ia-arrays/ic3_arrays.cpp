@@ -201,6 +201,12 @@ msat_truth_value IC3Array::prove()
 
             val = msat_model_eval(model, timed_axiom);
 
+            if (MSAT_ERROR_TERM(val))
+            {
+              std::cout << "Got error term from model evaluation." << std::endl;
+              throw std::exception();
+            }
+
             if (val == f) {
               // std::cout << "violated axiom ";
               // std::cout << msat_to_smtlib2_term(msat_env_, timed_axiom) <<
@@ -232,6 +238,11 @@ msat_truth_value IC3Array::prove()
             {
               //std::cout << "Checking timed axiom: " << msat_to_smtlib2_term(msat_env_, timed_axiom) << std::endl;
               val = msat_model_eval(model, timed_axiom);
+              if (MSAT_ERROR_TERM(val))
+              {
+                std::cout << "Got error term from model evaluation." << std::endl;
+                throw std::exception();
+              }
 
               if (val == f)
               {

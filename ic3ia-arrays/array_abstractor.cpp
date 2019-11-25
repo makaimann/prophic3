@@ -85,21 +85,24 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
     TermSet &removed_vars;
     TermMap &witnesses;
     std::unordered_map<std::string, msat_decl> &read_ufs;
+    std::unordered_map<std::string, msat_decl> & store_ufs;
     TermTypeMap &orig_types;
     TermSet &const_arrs;
     TermSet &stores;
     TermMap &cache;
     unsigned int &read_id;
+    unsigned int &write_id;
     std::unordered_map<std::string, msat_type> & type_map;
     const TransitionSystem &conc_ts;
     AbstractionData(TermSet &i, TermMap &nv, TermSet &rv, TermMap &w,
-                    std::unordered_map<std::string, msat_decl> &r, TermTypeMap &o,
+                    std::unordered_map<std::string, msat_decl> &r,
+                    std::unordered_map<std::string, msat_decl> &suf, TermTypeMap &o,
                     TermSet &ca, TermSet &s, TermMap &c, unsigned int &ri,
-                    std::unordered_map<std::string, msat_type> & tm,
+                    unsigned int &wi, std::unordered_map<std::string, msat_type> & tm,
                     const TransitionSystem &cts)
         : indices(i), new_vars(nv), removed_vars(rv), witnesses(w), read_ufs(r),
-          orig_types(o), const_arrs(ca), stores(s), cache(c),
-          read_id(ri), type_map(tm), conc_ts(cts) {}
+          store_ufs(suf), orig_types(o), const_arrs(ca), stores(s), cache(c),
+          read_id(ri), write_id(wi), type_map(tm), conc_ts(cts) {}
   };
 
   auto visit = [](msat_env e, msat_term t, int preorder,
@@ -186,21 +189,20 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
           // map next to type
           d->orig_types[arr_absN] = arridxtype;
         }
-
       }
       // check if it's an array equality
       else if (is_array_equality(e, t)) {
         msat_term lhs = msat_term_get_arg(t, 0);
         msat_term rhs = msat_term_get_arg(t, 1);
 
-        // assuming arrays have already been flattened
+        // Note: arrays should have already been flattened
         // thus store equalities are all top-level (e.g. definitions)
-        // we just remove those and do nothing else
+        // but with this abstraction this should no longer be necessary
         if (msat_term_is_array_write(e, lhs) ||
             msat_term_is_array_write(e, rhs)) {
-          // remove the store equality and keep it for refinement
-          d->cache[t] = msat_make_true(e);
-          d->stores.insert(t);
+          msat_term abs_store_eq = msat_make_eq(e, d->cache.at(lhs), d->cache.at(rhs));;
+          d->cache[t] = abs_store_eq;
+          d->stores.insert(abs_store_eq);
           return MSAT_VISIT_PROCESS;
         }
 
@@ -266,15 +268,43 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
         d->cache[t] = read_uf;
 
       } else if (msat_term_is_array_write(e, t)) {
-        // save index
-        // but otherwise do nothing -- will be removed later
-        // e.g. all stores at top-level because flattening and arr = store(...)
-        // terms are removed from system and saved for refinement
+        msat_term arr = msat_term_get_arg(t, 0);
         msat_term idx = msat_term_get_arg(t, 1);
+        msat_term val = msat_term_get_arg(t, 2);
+
+        msat_term arr_cache = d->cache.at(arr);
         msat_term int_idx_cache = idx_to_int(e, d->cache[idx]);
+        msat_term val_cache = d->cache.at(val);
+
+
+        // save index
         msat_type orig_idx_sort = msat_term_get_type(idx);
         d->indices.insert(int_idx_cache);
         d->orig_types[int_idx_cache] = orig_idx_sort;
+
+
+        // replace write with uninterpreted function
+        msat_type abs_type = msat_term_get_type(arr_cache);
+        std::string abs_typestr = msat_type_repr(abs_type);
+        msat_decl writefun;
+        if (d->store_ufs.find(abs_typestr) == d->store_ufs.end())
+        {
+          msat_type param_types[3] = {abs_type,
+                                      msat_term_get_type(int_idx_cache),
+                                      msat_term_get_type(val_cache)};
+          msat_type funtype = msat_get_function_type(e, &param_types[0], 3, abs_type);
+          std::string writename = "write_" + std::to_string(d->write_id++);
+          writefun = msat_declare_function(e, writename.c_str(), funtype);
+          d->store_ufs[abs_typestr] = writefun;
+        }
+        else
+        {
+          writefun = d->store_ufs.at(abs_typestr);
+        }
+
+        msat_term args[3] = {arr_cache, int_idx_cache, val_cache};
+        msat_term arr_write = msat_make_uf(e, writefun, &args[0]);
+        d->cache[t] = arr_write;
       } else {
         // rebuild the term
         size_t arity = msat_term_arity(t);
@@ -307,8 +337,8 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
   };
 
   AbstractionData data = AbstractionData(
-      indices_, new_vars_, removed_vars_, witnesses_, read_ufs_, orig_types_,
-      const_arrs_, stores_, cache_, read_id_, type_map_, conc_ts_);
+      indices_, new_vars_, removed_vars_, witnesses_, read_ufs_, store_ufs_,
+      orig_types_, const_arrs_, stores_, cache_, read_id_, write_id_, type_map_, conc_ts_);
   msat_visit_term(msat_env_, term, visit, &data);
   return data.cache.at(term);
 }

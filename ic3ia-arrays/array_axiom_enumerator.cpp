@@ -61,16 +61,11 @@ ic3ia::TermSet ArrayAxiomEnumerator::init_eq_axioms()
   std::unordered_map<std::string, msat_decl> &read_ufs = abstractor_.read_ufs();
   TermTypeMap &orig_types = abstractor_.orig_types();
 
-  if (init_eq_axioms_.size())
-  {
-    return init_eq_axioms_;
-  }
-
   const ic3ia::TermMap & witnesses = abstractor_.witnesses();
   ic3ia::TermSet axioms;
 
   msat_term lhs;
-  msat_decl read;
+  msat_decl readfun;
   msat_type orig_idx_type;
   msat_type arr_type;
   string arr_typestr;
@@ -80,8 +75,8 @@ ic3ia::TermSet ArrayAxiomEnumerator::init_eq_axioms()
     orig_idx_type = orig_types.at(lhs);
     arr_type = msat_term_get_type(lhs);
     arr_typestr = msat_type_repr(arr_type);
-    read = read_ufs.at(arr_typestr);
-    enumerate_eq_axioms(axioms, read, orig_idx_type, e, witnesses.at(e),
+    readfun = read_ufs.at(arr_typestr);
+    enumerate_eq_axioms(axioms, readfun, orig_idx_type, e, witnesses.at(e),
                         curr_indices_.at(msat_type_repr(orig_idx_type)),
                         get_finite_domain_lambda(lhs));
   }
@@ -93,16 +88,11 @@ ic3ia::TermSet ArrayAxiomEnumerator::trans_eq_axioms()
   std::unordered_map<std::string, msat_decl> &read_ufs = abstractor_.read_ufs();
   TermTypeMap &orig_types = abstractor_.orig_types();
 
-  if (trans_eq_axioms_.size())
-  {
-    return trans_eq_axioms_;
-  }
-
   const ic3ia::TermMap & witnesses = abstractor_.witnesses();
   ic3ia::TermSet axioms;
 
   msat_term lhs;
-  msat_decl read;
+  msat_decl readfun;
   msat_type orig_idx_type;
   msat_type arr_type;
   string arr_typestr;
@@ -112,8 +102,8 @@ ic3ia::TermSet ArrayAxiomEnumerator::trans_eq_axioms()
     orig_idx_type = orig_types.at(lhs);
     arr_type = msat_term_get_type(lhs);
     arr_typestr = msat_type_repr(arr_type);
-    read = read_ufs.at(arr_typestr);
-    enumerate_eq_axioms(axioms, read, orig_idx_type, e, witnesses.at(e),
+    readfun = read_ufs.at(arr_typestr);
+    enumerate_eq_axioms(axioms, readfun, orig_idx_type, e, witnesses.at(e),
                         all_indices_.at(msat_type_repr(orig_idx_type)),
                         get_finite_domain_lambda(lhs));
   }
@@ -125,16 +115,11 @@ ic3ia::TermSet ArrayAxiomEnumerator::prop_eq_axioms()
   std::unordered_map<std::string, msat_decl> &read_ufs = abstractor_.read_ufs();
   TermTypeMap &orig_types = abstractor_.orig_types();
 
-  if (prop_eq_axioms_.size())
-  {
-    return prop_eq_axioms_;
-  }
-
   const ic3ia::TermMap & witnesses = abstractor_.witnesses();
   ic3ia::TermSet axioms;
 
   msat_term lhs;
-  msat_decl read;
+  msat_decl readfun;
   msat_type orig_idx_type;
   msat_type arr_type;
   string arr_typestr;
@@ -144,8 +129,8 @@ ic3ia::TermSet ArrayAxiomEnumerator::prop_eq_axioms()
     orig_idx_type = orig_types.at(lhs);
     arr_type = msat_term_get_type(lhs);
     arr_typestr = msat_type_repr(arr_type);
-    read = read_ufs.at(arr_typestr);
-    enumerate_eq_axioms(axioms, read, orig_idx_type, e, witnesses.at(e),
+    readfun = read_ufs.at(arr_typestr);
+    enumerate_eq_axioms(axioms, readfun, orig_idx_type, e, witnesses.at(e),
                         all_indices_.at(msat_type_repr(orig_idx_type)),
                         get_finite_domain_lambda(lhs));
   }
@@ -154,11 +139,6 @@ ic3ia::TermSet ArrayAxiomEnumerator::prop_eq_axioms()
 
 ic3ia::TermSet ArrayAxiomEnumerator::const_array_axioms()
 {
-  if (const_array_axioms_.size())
-  {
-    return const_array_axioms_;
-  }
-
   ic3ia::TermSet axioms;
   ic3ia::TermMap & cache = abstractor_.cache();
   std::unordered_map<std::string, msat_decl> &read_ufs = abstractor_.read_ufs();
@@ -169,7 +149,7 @@ ic3ia::TermSet ArrayAxiomEnumerator::const_array_axioms()
   msat_term abs_ca;
   msat_type arr_type;
   std::string arr_typestr;
-  msat_decl read;
+  msat_decl readfun;
   for (msat_term ca : const_arrs) {
     if (!msat_is_array_type(msat_env_, msat_term_get_type(ca), &orig_idx_type, nullptr))
     {
@@ -178,10 +158,10 @@ ic3ia::TermSet ArrayAxiomEnumerator::const_array_axioms()
     abs_ca = cache.at(ca);
     arr_type = msat_term_get_type(abs_ca);
     arr_typestr = msat_type_repr(arr_type);
-    read = read_ufs.at(arr_typestr);
+    readfun = read_ufs.at(arr_typestr);
     enumerate_const_array_axioms(
         axioms,
-        read,
+        readfun,
         abs_ca,             // need to convert to abstracted array
         orig_idx_type,
         msat_term_get_arg(ca, 0), // the value
@@ -192,54 +172,40 @@ ic3ia::TermSet ArrayAxiomEnumerator::const_array_axioms()
 
 ic3ia::TermSet ArrayAxiomEnumerator::store_axioms()
 {
-  if (store_axioms_.size())
-  {
-    return store_axioms_;
-  }
-
   ic3ia::TermSet axioms;
-  ic3ia::TermMap & cache = abstractor_.cache();
   ic3ia::TermSet & stores = abstractor_.stores();
   std::unordered_map<std::string, msat_decl> &read_ufs = abstractor_.read_ufs();
   TermTypeMap & orig_types = abstractor_.orig_types();
 
-  msat_term arr0;
-  msat_term store;
-  msat_term arr1;
-  msat_term idx;
-  msat_term val;
-  msat_decl read;
+  msat_term arr;
+  msat_term store_arr;
+  msat_term abs_idx;
+  msat_type orig_idx_type;
+  msat_decl readfun;
   for (auto e : stores)
   {
-    arr0 = msat_term_get_arg(e, 0);
-    store = msat_term_get_arg(e, 1);
-    if (msat_term_is_array_write(msat_env_, arr0)) {
-      // using arr1 as a temporary variable
-      arr1 = arr0;
-      arr0 = store;
-      store = arr1;
-    }
-    arr1 = msat_term_get_arg(store, 0);
-    idx = msat_term_get_arg(store, 1);
-    val = msat_term_get_arg(store, 2);
-
-    msat_type orig_idx_type;
-    if (!msat_is_array_type(msat_env_, msat_term_get_type(arr0), &orig_idx_type, nullptr))
+    if (msat_term_arity(msat_term_get_arg(e, 0)) == 3)
     {
-      throw "Expecting array type";
+      store_arr = msat_term_get_arg(e, 0);
+      arr = msat_term_get_arg(e, 1);
+    }
+    else
+    {
+      assert(msat_term_arity(msat_term_get_arg(e, 1)) == 3);
+      store_arr = msat_term_get_arg(e, 1);
+      arr = msat_term_get_arg(e, 0);
     }
 
-    // abstract arrays
-    arr0 = cache.at(arr0);
-    arr1 = cache.at(arr1);
-    read = read_ufs.at(msat_type_repr(msat_term_get_type(arr0)));
-    // convert to abstract arrays with cache
-    enumerate_store_equalities( axioms, read, arr0,
-                                arr1, orig_idx_type,
-                                idx_to_int(msat_env_, cache.at(idx)),
-                                cache.at(val),
+    abs_idx = msat_term_get_arg(store_arr, 1);
+    // could get it from the return value of the function as well
+    // but somehow this seems better
+    readfun = read_ufs.at(msat_type_repr(msat_term_get_type(arr)));
+    orig_idx_type = orig_types.at(abs_idx);
+
+    enumerate_store_equalities( axioms, readfun, e,
+                                orig_idx_type,
                                 all_indices_.at(msat_type_repr(orig_idx_type)),
-                                get_finite_domain_lambda(arr0));
+                                get_finite_domain_lambda(arr));
   }
   return axioms;
 }
@@ -268,14 +234,14 @@ vector<TermSet> ArrayAxiomEnumerator::equality_axioms_all_indices(Unroller &un,
   }
 
   msat_term lhs;
-  msat_decl read;
+  msat_decl readfun;
   msat_type orig_idx_type;
   vector<TermSet> equalities_vec({init_equalities_, trans_equalities_});
   for (auto equalities : equalities_vec)
   {
     for (auto e : equalities) {
       lhs = msat_term_get_arg(e, 0);
-      read = read_ufs.at(msat_type_repr(msat_term_get_type(lhs)));
+      readfun = read_ufs.at(msat_type_repr(msat_term_get_type(lhs)));
       orig_idx_type = orig_types.at(lhs);
 
       for (size_t i = 0; i < k; i++) {
@@ -289,7 +255,7 @@ vector<TermSet> ArrayAxiomEnumerator::equality_axioms_all_indices(Unroller &un,
             lambda_j = un.at_time(lambda_j, j);
           }
 
-          enumerate_eq_axioms(axioms[j], read, orig_idx_type, e_i, witness_i,
+          enumerate_eq_axioms(axioms[j], readfun, orig_idx_type, e_i, witness_i,
                                  timed_indices[j].at(msat_type_repr(orig_idx_type)), lambda_j);
         }
       }
@@ -319,48 +285,34 @@ vector<TermSet> ArrayAxiomEnumerator::store_axioms_all_indices(Unroller &un,
     }
   }
 
-  ic3ia::TermMap &cache = abstractor_.cache();
   ic3ia::TermSet &stores = abstractor_.stores();
   std::unordered_map<std::string, msat_decl> &read_ufs = abstractor_.read_ufs();
 
-  msat_term arr0;
-  msat_term store;
-  msat_term arr1;
-  msat_term idx;
-  msat_term val;
-  msat_decl read;
-
+  msat_term arr;
+  msat_term store_arr;
+  msat_term abs_idx;
+  msat_type orig_idx_type;
+  msat_decl readfun;
   for (auto e : stores) {
-    arr0 = msat_term_get_arg(e, 0);
-    store = msat_term_get_arg(e, 1);
-    if (msat_term_is_array_write(msat_env_, arr0)) {
-      // using arr1 as a temporary variable
-      arr1 = arr0;
-      arr0 = store;
-      store = arr1;
-    }
-    arr1 = msat_term_get_arg(store, 0);
-    idx = msat_term_get_arg(store, 1);
-    val = msat_term_get_arg(store, 2);
-
-    msat_type orig_idx_type;
-    if (!msat_is_array_type(msat_env_, msat_term_get_type(arr0), &orig_idx_type, nullptr))
+    if (msat_term_arity(msat_term_get_arg(e, 0)) == 3)
     {
-      throw "Expecting an array type";
+      store_arr = msat_term_get_arg(e, 0);
+      arr = msat_term_get_arg(e, 1);
     }
-    string typestr = msat_type_repr(orig_idx_type);
+    else
+    {
+      assert(msat_term_arity(msat_term_get_arg(e, 1)) == 3);
+      store_arr = msat_term_get_arg(e, 1);
+      arr = msat_term_get_arg(e, 0);
+    }
 
-    // abstract arrays
-    arr0 = cache.at(arr0);
-    arr1 = cache.at(arr1);
-    read = read_ufs.at(msat_type_repr(msat_term_get_type(arr0)));
+    abs_idx = msat_term_get_arg(store_arr, 1);
+    orig_idx_type = orig_types.at(abs_idx);
+    string typestr = msat_type_repr(orig_idx_type);
+    readfun = read_ufs.at(msat_type_repr(msat_term_get_type(arr)));
 
     for (size_t i = 0; i < k; i++) {
-      msat_term arr0_i = un.at_time(arr0, i);
-      msat_term arr1_i = un.at_time(arr1, i);
-      msat_term idx_i = un.at_time(idx_to_int(msat_env_, cache.at(idx)), i);
-      msat_term val_i = un.at_time(cache.at(val), i);
-
+      msat_term e_i = un.at_time(e, i);
       // TODO: as an optimization, don't enumerate all i, j pairs
       //       for *state variable* indices, ones where abs(i - j) <= 1
       //       have already been checked
@@ -368,14 +320,13 @@ vector<TermSet> ArrayAxiomEnumerator::store_axioms_all_indices(Unroller &un,
       //                   don't have next
       for (size_t j = 0; j < k; j++) {
         // TODO: If this is too expensive, cache by e beforehand
-        msat_term lambda_j = get_finite_domain_lambda(arr0);
+        msat_term lambda_j = get_finite_domain_lambda(arr);
         if (!MSAT_ERROR_TERM(lambda_j)) {
           lambda_j = un.at_time(lambda_j, j);
         }
 
-        enumerate_store_equalities(axioms[j], read, arr0_i,
-                                   arr1_i, orig_idx_type,
-                                   idx_i, val_i,
+        enumerate_store_equalities(axioms[j], readfun, e_i,
+                                   orig_idx_type,
                                    timed_indices[j].at(typestr),
                                    lambda_j);
       }
@@ -413,7 +364,7 @@ vector<TermSet> ArrayAxiomEnumerator::const_array_axioms_all_indices(Unroller &u
   string typestr;
   msat_term abs_ca;
   msat_term val;
-  msat_decl read;
+  msat_decl readfun;
 
   for (msat_term ca : const_arrs)
   {
@@ -425,7 +376,7 @@ vector<TermSet> ArrayAxiomEnumerator::const_array_axioms_all_indices(Unroller &u
     abs_ca = cache.at(ca);
     // value doesn't need to be timed -- should be a constant
     val = msat_term_get_arg(ca, 0);
-    read = read_ufs.at(msat_type_repr(msat_term_get_type(abs_ca)));
+    readfun = read_ufs.at(msat_type_repr(msat_term_get_type(abs_ca)));
 
     for (size_t i = 0; i < k; i++)
     {
@@ -439,7 +390,7 @@ vector<TermSet> ArrayAxiomEnumerator::const_array_axioms_all_indices(Unroller &u
           lambda_j = un.at_time(lambda_j, j);
         }
 
-        enumerate_const_array_axioms(axioms[j], read, abs_ca_i,
+        enumerate_const_array_axioms(axioms[j], readfun, abs_ca_i,
                                      orig_idx_type, val, timed_indices[j].at(typestr));
       }
     }
@@ -461,37 +412,61 @@ msat_term ArrayAxiomEnumerator::get_index(msat_term ax) const
 }
 
 // protected helper functions
-void ArrayAxiomEnumerator::enumerate_store_equalities(TermSet &axioms, msat_decl read, msat_term arr0,
-                                                      msat_term arr1, msat_type orig_idx_type, msat_term idx,
-                                                      msat_term val, TermSet &indices, msat_term lambda) {
+void ArrayAxiomEnumerator::enumerate_store_equalities(TermSet &axioms, msat_decl readfun, msat_term store_eq,
+                                                      msat_type orig_idx_type, TermSet &indices, msat_term lambda) {
+
+  msat_term arr_res;
+  msat_term store_arr;
+  msat_term arr_arg;
+  msat_term idx;
+  msat_term val;
+
+  if (msat_term_arity(msat_term_get_arg(store_eq, 0)) == 3)
+  {
+    store_arr = msat_term_get_arg(store_eq, 0);
+    arr_res = msat_term_get_arg(store_eq, 1);
+    arr_arg = msat_term_get_arg(store_arr, 0);
+    idx = msat_term_get_arg(store_arr, 1);
+    val = msat_term_get_arg(store_arr, 2);
+  }
+  else
+  {
+    assert(msat_term_arity(msat_term_get_arg(store_eq, 1)) == 3);
+    store_arr = msat_term_get_arg(store_eq, 1);
+    arr_res = msat_term_get_arg(store_eq, 0);
+    arr_arg = msat_term_get_arg(store_arr, 0);
+    idx = msat_term_get_arg(store_arr, 1);
+    val = msat_term_get_arg(store_arr, 2);
+  }
 
   // temporary variable to be used throughout function
   msat_term ax;
-  msat_term args0[2] = {arr0, idx};
-  msat_term args1[2] = {arr1, idx};
+  msat_term args0[2] = {arr_res, idx};
+  msat_term args1[2] = {arr_arg, idx};
 
-  // equals expected value at the write index
-  ax = msat_make_equal(msat_env_, msat_make_uf(msat_env_, read, &args0[0]), val);
-  axioms.insert(ax);
-  axioms_to_index_[ax] = idx;
-
-  // equal at every index except for the write index
   for (auto i : indices)
   {
-    // TODO: Add next version of indices to orig_types in abstracter (not doing yet to avoid conflicts)
-    // optimization: don't put in the trivial (i != i) case
-    if (i != idx) {
-      args0[1] = i;
-      args1[1] = i;
-      msat_term antecedent =
-          msat_make_not(msat_env_, msat_make_equal(msat_env_, i, idx));
-      msat_term consequent =
-          msat_make_equal(msat_env_, msat_make_uf(msat_env_, read, &args0[0]),
-                          msat_make_uf(msat_env_, read, &args1[0]));
-      ax = implies(antecedent, consequent);
-      axioms.insert(ax);
-      axioms_to_index_[ax] = i;
-    }
+    args0[1] = i;
+    args1[1] = i;
+
+    // i = j case
+    msat_term antecedent = msat_make_and(msat_env_, store_eq,
+                                         msat_make_eq(msat_env_, i, idx));
+    msat_term consequent = msat_make_eq(msat_env_, msat_make_uf(msat_env_, readfun, &args0[0]), val);
+    ax = implies(antecedent, consequent);
+    axioms.insert(ax);
+    axioms_to_index_[ax] = i;
+
+    // i != j case
+    antecedent =
+      msat_make_and(msat_env_, store_eq,
+                    msat_make_not(msat_env_, msat_make_eq(msat_env_, i, idx)));
+    consequent =
+      msat_make_eq(msat_env_, msat_make_uf(msat_env_, readfun, &args0[0]),
+                      msat_make_uf(msat_env_, readfun, &args1[0]));
+    ax = implies(antecedent, consequent);
+    axioms.insert(ax);
+    axioms_to_index_[ax] = i;
   }
 
   // special case for finite-domain lambdas
@@ -502,14 +477,18 @@ void ArrayAxiomEnumerator::enumerate_store_equalities(TermSet &axioms, msat_decl
       assert(false);
     }
 
-    msat_term args0[2] = {arr0, lambda};
-    msat_term args1[2] = {arr1, lambda};
+    msat_term args0[2] = {arr_res, lambda};
+    msat_term args1[2] = {arr_arg, lambda};
+
+    // Optimization: only adding != case (because lambda should never be equal to another index)
+    // != case
     msat_term antecedent = msat_make_and(
         msat_env_, bound_lambda(lambda, width),
-        msat_make_not(msat_env_, msat_make_equal(msat_env_, lambda, idx)));
+        msat_make_and(msat_env_, store_eq,
+                      msat_make_not(msat_env_, msat_make_eq(msat_env_, lambda, idx))));
     msat_term consequent =
-        msat_make_equal(msat_env_, msat_make_uf(msat_env_, read, &args0[0]),
-                        msat_make_uf(msat_env_, read, &args1[0]));
+        msat_make_eq(msat_env_, msat_make_uf(msat_env_, readfun, &args0[0]),
+                        msat_make_uf(msat_env_, readfun, &args1[0]));
     ax = implies(antecedent, consequent);
     axioms.insert(ax);
     axioms_to_index_[ax] = lambda;
@@ -521,7 +500,7 @@ void ArrayAxiomEnumerator::enumerate_store_equalities(TermSet &axioms, msat_decl
 }
 
 void ArrayAxiomEnumerator::enumerate_const_array_axioms(TermSet & axioms,
-                                                        msat_decl read,
+                                                        msat_decl readfun,
                                                         msat_term arr,
                                                         msat_type orig_idx_type,
                                                         msat_term val,
@@ -534,7 +513,7 @@ void ArrayAxiomEnumerator::enumerate_const_array_axioms(TermSet & axioms,
   for (auto i : indices)
   {
     msat_term args[2] = {arr, i};
-    ax = msat_make_equal(msat_env_, msat_make_uf(msat_env_, read, &args[0]), val);
+    ax = msat_make_eq(msat_env_, msat_make_uf(msat_env_, readfun, &args[0]), val);
     axioms.insert(ax);
     axioms_to_index_[ax] = i;
   }
@@ -547,8 +526,8 @@ void ArrayAxiomEnumerator::enumerate_const_array_axioms(TermSet & axioms,
     msat_term lambda = get_lambda_from_type(orig_idx_type);
     msat_term args[2] = {arr, lambda};
     ax = implies(bound_lambda(lambda, width),
-                 msat_make_equal(msat_env_,
-                                 msat_make_uf(msat_env_, read, &args[0]), val));
+                 msat_make_eq(msat_env_,
+                                 msat_make_uf(msat_env_, readfun, &args[0]), val));
     axioms.insert(ax);
     axioms_to_index_[ax] = lambda;
   } else {
@@ -559,7 +538,7 @@ void ArrayAxiomEnumerator::enumerate_const_array_axioms(TermSet & axioms,
 }
 
 void ArrayAxiomEnumerator::enumerate_eq_axioms(
-    ic3ia::TermSet &axioms, msat_decl read, msat_type orig_idx_type,
+    ic3ia::TermSet &axioms, msat_decl readfun, msat_type orig_idx_type,
     msat_term eq_uf, msat_term witness, ic3ia::TermSet &indices,
     msat_term lambda) {
 
@@ -581,8 +560,8 @@ void ArrayAxiomEnumerator::enumerate_eq_axioms(
   {
     args0[1] = i;
     args1[1] = i;
-    eq_reads = msat_make_equal(msat_env_, msat_make_uf(msat_env_, read, &args0[0]),
-                               msat_make_uf(msat_env_, read, &args1[0]));
+    eq_reads = msat_make_eq(msat_env_, msat_make_uf(msat_env_, readfun, &args0[0]),
+                               msat_make_uf(msat_env_, readfun, &args1[0]));
     // eq(arr0, arr1) -> arr0[i] = arr1[i]
     ax = implies(eq_uf, eq_reads);
     axioms.insert(ax);
@@ -606,8 +585,8 @@ void ArrayAxiomEnumerator::enumerate_eq_axioms(
 
     msat_term args0[2] = {arr0, lambda};
     msat_term args1[2] = {arr1, lambda};
-    eq_reads = msat_make_equal(msat_env_, msat_make_uf(msat_env_, read, &args0[0]),
-                               msat_make_uf(msat_env_, read, &args1[0]));
+    eq_reads = msat_make_eq(msat_env_, msat_make_uf(msat_env_, readfun, &args0[0]),
+                               msat_make_uf(msat_env_, readfun, &args1[0]));
     msat_term antecedent1 =
         msat_make_and(msat_env_, eq_uf, bound_lambda(lambda, width));
     ax = implies(antecedent1, eq_reads);
@@ -634,8 +613,8 @@ void ArrayAxiomEnumerator::enumerate_eq_axioms(
   //       e.g. a[witness] = b[witness] -> a = b
   args0[1] = witness;
   args1[1] = witness;
-  eq_reads = msat_make_equal(msat_env_, msat_make_uf(msat_env_, read, &args0[0]),
-                             msat_make_uf(msat_env_, read, &args1[0]));
+  eq_reads = msat_make_eq(msat_env_, msat_make_uf(msat_env_, readfun, &args0[0]),
+                             msat_make_uf(msat_env_, readfun, &args1[0]));
   ax = implies(eq_reads, eq_uf);
   axioms.insert(ax);
   axioms_to_index_[ax] = witness;
