@@ -230,6 +230,8 @@ Options get_options(int argc, const char **argv)
             ret.bmc = true;
         } else if (a == "-bmc-k") {
             ok = getint(++i, ret.bmc_max_k);
+        } else if (a == "-no-eq-uf") {
+            ret.use_uf_for_arr_eq = false;
         } else if (a == "-h" || a == "-help" || a == "--help") {
             std::cout << "USAGE: " << argv[0] << " [OPTIONS] FILENAME.vmt"
                       << "\n\n   -v N : set verbosity level"
@@ -262,6 +264,7 @@ Options get_options(int argc, const char **argv)
                       << "k-liveness counter"
                       << "\n   -bmc : use BMC instead of IC3"
                       << "\n   -bmc-k N : max k value for BMC"
+                      << "\n   -no-eq-uf : use actual equalities between abstracted arrays"
                       << std::endl;
             exit(0);
             break;
