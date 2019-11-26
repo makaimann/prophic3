@@ -200,17 +200,6 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
         msat_term lhs = msat_term_get_arg(t, 0);
         msat_term rhs = msat_term_get_arg(t, 1);
 
-        // Note: arrays should have already been flattened
-        // thus store equalities are all top-level (e.g. definitions)
-        // but with this abstraction this should no longer be necessary
-        if (msat_term_is_array_write(e, lhs) ||
-            msat_term_is_array_write(e, rhs)) {
-          msat_term abs_store_eq = msat_make_eq(e, d->cache.at(lhs), d->cache.at(rhs));;
-          d->cache[t] = abs_store_eq;
-          d->stores.insert(abs_store_eq);
-          return MSAT_VISIT_PROCESS;
-        }
-
         // if equality doesn't contain a store
         // still use an equality between the two uninterpreted sorts
         // but we require a witness index
@@ -229,28 +218,41 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
         msat_term arr_eq = msat_make_eq(e, lhs_cache, rhs_cache);
         d->cache[t] = arr_eq;
 
-        std::string witness_name = "witness_" + std::to_string(d->witnesses.size());
+        // Note: arrays should have already been flattened
+        // thus store equalities are all top-level (e.g. definitions)
+        // but with this abstraction this should no longer be necessary
+        if (msat_term_is_array_write(e, lhs) ||
+            msat_term_is_array_write(e, rhs))
+        {
+          // save the store equality for later
+          d->stores.insert(arr_eq);
+        }
+        // otherwise, create a witness for the array equality
+        else
+        {
+          std::string witness_name = "witness_" + std::to_string(d->witnesses.size());
 
-        msat_type idx_type;
-        bool is_array = msat_is_array_type(e, msat_term_get_type(lhs), &idx_type, nullptr);
-        assert(is_array);
+          msat_type idx_type;
+          bool is_array = msat_is_array_type(e, msat_term_get_type(lhs), &idx_type, nullptr);
+          assert(is_array);
 
-        // TODO: figure out if witness needs to be a state variable?
-        msat_decl decl_witness =
+          // TODO: figure out if witness needs to be a state variable?
+          msat_decl decl_witness =
             msat_declare_function(e, witness_name.c_str(), idx_type);
-        msat_term witness = msat_make_constant(e, decl_witness);
-        msat_decl decl_witnessN =
+          msat_term witness = msat_make_constant(e, decl_witness);
+          msat_decl decl_witnessN =
             msat_declare_function(e, (witness_name + ".next").c_str(), idx_type);
-        msat_term witnessN = msat_make_constant(e, decl_witnessN);
-        // update state variables
-        d->new_vars[witness] = witnessN;
+          msat_term witnessN = msat_make_constant(e, decl_witnessN);
+          // update state variables
+          d->new_vars[witness] = witnessN;
 
-        msat_term converted_witness = idx_to_int(e, witness);
-        d->witnesses[arr_eq] = converted_witness;
-        d->orig_types[converted_witness] = idx_type;
-        d->indices.insert(converted_witness);
-        // TODO: figure out cleanest way to get next-state version of lemmas as well
-        // e.g. equal(next(arr), next(arr2)) -> ...
+          msat_term converted_witness = idx_to_int(e, witness);
+          d->witnesses[arr_eq] = converted_witness;
+          d->orig_types[converted_witness] = idx_type;
+          d->indices.insert(converted_witness);
+          // TODO: figure out cleanest way to get next-state version of lemmas as well
+          // e.g. equal(next(arr), next(arr2)) -> ...
+        }
 
       } else if (msat_term_is_array_read(e, t)) {
         // replace array reads with uninterpreted functions
