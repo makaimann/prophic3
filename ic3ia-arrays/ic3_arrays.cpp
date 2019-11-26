@@ -71,7 +71,7 @@ msat_truth_value IC3Array::prove()
   abs_ts_ = af.flatten_transition_system();
   assert(abs_ts_.only_cur(abs_ts_.init()));
   assert(abs_ts_.only_cur(abs_ts_.prop()));
-  ArrayAbstractor aa(abs_ts_);
+  ArrayAbstractor aa(abs_ts_, opts_.use_uf_for_arr_eq);
   abs_ts_ = aa.abstract_transition_system();
   assert(abs_ts_.only_cur(abs_ts_.init()));
   assert(abs_ts_.only_cur(abs_ts_.prop()));

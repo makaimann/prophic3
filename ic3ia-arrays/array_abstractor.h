@@ -29,7 +29,7 @@ inline bool is_variable(msat_env env, msat_term term) {
 
 class ArrayAbstractor {
 public:
-    ArrayAbstractor(const ic3ia::TransitionSystem &ts);
+    ArrayAbstractor(const ic3ia::TransitionSystem &ts, bool use_eq_uf);
     ~ArrayAbstractor();
 
     const ic3ia::TransitionSystem &abstract_transition_system() const
@@ -60,6 +60,9 @@ public:
     msat_env msat_env_;
 
     const ic3ia::TransitionSystem &conc_ts_;
+    // sets whether array equality is abstracted with a UF
+    // or if it's an equality between the abstract arrays (of uninterpreted sort)
+    bool use_eq_uf_;
     ic3ia::TransitionSystem abs_ts_;
 
     unsigned int read_id_{0};
@@ -90,6 +93,8 @@ public:
     std::unordered_map<std::string, msat_type> type_map_;
     // maps array types to abstract write UFs
     std::unordered_map<std::string, msat_decl> store_ufs_;
+    // maps abstract array types to equality ufs (unused if use_eq_uf is false)
+    std::unordered_map<std::string, msat_decl> equality_ufs_;
 
     ic3ia::TermSet finite_domain_lambdas_;
 };
