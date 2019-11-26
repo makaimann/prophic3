@@ -44,7 +44,7 @@ namespace ic3ia_array
     ic3ia::TermMap untime_cache;
 
     // for debugging
-    msat_result run_bmc(int k, ic3ia::TermSet & untimed_axioms, ic3ia::TermSet & timed_axioms);
+    msat_result check_bmc_k(int k, ic3ia::TermSet & untimed_axioms, ic3ia::TermSet & timed_axioms);
 
     void print_witness(msat_model model,
                        size_t reached_k,
