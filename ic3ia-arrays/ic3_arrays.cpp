@@ -283,10 +283,10 @@ msat_truth_value IC3Array::prove()
     TermSet red_timed_axioms;
     if (reduce_axioms(reached_k, untimed_axioms_to_add, timed_axioms_to_refine, red_untimed_axioms, red_timed_axioms)) {
       std::cout << "Reduced Untimed Axioms to "
-		<< red_untimed_axioms.size() << " axioms."
+                << red_untimed_axioms.size() << " axioms."
                 << std::endl;
       std::cout << "Reduced timed Axioms to "
-		<< red_timed_axioms.size() << " axioms."
+                << red_timed_axioms.size() << " axioms."
                 << std::endl;
       untimed_axioms = &red_untimed_axioms;
       timed_axioms = &red_timed_axioms;
@@ -299,16 +299,18 @@ msat_truth_value IC3Array::prove()
     if (timed_axioms->size() == 0)
     {
       for (auto ax : *(untimed_axioms)) {
-        //std::cout << msat_to_smtlib2_term(msat_env_, ax) << std::endl;
+        // std::cout << "Added to trans: " << msat_to_smtlib2_term(msat_env_, ax) << std::endl;
         abs_ts_.add_trans(ax);
 
         // if there's no next-state variables, add next version to trans
         if (!abs_ts_.contains_next(ax)) {
+          // std::cout << "Added to trans next: " << msat_to_smtlib2_term(msat_env_, abs_ts_.next(ax)) << std::endl;
           abs_ts_.add_trans(abs_ts_.next(ax));
         }
 
         // add to init if there's only current variables (no inputs or next)
         if (abs_ts_.only_cur(ax) && reached_k == 0) {
+          // std::cout << "Added to init: " << msat_to_smtlib2_term(msat_env_, ax) << std::endl;
           // only add axioms to init if the counterexample is length 1
           abs_ts_.add_init(ax);
           cnt++;
