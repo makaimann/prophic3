@@ -7,8 +7,8 @@ using namespace ic3ia;
 
 namespace ic3ia_array {
 
-ArrayAbstractor::ArrayAbstractor(const TransitionSystem &ts)
-    : msat_env_(ts.get_env()), conc_ts_(ts), abs_ts_(msat_env_) {
+ArrayAbstractor::ArrayAbstractor(const TransitionSystem &ts, bool use_eq_uf)
+  : msat_env_(ts.get_env()), conc_ts_(ts), use_eq_uf_(use_eq_uf), abs_ts_(msat_env_) {
   do_abstraction();
 }
 
@@ -87,6 +87,8 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
     TermMap &witnesses;
     std::unordered_map<std::string, msat_decl> &read_ufs;
     std::unordered_map<std::string, msat_decl> & store_ufs;
+    std::unordered_map<std::string, msat_decl> & equality_ufs;
+    bool use_eq_uf;
     TermTypeMap &orig_types;
     TermSet &const_arrs;
     TermSet &stores;
@@ -97,13 +99,16 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
     const TransitionSystem &conc_ts;
     AbstractionData(TermSet &i, TermMap &nv, TermSet &rv, TermMap &w,
                     std::unordered_map<std::string, msat_decl> &r,
-                    std::unordered_map<std::string, msat_decl> &suf, TermTypeMap &o,
-                    TermSet &ca, TermSet &s, TermMap &c, unsigned int &ri,
-                    unsigned int &wi, std::unordered_map<std::string, msat_type> & tm,
+                    std::unordered_map<std::string, msat_decl> &suf,
+                    std::unordered_map<std::string, msat_decl> &euf,
+                    bool ueuf, TermTypeMap &o, TermSet &ca, TermSet &s,
+                    TermMap &c, unsigned int &ri, unsigned int &wi,
+                    std::unordered_map<std::string, msat_type> & tm,
                     const TransitionSystem &cts)
         : indices(i), new_vars(nv), removed_vars(rv), witnesses(w), read_ufs(r),
-          store_ufs(suf), orig_types(o), const_arrs(ca), stores(s), cache(c),
-          read_id(ri), write_id(wi), type_map(tm), conc_ts(cts) {}
+          store_ufs(suf), equality_ufs(euf), use_eq_uf(ueuf), orig_types(o),
+          const_arrs(ca), stores(s), cache(c), read_id(ri), write_id(wi),
+          type_map(tm), conc_ts(cts) {}
   };
 
   auto visit = [](msat_env e, msat_term t, int preorder,
@@ -200,17 +205,6 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
         msat_term lhs = msat_term_get_arg(t, 0);
         msat_term rhs = msat_term_get_arg(t, 1);
 
-        // Note: arrays should have already been flattened
-        // thus store equalities are all top-level (e.g. definitions)
-        // but with this abstraction this should no longer be necessary
-        if (msat_term_is_array_write(e, lhs) ||
-            msat_term_is_array_write(e, rhs)) {
-          msat_term abs_store_eq = msat_make_eq(e, d->cache.at(lhs), d->cache.at(rhs));;
-          d->cache[t] = abs_store_eq;
-          d->stores.insert(abs_store_eq);
-          return MSAT_VISIT_PROCESS;
-        }
-
         // if equality doesn't contain a store
         // still use an equality between the two uninterpreted sorts
         // but we require a witness index
@@ -226,31 +220,71 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
         msat_term lhs_cache = d->cache.at(lhs);
         msat_term rhs_cache = d->cache.at(rhs);
 
-        msat_term arr_eq = msat_make_eq(e, lhs_cache, rhs_cache);
+        msat_term arr_eq;
+        if (d->use_eq_uf)
+        {
+          msat_type abs_type = msat_term_get_type(lhs_cache);
+          std::string abs_typestr = msat_type_repr(abs_type);
+          msat_decl eqfun;
+          if (d->equality_ufs.find(abs_typestr) == d->equality_ufs.end())
+          {
+            std::string eqname = "arreq_" + std::to_string(d->equality_ufs.size());
+            msat_type param_types[2] = {abs_type, abs_type};
+            msat_type funtype = msat_get_function_type(e, &param_types[0], 2,
+                                                       msat_get_bool_type(e));
+            eqfun = msat_declare_function(e, eqname.c_str(), funtype);
+            d->equality_ufs[abs_typestr] = eqfun;
+          }
+          else
+          {
+            eqfun = d->equality_ufs.at(abs_typestr);
+          }
+
+          msat_term cached_args[2] = {lhs_cache, rhs_cache};
+          arr_eq = msat_make_uf(e, eqfun, cached_args);
+        }
+        else
+        {
+          arr_eq = msat_make_eq(e, lhs_cache, rhs_cache);
+        }
+
         d->cache[t] = arr_eq;
 
-        std::string witness_name = "witness_" + std::to_string(d->witnesses.size());
+        // Note: arrays should have already been flattened
+        // thus store equalities are all top-level (e.g. definitions)
+        // but with this abstraction this should no longer be necessary
+        if (msat_term_is_array_write(e, lhs) ||
+            msat_term_is_array_write(e, rhs))
+        {
+          // save the store equality for later
+          d->stores.insert(arr_eq);
+        }
+        // otherwise, create a witness for the array equality
+        else
+        {
+          std::string witness_name = "witness_" + std::to_string(d->witnesses.size());
 
-        msat_type idx_type;
-        bool is_array = msat_is_array_type(e, msat_term_get_type(lhs), &idx_type, nullptr);
-        assert(is_array);
+          msat_type idx_type;
+          bool is_array = msat_is_array_type(e, msat_term_get_type(lhs), &idx_type, nullptr);
+          assert(is_array);
 
-        // TODO: figure out if witness needs to be a state variable?
-        msat_decl decl_witness =
+          // TODO: figure out if witness needs to be a state variable?
+          msat_decl decl_witness =
             msat_declare_function(e, witness_name.c_str(), idx_type);
-        msat_term witness = msat_make_constant(e, decl_witness);
-        msat_decl decl_witnessN =
+          msat_term witness = msat_make_constant(e, decl_witness);
+          msat_decl decl_witnessN =
             msat_declare_function(e, (witness_name + ".next").c_str(), idx_type);
-        msat_term witnessN = msat_make_constant(e, decl_witnessN);
-        // update state variables
-        d->new_vars[witness] = witnessN;
+          msat_term witnessN = msat_make_constant(e, decl_witnessN);
+          // update state variables
+          d->new_vars[witness] = witnessN;
 
-        msat_term converted_witness = idx_to_int(e, witness);
-        d->witnesses[arr_eq] = converted_witness;
-        d->orig_types[converted_witness] = idx_type;
-        d->indices.insert(converted_witness);
-        // TODO: figure out cleanest way to get next-state version of lemmas as well
-        // e.g. equal(next(arr), next(arr2)) -> ...
+          msat_term converted_witness = idx_to_int(e, witness);
+          d->witnesses[arr_eq] = converted_witness;
+          d->orig_types[converted_witness] = idx_type;
+          d->indices.insert(converted_witness);
+          // TODO: figure out cleanest way to get next-state version of lemmas as well
+          // e.g. equal(next(arr), next(arr2)) -> ...
+        }
 
       } else if (msat_term_is_array_read(e, t)) {
         // replace array reads with uninterpreted functions
@@ -342,8 +376,9 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
   };
 
   AbstractionData data = AbstractionData(
-      indices_, new_vars_, removed_vars_, witnesses_, read_ufs_, store_ufs_,
-      orig_types_, const_arrs_, stores_, cache_, read_id_, write_id_, type_map_, conc_ts_);
+      indices_, new_vars_, removed_vars_, witnesses_, read_ufs_, store_ufs_, equality_ufs_,
+      use_eq_uf_, orig_types_, const_arrs_, stores_, cache_, read_id_, write_id_,
+      type_map_, conc_ts_);
   msat_visit_term(msat_env_, term, visit, &data);
   return data.cache.at(term);
 }
