@@ -42,7 +42,11 @@ TermList conjunctive_partition(msat_env e, msat_term top)
 
 msat_result IC3Array::check_bmc_k(int k, TermSet & untimed_axioms, TermSet & timed_axioms)
 {
+  std::string name = ("check_bmc_k" + std::to_string(k) + ".smt2");
+  std::cout << "dumping " << name << std::endl;
   msat_config cfg = get_config(FULL_MODEL);
+  msat_set_option(cfg, "debug.api_call_trace", "1");
+  msat_set_option(cfg, "debug.api_call_trace_filename", name.c_str());
   msat_env bmc_env = msat_create_shared_env(cfg, abs_ts_.get_env());
   msat_destroy_config(cfg);
 
@@ -69,6 +73,19 @@ msat_result IC3Array::check_bmc_k(int k, TermSet & untimed_axioms, TermSet & tim
   }
 
   msat_result res = msat_solve(bmc_env);
+  if (res == MSAT_UNSAT)
+  {
+    std::cout << "Got unsat." << std::endl;
+  }
+  else if (res == MSAT_SAT)
+  {
+    std::cout << "Got sat." << std::endl;
+  }
+  else
+  {
+    std::cout << "Unexpected result" << std::endl;
+    throw std::exception();
+  }
   msat_destroy_env(bmc_env);
   return res;
 }
@@ -81,6 +98,8 @@ IC3Array::IC3Array(const ic3ia::TransitionSystem &ts, const ic3ia::Options &opts
   l.set_verbosity(verbosity);
 
   msat_config cfg = get_config(FULL_MODEL);
+  msat_set_option(cfg, "debug.api_call_trace", "1");
+  msat_set_option(cfg, "debug.api_call_trace_filename", "refiner.smt2");
   refiner_ = msat_create_shared_env(cfg, abs_ts_.get_env());
   msat_destroy_config(cfg);
 
@@ -191,9 +210,27 @@ msat_truth_value IC3Array::prove()
     msat_assert_formula(refiner_,
 			un_.at_time(msat_make_not(refiner_, abs_ts_.prop()),
 				  reached_k));
-    bool broken = msat_solve(refiner_) == MSAT_SAT;
+
+    std::cout << "Checking refiner" << std::endl;
+    msat_result bmc_res = msat_solve(refiner_);
+    if (bmc_res == MSAT_UNSAT)
+    {
+      std::cout << "Got unsat." << std::endl;
+    }
+    else if (bmc_res == MSAT_SAT)
+    {
+      std::cout << "Got sat." << std::endl;
+    }
+    else
+    {
+      std::cout << "Unexpected result" << std::endl;
+      throw std::exception();
+    }
+
+    bool broken = bmc_res == MSAT_SAT;
     //bmc.check_until(reached_k);
-    assert((res != MSAT_FALSE) || broken);
+    assert((res == MSAT_FALSE && bmc_res == MSAT_SAT) ||
+           (res == MSAT_UNDEF));
 
     // TODO: filter axioms with unsat core
     TermSet untimed_axioms_to_add;
@@ -310,10 +347,24 @@ msat_truth_value IC3Array::prove()
         all_violated_axioms.insert(ax);
         msat_assert_formula(refiner_, ax);
       }
+      std::cout << "Checking refiner" << std::endl;
       msat_result solver_res = msat_solve(refiner_);
+      if (solver_res == MSAT_UNSAT)
+      {
+        std::cout << "Got unsat." << std::endl;
+      }
+      else if (solver_res == MSAT_SAT)
+      {
+        std::cout << "Got sat." << std::endl;
+      }
+      else
+      {
+        std::cout << "Unexpected result" << std::endl;
+        throw std::exception();
+      }
       broken = solver_res == MSAT_SAT;
       TermSet tmp;
-      //assert(run_bmc(reached_k, tmp, all_violated_axioms) == solver_res);
+      //assert(check_bmc_k(reached_k, tmp, all_violated_axioms) == solver_res);
       std::cout << "reached_k = " << reached_k << std::endl;
       std::cout << "broken = " << broken << std::endl;
       violated_axioms.clear();
@@ -327,7 +378,7 @@ msat_truth_value IC3Array::prove()
     std::cout << "Have " << all_violated_axioms.size() << " violated axioms." << std::endl;
     TermSet tmp_set;
     std::cout << "reached_k = " << reached_k << std::endl;
-    assert(run_bmc(reached_k, tmp_set, all_violated_axioms) == MSAT_UNSAT);
+    assert(check_bmc_k(reached_k, tmp_set, all_violated_axioms) == MSAT_UNSAT);
     //all_violated_axioms.clear();
 
     std::cout << "Found " << untimed_axioms_to_add.size() << " untimed axioms"

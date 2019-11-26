@@ -13,7 +13,9 @@ make
 
 If it behaves the same as on my machine, there will be an assertion failure.
 
-Now, uncomment line 316 of `ic3_arrays.cpp` (which should be a C assert). Rebuild and run on the same example, and on my machine it no longer fails.
+Now, uncomment line 367 of `ic3_arrays.cpp` (which should be a C assert). Rebuild and run on the same example, and on my machine it no longer fails.
+
+I also print the results from each call to solve and dump the mathsat debug traces. When running the mathsat binary on the dumped traces, it doesn't agree with the printed results.
 
 # Code
 The code is a modification of ic3ia from https://es-static.fbk.eu/people/griggio/ic3ia/ic3ia.tar.gz, which uses mathsat bindings downloaded from https://es-static.fbk.eu/tools/nb/
