@@ -16,13 +16,14 @@ msat_term ArrayAxiomEnumerator::implies(msat_term antecedent, msat_term conseque
 }
 
 msat_term ArrayAxiomEnumerator::get_finite_domain_lambda(msat_term arr) {
-  // only need to check one of the arrays
-  msat_type _type = abstractor_.orig_types().at(arr);
+  msat_type orig_idx_type;
+  bool is_array = msat_is_array_type(msat_env_, abstractor_.orig_types().at(arr),
+                                     &orig_idx_type, nullptr);
   size_t width;
   msat_term lambda;
   MSAT_MAKE_ERROR_TERM(lambda);
-  if (msat_is_bv_type(msat_env_, _type, &width)) {
-    lambda = get_lambda_from_type(_type);
+  if (msat_is_bv_type(msat_env_, orig_idx_type, &width)) {
+    lambda = get_lambda_from_type(orig_idx_type);
   }
   return lambda;
 }
