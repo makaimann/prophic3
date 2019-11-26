@@ -202,6 +202,9 @@ msat_truth_value IC3Array::prove()
     // stores timed axioms that need to be refined
     TermSet timed_axioms_to_refine;
 
+    // debugging
+    TermSet all_violated_axioms;
+
     while (broken) {
       msat_model model = msat_get_model(refiner_);
 
@@ -246,6 +249,7 @@ msat_truth_value IC3Array::prove()
               // std::cout << msat_to_smtlib2_term(msat_env_, timed_axiom) <<
               // std::endl;
               violated_axioms.insert(timed_axiom);
+              //              all_violated_axioms.insert(timed_axiom);
               untimed_axioms_to_add.insert(ax);
             }
           }
@@ -281,6 +285,7 @@ msat_truth_value IC3Array::prove()
               if (val == f)
               {
                 violated_axioms.insert(timed_axiom);
+                //                all_violated_axioms.insert(timed_axiom);
                 time_of_index[timed_axiom] = i;
                 timed_axioms_to_refine.insert(timed_axiom);
               }
@@ -302,9 +307,15 @@ msat_truth_value IC3Array::prove()
       }
 
       for (auto ax : violated_axioms) {
+        all_violated_axioms.insert(ax);
         msat_assert_formula(refiner_, ax);
       }
-      broken = msat_solve(refiner_) == MSAT_SAT;
+      msat_result solver_res = msat_solve(refiner_);
+      broken = solver_res == MSAT_SAT;
+      TermSet tmp;
+      //assert(run_bmc(reached_k, tmp, all_violated_axioms) == solver_res);
+      std::cout << "reached_k = " << reached_k << std::endl;
+      std::cout << "broken = " << broken << std::endl;
       violated_axioms.clear();
 
       if (!MSAT_ERROR_MODEL(model))
@@ -312,6 +323,12 @@ msat_truth_value IC3Array::prove()
         msat_destroy_model(model);
       }
     }
+
+    std::cout << "Have " << all_violated_axioms.size() << " violated axioms." << std::endl;
+    TermSet tmp_set;
+    std::cout << "reached_k = " << reached_k << std::endl;
+    assert(run_bmc(reached_k, tmp_set, all_violated_axioms) == MSAT_UNSAT);
+    //all_violated_axioms.clear();
 
     std::cout << "Found " << untimed_axioms_to_add.size() << " untimed axioms"
               << std::endl;
