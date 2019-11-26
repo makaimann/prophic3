@@ -4,6 +4,9 @@
 
 #include <vector>
 
+#include <iostream>
+#include <fstream>
+
 using namespace ic3ia;
 using namespace std;
 
@@ -126,6 +129,10 @@ msat_truth_value IC3Array::prove()
   while (res != MSAT_TRUE)
   {
     std::cout << "Running IC3" << std::endl;
+    ofstream f;
+    f.open("dumped.vmt");
+    abs_ts_.to_vmt(f);
+    f.close();
     // Run IC3
     // NOTE: It is very IMPORTANT that ic3 is instantiated here
     //       at one point, I had it instantiated outside of the loop

@@ -110,6 +110,7 @@ public:
     ///< abstraction
 
 private:
+    void initialize_solver(bool eq_propagation);
     void extract_predicates(msat_env env);
     void minimize_predicates(const std::vector<TermList> &cex);
     
@@ -121,6 +122,13 @@ private:
     
     msat_env solver_;
     ///< the interpolating solver
+
+    bool eq_propagation_;
+    ///< keeps track of whether the solver has eq_propagation enabled
+    /// when disabled, cannot trust a SAT result
+
+    const Options & opts_;
+    ///< save the options (to be used in initialize_solver)
 
     Unroller un_;
     ///< unroller for building the BMC problem

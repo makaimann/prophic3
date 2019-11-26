@@ -94,19 +94,21 @@ Refiner::Refiner(const TransitionSystem &ts, const Options &opts,
                  Abstractor &abs):
     ts_(ts),
     abs_(abs),
+    opts_(opts),
     un_(ts),
     predminimizer_(ts, opts, abs, un_)
 {
     minpreds_ = opts.minpreds;
     msat_config cfg = get_config(FULL_MODEL, true);
-    if (!opts.trace.empty()) {
-        std::string name = opts.trace + ".itp.smt2";
+    if (!opts_.trace.empty()) {
+        std::string name = opts_.trace + ".itp.smt2";
         msat_set_option(cfg, "debug.api_call_trace", "1");
         msat_set_option(cfg, "debug.api_call_trace_filename", name.c_str());
     }
+    eq_propagation_ = false;
+    msat_set_option(cfg, "theory.eq_propagation", "false");
     solver_ = msat_create_shared_env(cfg, ts_.get_env());
     msat_destroy_config(cfg);
-
     predabs_ = msat_make_true(ts_.get_env());
 }
 
@@ -149,6 +151,7 @@ bool Refiner::refine(const std::vector<TermList> &cex)
     msat_result res = msat_solve(solver_);    
 
     if (res == MSAT_UNSAT) {
+        std::cout << "Got unsat from solver_ with eq_propagation " << eq_propagation_ << std::endl;
         logger(3) << "counterexample is spurious, extracting interpolants"
                   << endlog;
         // compute a sequence interpolant for the spurious cex trace, and
@@ -156,13 +159,66 @@ bool Refiner::refine(const std::vector<TermList> &cex)
         // sequence (after proper untiming -- see Unroller::untime())
         extract_predicates(solver_);
         if (minpreds_) {
-            minimize_predicates(cex);
+            try
+            {
+                minimize_predicates(cex);
+            }
+            catch(std::exception & e)
+            {
+                if (!eq_propagation_)
+                {
+                    std::cout << "Disagreed with eq_propagation " << eq_propagation_ << std::endl;
+                    std::cout << "Rerunning with eq_propagation true" << std::endl;
+                    initialize_solver(true);
+                    bool res = refine(cex);
+                    std::cout << "unsat now? " << res << std::endl;
+                }
+                else
+                {
+                    std::cout << "Got exception when eq_propagation was true..." << std::endl;
+                }
+                throw std::exception();
+            }
         }
-    } else {
+    }
+    else if (!eq_propagation_) {
+        std::cout << "Got sat from solver_ with eq_propagation false" << std::endl;
+        // can't trust sat result if theory.eq_propagation is set to false
+        initialize_solver(true);
+        std::cout << "Running refine again with eq_propagation = " << eq_propagation_ << std::endl;
+        bool res = refine(cex);
+        if (res)
+        {
+            // set it back to false
+            initialize_solver(false);
+        }
+        return res;
+    }
+    else {
+        std::cout << "Got sat from solver_ with eq_propagation " << eq_propagation_ << std::endl;
         logger(3) << "counterexample is real" << endlog;
     }
 
     return (res == MSAT_UNSAT);
+}
+
+
+void Refiner::initialize_solver(bool eq_propagation)
+{
+    if (!MSAT_ERROR_ENV(solver_))
+    {
+        msat_destroy_env(solver_);
+    }
+    eq_propagation_ = eq_propagation;
+    msat_config cfg = get_config(FULL_MODEL, true);
+    if (!opts_.trace.empty()) {
+        std::string name = opts_.trace + ".itp.smt2";
+        msat_set_option(cfg, "debug.api_call_trace", "1");
+        msat_set_option(cfg, "debug.api_call_trace_filename", name.c_str());
+    }
+    msat_set_option(cfg, "theory.eq_propagation", eq_propagation ? "true" : "false");
+    solver_ = msat_create_shared_env(cfg, ts_.get_env());
+    msat_destroy_config(cfg);
 }
 
 
@@ -312,6 +368,11 @@ bool PredRefMinimizer::operator()(msat_term trans,
     }
 
     msat_result s = msat_solve_with_assumptions(env, &labels[0], labels.size());
+    std::cout << "in minimizer: is unsat? " << (s == MSAT_UNSAT) << std::endl;
+    if (s == MSAT_SAT)
+    {
+        throw std::exception();
+    }
     if (s == MSAT_UNSAT) {
         size_t ucsz = 0;
         msat_term *uc = msat_get_unsat_assumptions(env, &ucsz);
