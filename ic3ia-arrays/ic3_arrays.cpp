@@ -298,6 +298,23 @@ msat_truth_value IC3Array::prove()
     size_t cnt = 0;
     if (timed_axioms->size() == 0)
     {
+      // HACK : minor hack
+      //        the reducer can sometimes remove critical invariants
+      //        if there are two possible axioms, but only one goes into init
+      //        it might throw away the init one and use a trans one
+      //        but this won't be added to init and we won't progess
+      //        In that case, just include all axioms that can be added to init
+      if (reached_k == 0)
+      {
+        for (auto ax : untimed_axioms_to_add)
+        {
+          if (abs_ts_.only_cur(ax))
+          {
+            untimed_axioms->insert(ax);
+          }
+        }
+      }
+
       for (auto ax : *(untimed_axioms)) {
         // std::cout << "Added to trans: " << msat_to_smtlib2_term(msat_env_, ax) << std::endl;
         abs_ts_.add_trans(ax);
