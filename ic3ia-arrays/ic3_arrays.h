@@ -43,6 +43,9 @@ namespace ic3ia_array
     // TODO: Look into using unroller's untime feature
     ic3ia::TermMap untime_cache;
 
+    // for debugging
+    msat_result run_bmc(int k, ic3ia::TermSet & untimed_axioms, ic3ia::TermSet & timed_axioms);
+
     void print_witness(msat_model model,
                        size_t reached_k,
                        ArrayAxiomEnumerator &aae);

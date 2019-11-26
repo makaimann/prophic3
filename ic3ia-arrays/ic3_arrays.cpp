@@ -40,6 +40,39 @@ TermList conjunctive_partition(msat_env e, msat_term top)
   return partition;
 }
 
+msat_result IC3Array::run_bmc(int k, TermSet & untimed_axioms, TermSet & timed_axioms)
+{
+  msat_config cfg = get_config(FULL_MODEL);
+  msat_env bmc_env = msat_create_shared_env(cfg, abs_ts_.get_env());
+  msat_destroy_config(cfg);
+
+  assert(!abs_ts_.live_prop());
+
+  msat_assert_formula(bmc_env, un_.at_time(abs_ts_.init(), 0));
+  for (int i = 0; i < k; i++)
+  {
+    msat_assert_formula(bmc_env, un_.at_time(abs_ts_.trans(), i));
+  }
+  msat_assert_formula(bmc_env, msat_make_not(bmc_env, un_.at_time(abs_ts_.prop(), k)));
+
+  for (auto ax : untimed_axioms)
+  {
+    for (int i = 0; i <= k; i++)
+    {
+      msat_assert_formula(bmc_env, un_.at_time(ax, i));
+    }
+  }
+
+  for (auto ax : timed_axioms)
+  {
+    msat_assert_formula(bmc_env, ax);
+  }
+
+  msat_result res = msat_solve(bmc_env);
+  msat_destroy_env(bmc_env);
+  return res;
+}
+
 IC3Array::IC3Array(const ic3ia::TransitionSystem &ts, const ic3ia::Options &opts,
 		   ic3ia::LiveEncoder &l2s, unsigned int verbosity)
   : msat_env_(ts.get_env()), conc_ts_(ts), abs_ts_(msat_env_), l2s_(l2s),
