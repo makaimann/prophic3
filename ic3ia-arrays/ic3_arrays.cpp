@@ -179,11 +179,6 @@ msat_truth_value IC3Array::prove()
           aae.init_eq_axioms(), aae.trans_eq_axioms(),
           aae.prop_eq_axioms(), aae.const_array_axioms(),
           aae.store_axioms()};
-      // std::vector<std::string> axiom_names = {"Init Eq",
-      //                                         "Trans Eq",
-      //                                         "Prop Eq",
-      //                                         "Const Array Axioms",
-      //                                         "Store Axioms"};
 
       TermSet violated_axioms;
 
@@ -294,10 +289,10 @@ msat_truth_value IC3Array::prove()
     TermSet red_timed_axioms;
     if (reduce_axioms(reached_k, untimed_axioms_to_add, timed_axioms_to_refine, red_untimed_axioms, red_timed_axioms)) {
       std::cout << "Reduced Untimed Axioms to "
-		<< red_untimed_axioms.size() << " axioms."
+                << red_untimed_axioms.size() << " axioms."
                 << std::endl;
       std::cout << "Reduced timed Axioms to "
-		<< red_timed_axioms.size() << " axioms."
+                << red_timed_axioms.size() << " axioms."
                 << std::endl;
       untimed_axioms = &red_untimed_axioms;
       timed_axioms = &red_timed_axioms;
@@ -309,17 +304,36 @@ msat_truth_value IC3Array::prove()
     size_t cnt = 0;
     if (timed_axioms->size() == 0)
     {
+      // HACK : minor hack
+      //        the reducer can sometimes remove critical invariants
+      //        if there are two possible axioms, but only one goes into init
+      //        it might throw away the init one and use a trans one
+      //        but this won't be added to init and we won't progess
+      //        In that case, just include all axioms that can be added to init
+      if (reached_k == 0)
+      {
+        for (auto ax : untimed_axioms_to_add)
+        {
+          if (abs_ts_.only_cur(ax))
+          {
+            untimed_axioms->insert(ax);
+          }
+        }
+      }
+
       for (auto ax : *(untimed_axioms)) {
-        //std::cout << msat_to_smtlib2_term(msat_env_, ax) << std::endl;
+        // std::cout << "Added to trans: " << msat_to_smtlib2_term(msat_env_, ax) << std::endl;
         abs_ts_.add_trans(ax);
 
         // if there's no next-state variables, add next version to trans
         if (!abs_ts_.contains_next(ax)) {
+          // std::cout << "Added to trans next: " << msat_to_smtlib2_term(msat_env_, abs_ts_.next(ax)) << std::endl;
           abs_ts_.add_trans(abs_ts_.next(ax));
         }
 
         // add to init if there's only current variables (no inputs or next)
         if (abs_ts_.only_cur(ax) && reached_k == 0) {
+          // std::cout << "Added to init: " << msat_to_smtlib2_term(msat_env_, ax) << std::endl;
           // only add axioms to init if the counterexample is length 1
           abs_ts_.add_init(ax);
           cnt++;
@@ -470,11 +484,14 @@ void IC3Array::print_witness(msat_model model,
   }
 
   msat_decl readfun;
+  msat_type idx_type;
   for (auto arr : arrays) {
     readfun = read_ufs.at(msat_type_repr(msat_term_get_type(arr)));
 
     TermSet indices;
-    string typestr = msat_type_repr(orig_types.at(arr));
+    bool is_array = msat_is_array_type(msat_env_, orig_types.at(arr), &idx_type, nullptr);
+    assert(is_array);
+    string typestr = msat_type_repr(idx_type);
     for (auto i : aae.all_indices().at(typestr)) {
       for (size_t k = 0; k <= reached_k; ++k) {
         indices.insert(msat_model_eval(model, un_.at_time(i, k)));

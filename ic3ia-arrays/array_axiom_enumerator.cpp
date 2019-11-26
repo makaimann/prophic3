@@ -16,13 +16,14 @@ msat_term ArrayAxiomEnumerator::implies(msat_term antecedent, msat_term conseque
 }
 
 msat_term ArrayAxiomEnumerator::get_finite_domain_lambda(msat_term arr) {
-  // only need to check one of the arrays
-  msat_type _type = abstractor_.orig_types().at(arr);
+  msat_type orig_idx_type;
+  bool is_array = msat_is_array_type(msat_env_, abstractor_.orig_types().at(arr),
+                                     &orig_idx_type, nullptr);
   size_t width;
   msat_term lambda;
   MSAT_MAKE_ERROR_TERM(lambda);
-  if (msat_is_bv_type(msat_env_, _type, &width)) {
-    lambda = get_lambda_from_type(_type);
+  if (msat_is_bv_type(msat_env_, orig_idx_type, &width)) {
+    lambda = get_lambda_from_type(orig_idx_type);
   }
   return lambda;
 }
@@ -69,12 +70,14 @@ ic3ia::TermSet ArrayAxiomEnumerator::init_eq_axioms()
   msat_type orig_idx_type;
   msat_type arr_type;
   string arr_typestr;
+  bool is_array;
   for (auto e : init_equalities_)
   {
     lhs = msat_term_get_arg(e, 0);
-    orig_idx_type = orig_types.at(lhs);
     arr_type = msat_term_get_type(lhs);
     arr_typestr = msat_type_repr(arr_type);
+    is_array = msat_is_array_type(msat_env_, orig_types.at(lhs), &orig_idx_type, nullptr);
+    assert(is_array);
     readfun = read_ufs.at(arr_typestr);
     enumerate_eq_axioms(axioms, readfun, orig_idx_type, e, witnesses.at(e),
                         curr_indices_.at(msat_type_repr(orig_idx_type)),
@@ -96,12 +99,14 @@ ic3ia::TermSet ArrayAxiomEnumerator::trans_eq_axioms()
   msat_type orig_idx_type;
   msat_type arr_type;
   string arr_typestr;
+  bool is_array;
   for (auto e : trans_equalities_)
   {
     lhs = msat_term_get_arg(e, 0);
-    orig_idx_type = orig_types.at(lhs);
     arr_type = msat_term_get_type(lhs);
     arr_typestr = msat_type_repr(arr_type);
+    is_array = msat_is_array_type(msat_env_, orig_types.at(lhs), &orig_idx_type, nullptr);
+    assert(is_array);
     readfun = read_ufs.at(arr_typestr);
     enumerate_eq_axioms(axioms, readfun, orig_idx_type, e, witnesses.at(e),
                         all_indices_.at(msat_type_repr(orig_idx_type)),
@@ -123,12 +128,14 @@ ic3ia::TermSet ArrayAxiomEnumerator::prop_eq_axioms()
   msat_type orig_idx_type;
   msat_type arr_type;
   string arr_typestr;
+  bool is_array;
   for (auto e : prop_equalities_)
   {
     lhs = msat_term_get_arg(e, 0);
-    orig_idx_type = orig_types.at(lhs);
     arr_type = msat_term_get_type(lhs);
     arr_typestr = msat_type_repr(arr_type);
+    is_array = msat_is_array_type(msat_env_, orig_types.at(lhs), &orig_idx_type, nullptr);
+    assert(is_array);
     readfun = read_ufs.at(arr_typestr);
     enumerate_eq_axioms(axioms, readfun, orig_idx_type, e, witnesses.at(e),
                         all_indices_.at(msat_type_repr(orig_idx_type)),
@@ -236,13 +243,15 @@ vector<TermSet> ArrayAxiomEnumerator::equality_axioms_all_indices(Unroller &un,
   msat_term lhs;
   msat_decl readfun;
   msat_type orig_idx_type;
+  bool is_array;
   vector<TermSet> equalities_vec({init_equalities_, trans_equalities_});
   for (auto equalities : equalities_vec)
   {
     for (auto e : equalities) {
       lhs = msat_term_get_arg(e, 0);
       readfun = read_ufs.at(msat_type_repr(msat_term_get_type(lhs)));
-      orig_idx_type = orig_types.at(lhs);
+      is_array = msat_is_array_type(msat_env_, orig_types.at(lhs), &orig_idx_type, nullptr);
+      assert(is_array);
 
       for (size_t i = 0; i < k; i++) {
         msat_term e_i = un.at_time(e, i);
