@@ -54,6 +54,8 @@ struct Options {
     bool check_witness;
     std::string witness_check_script;
     bool ltl_single_fairness_sorted;
+    // Added by Makai
+    bool use_uf_for_arr_eq;
 
     Options()
     {
@@ -84,6 +86,7 @@ struct Options {
         check_witness = false;
         witness_check_script = "";
         ltl_single_fairness_sorted = true;
+        use_uf_for_arr_eq = true;
     }
 };
 

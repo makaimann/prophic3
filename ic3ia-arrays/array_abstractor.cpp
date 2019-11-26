@@ -7,8 +7,8 @@ using namespace ic3ia;
 
 namespace ic3ia_array {
 
-ArrayAbstractor::ArrayAbstractor(const TransitionSystem &ts)
-    : msat_env_(ts.get_env()), conc_ts_(ts), abs_ts_(msat_env_) {
+ArrayAbstractor::ArrayAbstractor(const TransitionSystem &ts, bool use_eq_uf)
+  : msat_env_(ts.get_env()), conc_ts_(ts), use_eq_uf_(use_eq_uf), abs_ts_(msat_env_) {
   do_abstraction();
 }
 
@@ -87,6 +87,8 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
     TermMap &witnesses;
     std::unordered_map<std::string, msat_decl> &read_ufs;
     std::unordered_map<std::string, msat_decl> & store_ufs;
+    std::unordered_map<std::string, msat_decl> & equality_ufs;
+    bool use_eq_uf;
     TermTypeMap &orig_types;
     TermSet &const_arrs;
     TermSet &stores;
@@ -97,13 +99,16 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
     const TransitionSystem &conc_ts;
     AbstractionData(TermSet &i, TermMap &nv, TermSet &rv, TermMap &w,
                     std::unordered_map<std::string, msat_decl> &r,
-                    std::unordered_map<std::string, msat_decl> &suf, TermTypeMap &o,
-                    TermSet &ca, TermSet &s, TermMap &c, unsigned int &ri,
-                    unsigned int &wi, std::unordered_map<std::string, msat_type> & tm,
+                    std::unordered_map<std::string, msat_decl> &suf,
+                    std::unordered_map<std::string, msat_decl> &euf,
+                    bool ueuf, TermTypeMap &o, TermSet &ca, TermSet &s,
+                    TermMap &c, unsigned int &ri, unsigned int &wi,
+                    std::unordered_map<std::string, msat_type> & tm,
                     const TransitionSystem &cts)
         : indices(i), new_vars(nv), removed_vars(rv), witnesses(w), read_ufs(r),
-          store_ufs(suf), orig_types(o), const_arrs(ca), stores(s), cache(c),
-          read_id(ri), write_id(wi), type_map(tm), conc_ts(cts) {}
+          store_ufs(suf), equality_ufs(euf), use_eq_uf(ueuf), orig_types(o),
+          const_arrs(ca), stores(s), cache(c), read_id(ri), write_id(wi),
+          type_map(tm), conc_ts(cts) {}
   };
 
   auto visit = [](msat_env e, msat_term t, int preorder,
@@ -215,7 +220,34 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
         msat_term lhs_cache = d->cache.at(lhs);
         msat_term rhs_cache = d->cache.at(rhs);
 
-        msat_term arr_eq = msat_make_eq(e, lhs_cache, rhs_cache);
+        msat_term arr_eq;
+        if (d->use_eq_uf)
+        {
+          msat_type abs_type = msat_term_get_type(lhs_cache);
+          std::string abs_typestr = msat_type_repr(abs_type);
+          msat_decl eqfun;
+          if (d->equality_ufs.find(abs_typestr) == d->equality_ufs.end())
+          {
+            std::string eqname = "arreq_" + std::to_string(d->equality_ufs.size());
+            msat_type param_types[2] = {abs_type, abs_type};
+            msat_type funtype = msat_get_function_type(e, &param_types[0], 2,
+                                                       msat_get_bool_type(e));
+            eqfun = msat_declare_function(e, eqname.c_str(), funtype);
+            d->equality_ufs[abs_typestr] = eqfun;
+          }
+          else
+          {
+            eqfun = d->equality_ufs.at(abs_typestr);
+          }
+
+          msat_term cached_args[2] = {lhs_cache, rhs_cache};
+          arr_eq = msat_make_uf(e, eqfun, cached_args);
+        }
+        else
+        {
+          arr_eq = msat_make_eq(e, lhs_cache, rhs_cache);
+        }
+
         d->cache[t] = arr_eq;
 
         // Note: arrays should have already been flattened
@@ -344,8 +376,9 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
   };
 
   AbstractionData data = AbstractionData(
-      indices_, new_vars_, removed_vars_, witnesses_, read_ufs_, store_ufs_,
-      orig_types_, const_arrs_, stores_, cache_, read_id_, write_id_, type_map_, conc_ts_);
+      indices_, new_vars_, removed_vars_, witnesses_, read_ufs_, store_ufs_, equality_ufs_,
+      use_eq_uf_, orig_types_, const_arrs_, stores_, cache_, read_id_, write_id_,
+      type_map_, conc_ts_);
   msat_visit_term(msat_env_, term, visit, &data);
   return data.cache.at(term);
 }
