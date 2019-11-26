@@ -40,7 +40,7 @@ TermList conjunctive_partition(msat_env e, msat_term top)
   return partition;
 }
 
-msat_result IC3Array::run_bmc(int k, TermSet & untimed_axioms, TermSet & timed_axioms)
+msat_result IC3Array::check_bmc_k(int k, TermSet & untimed_axioms, TermSet & timed_axioms)
 {
   msat_config cfg = get_config(FULL_MODEL);
   msat_env bmc_env = msat_create_shared_env(cfg, abs_ts_.get_env());
