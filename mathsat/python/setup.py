@@ -1,7 +1,7 @@
-#!/usr/bin/env python 
+#!/usr/bin/env python
 
 import os, sys
-from distutils.core import setup, Extension
+from setuptools import setup, Extension
 
 # adjust the following variables to customize your build
 extra_compile_args = []
@@ -11,9 +11,11 @@ extra_library_dirs = []
 
 MATHSAT_DIR = '..'
 
-libraries = ['mathsat', 'gmpxx', 'gmp']
+libraries = ['mathsat']
 if sys.platform == 'win32':
-    libraries += ['psapi']
+    libraries += ['psapi', 'mpir']
+else:
+    libraries += ['gmpxx', 'gmp']
 
 setup(name='mathsat',
       version='0.1',
