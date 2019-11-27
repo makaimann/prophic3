@@ -68,6 +68,10 @@ public:
                     msat_term predabs, TermSet &newpreds);
 
 private:
+    bool run(msat_env env, msat_term trans,
+             const std::vector<TermList> &cex,
+             msat_term predabs, TermSet &newpreds);
+
     const TransitionSystem &ts_;
     ///< the input transition system
     
@@ -81,6 +85,12 @@ private:
     
     msat_env minsolver_;
     ///< the solver for predicate minimization
+
+    msat_env minsolver_toplevel_propagation_;
+    ///< HACK a second solver for predicate minimization
+    ///< added by Makai as a workaround for a possible
+    ///< MathSAT bug (getting different results)
+    ///< too expensive to use as the main solver
 };
 
 
