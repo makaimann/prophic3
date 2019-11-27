@@ -89,6 +89,8 @@ public:
 
     // maps a string of an array type to an uninterpreted type
     std::unordered_map<std::string, msat_type> type_map_;
+    // maps abstract arrays to their write UF
+    TermDeclMap write_ufs_;
 
     ic3ia::TermSet finite_domain_lambdas_;
 };
