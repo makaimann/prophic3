@@ -285,4 +285,27 @@ Options get_options(int argc, const char **argv)
     return ret;
 }
 
+void get_free_vars(msat_env env, msat_term term, TermSet & out_free_vars)
+{
+  struct Data {
+    TermSet &free_vars;
+    Data(TermSet &fv) : free_vars(fv){};
+  };
+  auto visit = [](msat_env e, msat_term t, int preorder,
+                  void *data) -> msat_visit_status {
+                 Data *d = static_cast<Data *>(data);
+                 // a variable is a term with no children and no built-in
+                 // interpretation
+                 if (preorder && msat_term_arity(t) == 0 &&
+                     msat_decl_get_tag(e, msat_term_get_decl(t)) == MSAT_TAG_UNKNOWN &&
+                     !msat_term_is_number(e, t)) {
+                   d->free_vars.insert(t);
+                 }
+                 return MSAT_VISIT_PROCESS;
+               };
+
+  Data data(out_free_vars);
+  msat_visit_term(env, term, visit, &data);
+}
+
 }

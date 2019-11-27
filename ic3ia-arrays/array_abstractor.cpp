@@ -1,6 +1,7 @@
 #include "assert.h"
 #include <algorithm>
 
+#include "utils.h"
 #include "array_abstractor.h"
 
 using namespace ic3ia;
@@ -19,6 +20,7 @@ ArrayAbstractor::~ArrayAbstractor()
 void ArrayAbstractor::do_abstraction()
 {
   msat_term new_init = abstract(conc_ts_.init());
+  msat_term new_trans = abstract(conc_ts_.trans());
   msat_term new_prop = abstract(conc_ts_.prop());
 
   // add all old state elements unless they've been removed
@@ -29,12 +31,31 @@ void ArrayAbstractor::do_abstraction()
     }
   }
 
-  msat_term new_trans = abstract(conc_ts_.trans());
+  // need to promote inputs that occur in new_init / new_prop to states
+  TermSet free_vars;
+  get_free_vars(msat_env_, new_init, free_vars);
+  get_free_vars(msat_env_, new_prop, free_vars);
+  for (auto fv : free_vars)
+  {
+    if (new_vars_.find(fv) == new_vars_.end())
+    {
+      msat_type fv_type = msat_term_get_type(fv);
+      std::string name = msat_term_repr(fv);
+      msat_decl decl_fvN = msat_declare_function(msat_env_,
+                                                 (name + ".next").c_str(),
+                                                 fv_type);
+      msat_term fvN = msat_make_constant(msat_env_, decl_fvN);
+      new_vars_[fv] = fvN;
+      // map next to type
+      orig_types_[fvN] = fv_type;
+    }
+  }
 
   abs_ts_.initialize(new_vars_, new_init, new_trans, new_prop,
                      conc_ts_.live_prop());
 
   // make const arrays frozenvars
+  // if they're not statevars, this will simplify to true
   msat_term abs_ca;
   for (auto ca : const_arrs_)
   {
@@ -159,21 +180,17 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
         // keep track of the original index sort
         d->orig_types[arr_int] = arridxtype;
 
-        msat_decl decl_arrintN = msat_declare_function(
-                                                       e, (name + ".next").c_str(), msat_get_integer_type(e));
-        msat_term arr_intN = msat_make_constant(e, decl_arrintN);
-        d->new_vars[arr_int] = arr_intN;
-        // use the same read function for the next-state
-        // added to map for convenience
-        d->read_ufs[arr_intN] = readfun;
-        // map next to type
-        d->orig_types[arr_intN] = arridxtype;
-
         if (d->conc_ts.is_statevar(t))
         {
-          // if it wasn't already a state variable, then we don't
-          // want to overwrite the cache entry
-          // because next(input) -> input
+          msat_decl decl_arrintN = msat_declare_function(
+                                                         e, (name + ".next").c_str(), msat_get_integer_type(e));
+          msat_term arr_intN = msat_make_constant(e, decl_arrintN);
+          d->new_vars[arr_int] = arr_intN;
+          // use the same read function for the next-state
+          // added to map for convenience
+          d->read_ufs[arr_intN] = readfun;
+          // map next to type
+          d->orig_types[arr_intN] = arridxtype;
           d->cache[d->conc_ts.next(t)] = arr_intN;
         }
 
@@ -330,7 +347,7 @@ void ArrayAbstractor::create_lambdas() {
     msat_type _type = elem.second;
     if (std::find(types.begin(), types.end(), _type) == types.end()) {
       types.push_back(_type);
-      std::string name = "arrlambda_" + std::to_string(lambda_id_);
+      std::string name = "arrlambda_" + std::to_string(lambda_id_++);
       msat_decl lambda_decl = msat_declare_function(
           msat_env_, name.c_str(), msat_get_integer_type(msat_env_));
       msat_term lambda = msat_make_constant(msat_env_, lambda_decl);
@@ -359,8 +376,11 @@ void ArrayAbstractor::create_lambdas() {
       abs_ts_.add_trans(abs_ts_.next(alldiff));
 
       // store original sort (might be the same if it's already an integer)
-      orig_types_[lambda] = _type;
-
+      if (orig_types_.find(lambda) == orig_types_.end())
+      {
+        orig_types_[lambda] = _type;
+      }
+      
       // if it's an infinite domain index, can just add it to index sets
       // otherwise keep it separate
       // for now, only handle int and bit-vector

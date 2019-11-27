@@ -31,6 +31,7 @@ msat_term ArrayAxiomEnumerator::get_lambda_from_type(msat_type _type)
 {
   // have to do this because types aren't hashable
   msat_term lambda;
+  MSAT_MAKE_ERROR_TERM(lambda);
   TermTypeMap &orig_types = abstractor_.orig_types();
   for (auto l : abstractor_.finite_domain_lambdas()) {
     if (msat_type_equals(orig_types.at(l), _type)) {
