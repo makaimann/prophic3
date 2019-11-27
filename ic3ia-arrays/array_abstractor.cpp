@@ -1,6 +1,7 @@
 #include "assert.h"
 #include <algorithm>
 
+#include "utils.h"
 #include "array_abstractor.h"
 
 using namespace ic3ia;
@@ -19,6 +20,7 @@ ArrayAbstractor::~ArrayAbstractor()
 void ArrayAbstractor::do_abstraction()
 {
   msat_term new_init = abstract(conc_ts_.init());
+  msat_term new_trans = abstract(conc_ts_.trans());
   msat_term new_prop = abstract(conc_ts_.prop());
 
   // add all old state elements unless they've been removed
@@ -29,12 +31,31 @@ void ArrayAbstractor::do_abstraction()
     }
   }
 
-  msat_term new_trans = abstract(conc_ts_.trans());
+  // need to promote inputs that occur in new_init / new_prop to states
+  TermSet free_vars;
+  get_free_vars(msat_env_, new_init, free_vars);
+  get_free_vars(msat_env_, new_prop, free_vars);
+  for (auto fv : free_vars)
+  {
+    if (new_vars_.find(fv) == new_vars_.end())
+    {
+      msat_type fv_type = msat_term_get_type(fv);
+      std::string name = msat_term_repr(fv);
+      msat_decl decl_fvN = msat_declare_function(msat_env_,
+                                                 (name + ".next").c_str(),
+                                                 fv_type);
+      msat_term fvN = msat_make_constant(msat_env_, decl_fvN);
+      new_vars_[fv] = fvN;
+      // map next to type
+      orig_types_[fvN] = fv_type;
+    }
+  }
 
   abs_ts_.initialize(new_vars_, new_init, new_trans, new_prop,
                      conc_ts_.live_prop());
 
   // make const arrays frozenvars
+  // if they're not statevars, this will simplify to true
   msat_term abs_ca;
   for (auto ca : const_arrs_)
   {
@@ -184,19 +205,15 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
         // keep track of the original index sort
         d->orig_types[arr_abs] = _type;
 
-        msat_decl decl_arrabsN = msat_declare_function(e,
-                                                       (name + ".next").c_str(),
-                                                       abs_type);
-        msat_term arr_absN = msat_make_constant(e, decl_arrabsN);
-        d->new_vars[arr_abs] = arr_absN;
-        // map next to type
-        d->orig_types[arr_absN] = _type;
-
         if (d->conc_ts.is_statevar(t))
         {
-          // if it wasn't already a state variable, then we don't
-          // want to overwrite the cache entry
-          // because next(input) -> input
+          msat_decl decl_arrabsN = msat_declare_function(e,
+                                                         (name + ".next").c_str(),
+                                                         abs_type);
+          msat_term arr_absN = msat_make_constant(e, decl_arrabsN);
+          d->new_vars[arr_abs] = arr_absN;
+          // map next to type
+          d->orig_types[arr_absN] = _type;
           d->cache[d->conc_ts.next(t)] = arr_absN;
         }
       }
