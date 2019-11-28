@@ -87,6 +87,9 @@ public:
     // removed variables from concrete transition system -- internal use only
     ic3ia::TermSet removed_vars_;
 
+    // maps a string of an array type to an uninterpreted type
+    std::unordered_map<std::string, msat_type> type_map_;
+
     ic3ia::TermSet finite_domain_lambdas_;
 };
 
