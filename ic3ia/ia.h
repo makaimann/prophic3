@@ -120,7 +120,10 @@ public:
     ///< abstraction
 
 private:
-    void extract_predicates(msat_env env);
+    msat_result check_abstract_cex(msat_env interpolator_, const std::vector<TermList> & cex);
+    ///< checks if an abstract counterexample is spurious
+
+    bool extract_predicates(msat_env env);
     void minimize_predicates(const std::vector<TermList> &cex);
     
     const TransitionSystem &ts_;
@@ -128,9 +131,15 @@ private:
 
     Abstractor &abs_;
     ///< the abstractor
-    
+
     msat_env solver_;
-    ///< the interpolating solver
+    ///< the main interpolating solver
+
+    msat_env solver_unsat_only_;
+    ///< another interpolating solver
+    ///< this one is configured with eq_propagation=false
+    ///< which can only be trusted for unsat, but is better
+    ///< at getting interpolants
 
     Unroller un_;
     ///< unroller for building the BMC problem
