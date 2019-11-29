@@ -33,8 +33,12 @@ namespace ic3ia_array
     msat_env msat_env_;
     const ic3ia::TransitionSystem & conc_ts_;
     ic3ia::TransitionSystem abs_ts_;
-    const ic3ia::Options & opts_;
     ic3ia::LiveEncoder &l2s_;
+    const ic3ia::Options & opts_;
+
+    ArrayFlattener af_;
+    ArrayAbstractor aa_;
+    ArrayAxiomEnumerator aae_;
 
     ic3ia::Unroller un_;
     msat_env refiner_;

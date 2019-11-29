@@ -43,9 +43,17 @@ TermList conjunctive_partition(msat_env e, msat_term top)
 IC3Array::IC3Array(const ic3ia::TransitionSystem &ts, const ic3ia::Options &opts,
 		   ic3ia::LiveEncoder &l2s, unsigned int verbosity)
   : msat_env_(ts.get_env()), conc_ts_(ts), abs_ts_(msat_env_), l2s_(l2s),
-    opts_(opts), un_(abs_ts_) {
+    opts_(opts), af_(conc_ts_),
+    aa_(af_.flatten_transition_system(), opts_.use_uf_for_arr_eq),
+    aae_(aa_.abstract_transition_system(), aa_), un_(abs_ts_) {
+
   ic3ia::Logger & l = ic3ia::Logger::get();
   l.set_verbosity(verbosity);
+
+  // set abs_ts_ to the abstract transition system
+  abs_ts_ = aa_.abstract_transition_system();
+  assert(abs_ts_.only_cur(abs_ts_.init()));
+  assert(abs_ts_.only_cur(abs_ts_.prop()));
 
   msat_config cfg = get_config(FULL_MODEL);
   refiner_ = msat_create_shared_env(cfg, abs_ts_.get_env());
@@ -62,21 +70,9 @@ IC3Array::~IC3Array()
   msat_destroy_env(refiner_);
   msat_destroy_env(reducer_);
 }
-  
+
 msat_truth_value IC3Array::prove()
 {
-  assert(conc_ts_.only_cur(conc_ts_.init()));
-  assert(conc_ts_.only_cur(conc_ts_.prop()));
-  ArrayFlattener af(conc_ts_);
-  abs_ts_ = af.flatten_transition_system();
-  assert(abs_ts_.only_cur(abs_ts_.init()));
-  assert(abs_ts_.only_cur(abs_ts_.prop()));
-  ArrayAbstractor aa(abs_ts_, opts_.use_uf_for_arr_eq);
-  abs_ts_ = aa.abstract_transition_system();
-  assert(abs_ts_.only_cur(abs_ts_.init()));
-  assert(abs_ts_.only_cur(abs_ts_.prop()));
-  ArrayAxiomEnumerator aae =
-      ArrayAxiomEnumerator(abs_ts_, aa);
 
   msat_truth_value res = MSAT_UNDEF;
 
@@ -86,7 +82,7 @@ msat_truth_value IC3Array::prove()
   //       but if it is needed and we wait, we'll have to enumerate a lot axioms
   //       before we even get to prophecy vars
   ProphecyRefiner pr(abs_ts_.get_env(),
-                     aae.orig_indices());
+                     aae_.orig_indices());
 
   HistoryRefiner hr(abs_ts_);
 
@@ -95,7 +91,7 @@ msat_truth_value IC3Array::prove()
   // update variables and type maps
   const TermMap & next_proph_vars = pr.next_proph_vars();
   const TermMap & proph_targets = pr.proph_targets();
-  TermTypeMap & orig_types = aa.orig_types();
+  TermTypeMap & orig_types = aa_.orig_types();
   msat_type _type;
 
   msat_term nv;
@@ -109,7 +105,7 @@ msat_truth_value IC3Array::prove()
     // update type maps and add as index
     _type = orig_types.at(proph_targets.at(v));
     orig_types[v] = _type;
-    aae.add_index(_type, v);
+    aae_.add_index(_type, v);
   }
 
   // set the new property
@@ -176,9 +172,9 @@ msat_truth_value IC3Array::prove()
       msat_term timed_axiom;
       msat_term val;
       std::vector<TermSet> axiom_sets = {
-          aae.init_eq_axioms(), aae.trans_eq_axioms(),
-          aae.prop_eq_axioms(), aae.const_array_axioms(),
-          aae.store_axioms()};
+          aae_.init_eq_axioms(), aae_.trans_eq_axioms(),
+          aae_.prop_eq_axioms(), aae_.const_array_axioms(),
+          aae_.store_axioms()};
 
       TermSet violated_axioms;
 
@@ -221,9 +217,9 @@ msat_truth_value IC3Array::prove()
       if (!found_untimed_axioms)
       {
         vector<vector<TermSet>> timed_axioms;
-        timed_axioms.push_back(aae.equality_axioms_all_indices(un_, reached_k));
-        timed_axioms.push_back(aae.store_axioms_all_indices(un_, reached_k));
-        timed_axioms.push_back(aae.const_array_axioms_all_indices(un_, reached_k));
+        timed_axioms.push_back(aae_.equality_axioms_all_indices(un_, reached_k));
+        timed_axioms.push_back(aae_.store_axioms_all_indices(un_, reached_k));
+        timed_axioms.push_back(aae_.const_array_axioms_all_indices(un_, reached_k));
 
         for(auto axiom_vec : timed_axioms)
         {
@@ -248,7 +244,7 @@ msat_truth_value IC3Array::prove()
       }
 
       if (!found_untimed_axioms & !found_timed_axioms) {
-        print_witness(model, reached_k, aae);
+        print_witness(model, reached_k, aae_);
         // TODO: Use real exceptions
         std::cout << "It looks like there's a concrete counter-example (or some axioms are missing)" << std::endl;
         return MSAT_FALSE;
@@ -343,7 +339,7 @@ msat_truth_value IC3Array::prove()
       msat_term tmp_idx;
       for (auto ax : *(timed_axioms))
       {
-        tmp_idx = aae.get_index(ax);
+        tmp_idx = aae_.get_index(ax);
         indices_to_refine[un_.untime(tmp_idx)] = time_of_index.at(ax);
       }
 
@@ -393,7 +389,7 @@ msat_truth_value IC3Array::prove()
         // update type maps and add as index
         _type = orig_types.at(proph_targets.at(v));
         orig_types[v] = _type;
-        aae.add_index(_type, v);
+        aae_.add_index(_type, v);
       }
 
       // set the new property
@@ -420,9 +416,9 @@ int IC3Array::witness(std::vector<TermList> & out)
 
 void IC3Array::print_witness(msat_model model,
                              size_t reached_k,
-                             ArrayAxiomEnumerator &aae) {
+                             ArrayAxiomEnumerator &aae_) {
 
-  ArrayAbstractor &abstractor = aae.get_abstractor();
+  ArrayAbstractor &abstractor = aae_.get_abstractor();
   TermTypeMap &orig_types = abstractor.orig_types();
 
   std::cout << "+++++++++++++++++++++ FAILED +++++++++++++++++++" << std::endl;
@@ -467,7 +463,7 @@ void IC3Array::print_witness(msat_model model,
 
     TermSet indices;
     string typestr = msat_type_repr(orig_types.at(arr));
-    for (auto i : aae.all_indices().at(typestr)) {
+    for (auto i : aae_.all_indices().at(typestr)) {
       for (size_t k = 0; k <= reached_k; ++k) {
         indices.insert(msat_model_eval(model, un_.at_time(i, k)));
       }
@@ -565,7 +561,7 @@ bool IC3Array::reduce_axioms(int k, const TermSet & untimed_axioms,
   }
   msat_assert_formula(reducer_,
                       un_.at_time(msat_make_not(reducer_, abs_ts_.prop()), k));
-  
+
   auto lbl = [=](msat_term p) -> msat_term
              {
                std::ostringstream buf;
@@ -599,7 +595,7 @@ bool IC3Array::reduce_axioms(int k, const TermSet & untimed_axioms,
     labels.push_back(l);
     msat_assert_formula(reducer_, msat_make_iff(reducer_, l, a));
   }
-  
+
   msat_result s = msat_solve_with_assumptions(reducer_, &labels[0], labels.size());
   if (s == MSAT_UNSAT) {
     size_t ucsz = 0;
@@ -626,7 +622,7 @@ bool IC3Array::reduce_axioms(int k, const TermSet & untimed_axioms,
         out_timed.insert(a);
       }
     }
-    
+
     return true;
   } else {
     std::cout << "FAILED REDUCING" << std::endl;
