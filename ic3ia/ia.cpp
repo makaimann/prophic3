@@ -319,10 +319,6 @@ PredRefMinimizer::~PredRefMinimizer()
     if (!MSAT_ERROR_ENV(minsolver_)) {
         msat_destroy_env(minsolver_);
     }
-    if (!MSAT_ERROR_ENV(minsolver_toplevel_propagation_))
-    {
-        msat_destroy_env(minsolver_toplevel_propagation_);
-    }
 }
 
 
