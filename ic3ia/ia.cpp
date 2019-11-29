@@ -300,17 +300,6 @@ PredRefMinimizer::PredRefMinimizer(const TransitionSystem &ts,
     }
     minsolver_ = msat_create_shared_env(cfg, ts_.get_env());
     msat_destroy_config(cfg);
-
-    msat_config cfg_toplevel_propagation = get_config(NO_MODEL);
-    if (!opts.trace.empty()) {
-      std::string name = opts.trace + ".minpreds.smt2";
-      msat_set_option(cfg_toplevel_propagation, "debug.api_call_trace", "1");
-      msat_set_option(cfg_toplevel_propagation, "debug.api_call_trace_filename", name.c_str());
-    }
-    msat_set_option(cfg_toplevel_propagation, "preprocessor.toplevel_propagation", "true");
-    minsolver_toplevel_propagation_ = msat_create_shared_env(cfg_toplevel_propagation,
-                                                             minsolver_);
-    msat_destroy_config(cfg_toplevel_propagation);
 }
 
 
@@ -326,23 +315,7 @@ bool PredRefMinimizer::operator()(msat_term trans,
                                   const std::vector<TermList> &cex,
                                   msat_term predabs, TermSet &newpreds)
 {
-    // HACK Added by Makai to handle a possible MathSAT bug
-    //      gets different results in incremental vs non-incremental
-    //      calls without toplevel propagation enabled.
-    if (!run(minsolver_, trans, cex, predabs, newpreds))
-    {
-      logger(1) << "predicate minimization failed...retry with toplevel propagation" << endlog;
-      return run(minsolver_toplevel_propagation_,
-                 trans, cex, predabs, newpreds);
-    }
-    return true;
-}
-
-
-bool PredRefMinimizer::run(msat_env env, msat_term trans,
-                           const std::vector<TermList> &cex,
-                           msat_term predabs, TermSet &newpreds)
-{
+    msat_env env = minsolver_;
     msat_reset_env(env);
 
     msat_term atrans = abs_.abstract(trans);
