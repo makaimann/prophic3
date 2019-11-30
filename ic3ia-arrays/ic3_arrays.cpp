@@ -311,42 +311,10 @@ msat_truth_value IC3Array::prove()
       for (auto ax : *(timed_axioms))
       {
         tmp_idx = aae_.get_index(ax);
-        indices_to_refine[un_.untime(tmp_idx)] = time_of_index.at(ax);
+        indices_to_refine[un_.untime(tmp_idx)] = reached_k - time_of_index.at(ax);
       }
 
-      std::cout << "Found " << indices_to_refine.size() << " indices which need to be refined." << std::endl;
-      for (auto elem : indices_to_refine)
-      {
-        std::cout << "\t" << msat_to_smtlib2_term(msat_env_, elem.first) << ":" << elem.second << std::endl;
-      }
-
-      // just the history variables that need to be refined over
-      TermSet hist_vars_to_refine;
-      // all created history variables (including intermediate ones)
-      TermSet all_created_hist_vars;
-      msat_type _type;
-      for (auto elem : indices_to_refine)
-      {
-        msat_term v = hr_.hist_var(elem.first, reached_k - elem.second, all_created_hist_vars);
-        // update type maps -- need to keep track of this for proph var indices
-        _type = orig_types.at(elem.first);
-        orig_types[v] = _type;
-        hist_vars_to_refine.insert(v);
-      }
-
-      std::cout << "Created the following history variables:" << std::endl;
-      for (auto v : hist_vars_to_refine)
-      {
-        std::cout << "\t" << msat_to_smtlib2_term(msat_env_, v) << std::endl;
-      }
-
-      const TermMap & next_hist_vars = hr_.next_hist_vars();
-      const TermMap & hist_trans = hr_.hist_trans();
-      for (auto v : all_created_hist_vars)
-      {
-        abs_ts_.add_statevar(v, next_hist_vars.at(v));
-        abs_ts_.add_trans(hist_trans.at(v));
-      }
+      TermSet hist_vars_to_refine = add_history_vars(indices_to_refine);
 
       // create prophecy variables for these history variables
       add_frozen_proph_vars(hist_vars_to_refine);
@@ -442,6 +410,47 @@ void IC3Array::add_frozen_proph_vars(const ic3ia::TermSet & proph_targets)
                                 msat_make_not(msat_env_, equalities),
                                 abs_ts_.prop()),
                    abs_ts_.live_prop());
+}
+
+TermSet IC3Array::add_history_vars(const std::unordered_map<msat_term, size_t> targets)
+{
+  std::cout << "Found " << targets.size() << " indices which need to be refined." << std::endl;
+  for (auto elem : targets)
+  {
+    std::cout << "\t" << msat_to_smtlib2_term(msat_env_, elem.first) << ":" << elem.second << std::endl;
+  }
+
+  TermTypeMap & orig_types = aa_.orig_types();
+
+  // just the history variables that need to be refined over
+  TermSet hist_vars_to_refine;
+  // all created history variables (including intermediate ones)
+  TermSet all_created_hist_vars;
+  msat_type _type;
+  for (auto elem : targets)
+  {
+    msat_term v = hr_.hist_var(elem.first, elem.second, all_created_hist_vars);
+    // update type maps -- need to keep track of this for proph var indices
+    _type = orig_types.at(elem.first);
+    orig_types[v] = _type;
+    hist_vars_to_refine.insert(v);
+  }
+
+  std::cout << "Created the following history variables:" << std::endl;
+  for (auto v : hist_vars_to_refine)
+  {
+    std::cout << "\t" << msat_to_smtlib2_term(msat_env_, v) << std::endl;
+  }
+
+  const TermMap & next_hist_vars = hr_.next_hist_vars();
+  const TermMap & hist_trans = hr_.hist_trans();
+  for (auto v : all_created_hist_vars)
+  {
+    abs_ts_.add_statevar(v, next_hist_vars.at(v));
+    abs_ts_.add_trans(hist_trans.at(v));
+  }
+
+  return hist_vars_to_refine;
 }
 
 void IC3Array::print_witness(msat_model model,

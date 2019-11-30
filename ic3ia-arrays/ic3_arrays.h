@@ -59,6 +59,9 @@ namespace ic3ia_array
     /* Creates frozen prophecy variables with a target */
     void add_frozen_proph_vars(const ic3ia::TermSet & proph_targets);
 
+    /* Creates history variables for various delays */
+    ic3ia::TermSet add_history_vars(const std::unordered_map<msat_term, size_t> targets);
+
     void print_witness(msat_model model,
                        size_t reached_k,
                        ArrayAxiomEnumerator &aae);
