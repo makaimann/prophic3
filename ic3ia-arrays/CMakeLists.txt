@@ -25,7 +25,6 @@ add_executable(ic3ia-arrays
   "${PROJECT_SOURCE_DIR}/array_abstractor.cpp"
   "${PROJECT_SOURCE_DIR}/array_axiom_enumerator.cpp"
   "${PROJECT_SOURCE_DIR}/ic3_arrays.cpp"
-  "${PROJECT_SOURCE_DIR}/prophecy_refiner.cpp"
   "${PROJECT_SOURCE_DIR}/history_refiner.cpp"
   "${PROJECT_SOURCE_DIR}/ic3ia-arrays.cpp"
   )

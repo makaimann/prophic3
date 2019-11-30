@@ -75,44 +75,16 @@ msat_truth_value IC3Array::prove()
 {
 
   msat_truth_value res = MSAT_UNDEF;
-
-  // TODO: figure out when the best place to "prophesize" the property is
-  //       I have this intuition that we should just do it immediately
-  //       because it shouldn't make proving too much harder if it's not needed
-  //       but if it is needed and we wait, we'll have to enumerate a lot axioms
-  //       before we even get to prophecy vars
-  ProphecyRefiner pr(abs_ts_.get_env(),
-                     aae_.orig_indices());
-
   HistoryRefiner hr(abs_ts_);
 
-  TermSet proph_vars = pr.prophesize_prop(abs_ts_.prop());
+  // heuristic -- add prophecy variables for indices in property up front
+  TermSet prop_indices = detect_indices(abs_ts_.prop());
+  add_frozen_proph_vars(prop_indices);
 
-  // update variables and type maps
-  const TermMap & next_proph_vars = pr.next_proph_vars();
-  const TermMap & proph_targets = pr.proph_targets();
-  TermTypeMap & orig_types = aa_.orig_types();
-  msat_type _type;
-
-  msat_term nv;
-  for (auto v : proph_vars)
-  {
-    nv = next_proph_vars.at(v);
-    abs_ts_.add_statevar(v, nv);
-    // frozenvar: proph' = proph
-    abs_ts_.add_trans(msat_make_eq(msat_env_, nv, v));
-
-    // update type maps and add as index
-    _type = orig_types.at(proph_targets.at(v));
-    orig_types[v] = _type;
-    aae_.add_index(_type, v);
-  }
-
-  // set the new property
-  abs_ts_.set_prop(pr.prop(), abs_ts_.live_prop());
-
-  std::cout << "Created " << proph_vars.size();
+  std::cout << "Created " << prop_indices.size();
   std::cout << " prophecy variables for the property" << std::endl;
+
+  TermTypeMap & orig_types = aa_.orig_types();
 
   bool found_untimed_axioms = false;
   bool found_timed_axioms = false;
@@ -353,6 +325,7 @@ msat_truth_value IC3Array::prove()
       TermSet hist_vars_to_refine;
       // all created history variables (including intermediate ones)
       TermSet all_created_hist_vars;
+      msat_type _type;
       for (auto elem : indices_to_refine)
       {
         msat_term v = hr.hist_var(elem.first, reached_k - elem.second, all_created_hist_vars);
@@ -376,25 +349,8 @@ msat_truth_value IC3Array::prove()
         abs_ts_.add_trans(hist_trans.at(v));
       }
 
-      TermSet proph_hist_vars = pr.prophesize_prop(abs_ts_.prop(), hist_vars_to_refine);
-
-      // Note: next_proph_vars and proph_targets are references -- they've been updated
-      for(auto v : proph_hist_vars)
-      {
-        nv = next_proph_vars.at(v);
-        abs_ts_.add_statevar(v, nv);
-        // frozenvar: proph' = proph
-        abs_ts_.add_trans(msat_make_eq(msat_env_, nv, v));
-
-        // update type maps and add as index
-        _type = orig_types.at(proph_targets.at(v));
-        orig_types[v] = _type;
-        aae_.add_index(_type, v);
-      }
-
-      // set the new property
-      abs_ts_.set_prop(pr.prop(), abs_ts_.live_prop());
-
+      // create prophecy variables for these history variables
+      add_frozen_proph_vars(hist_vars_to_refine);
     }
 
     assert(abs_ts_.only_cur(abs_ts_.init()));
@@ -412,6 +368,81 @@ msat_truth_value IC3Array::prove()
 int IC3Array::witness(std::vector<TermList> & out)
 {
   throw "Not implemented";
+}
+
+TermSet IC3Array::detect_indices(msat_term term)
+{
+  struct Data {
+    const TermSet &indices;
+    TermSet & out_indices;
+    Data(const TermSet &i, TermSet&o) : indices(i), out_indices(o) {};
+  };
+
+
+  auto visit = [](msat_env e, msat_term t, int preorder,
+                  void *data) -> msat_visit_status {
+                 Data *d = static_cast<Data *>(data);
+
+                 if (preorder && (d->indices.find(t) != d->indices.end())) {
+                   d->out_indices.insert(t);
+                 }
+
+                 return MSAT_VISIT_PROCESS;
+               };
+
+  const TermSet & orig_indices = aae_.orig_indices();
+  TermSet out_indices;
+  Data data(orig_indices, out_indices);
+  msat_visit_term(msat_env_, term, visit, &data);
+  return out_indices;
+}
+
+void IC3Array::add_frozen_proph_vars(const ic3ia::TermSet & proph_targets)
+{
+  TermTypeMap & orig_types = aa_.orig_types();
+  msat_term equalities = msat_make_true(msat_env_);
+
+  std::string name;
+  msat_type t_type;
+  msat_type t_orig_type;
+  for (auto t : proph_targets)
+  {
+    t_type = msat_term_get_type(t);
+    t_orig_type = orig_types.at(t);
+
+    name = "proph" + std::to_string(num_proph_vars_++);
+    msat_decl proph_decl =
+      msat_declare_function(msat_env_, name.c_str(), t_type);
+    msat_term proph = msat_make_constant(msat_env_, proph_decl);
+
+    // store the target equality
+    equalities = msat_make_and(msat_env_, equalities,
+                               msat_make_eq(msat_env_, proph, t));
+
+    // update member variable
+    frozen_proph_vars_[proph] = t;
+
+    // update type map for this prophecy
+    // should match the target
+    orig_types[proph] = t_orig_type;
+
+    // add as an index
+    aae_.add_index(t_orig_type, proph);
+
+    msat_decl proph_decl_next =
+      msat_declare_function(msat_env_, (name + ".next").c_str(), t_type);
+    msat_term proph_next = msat_make_constant(msat_env_, proph_decl_next);
+    abs_ts_.add_statevar(proph, proph_next);
+
+    // make it frozen
+    abs_ts_.add_trans(msat_make_eq(msat_env_, proph_next, proph));
+  }
+
+  // set the new property
+  abs_ts_.set_prop(msat_make_or(msat_env_,
+                                msat_make_not(msat_env_, equalities),
+                                abs_ts_.prop()),
+                   abs_ts_.live_prop());
 }
 
 void IC3Array::print_witness(msat_model model,

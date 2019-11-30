@@ -8,7 +8,6 @@
 #include "array_axiom_enumerator.h"
 #include "array_flattener.h"
 #include "history_refiner.h"
-#include "prophecy_refiner.h"
 
 #include "ic3.h"
 #include "ltl.h"
@@ -43,9 +42,21 @@ namespace ic3ia_array
     ic3ia::Unroller un_;
     msat_env refiner_;
     msat_env reducer_;
-    
+
+
+    size_t num_proph_vars_{0};
+
     // TODO: Look into using unroller's untime feature
     ic3ia::TermMap untime_cache;
+
+    /* Keep track of created prophecy vars */
+    ic3ia::TermMap frozen_proph_vars_;
+
+    /* Returns all the original indices that occur in term */
+    ic3ia::TermSet detect_indices(msat_term term);
+
+    /* Creates frozen prophecy variables with a target */
+    void add_frozen_proph_vars(const ic3ia::TermSet & proph_targets);
 
     void print_witness(msat_model model,
                        size_t reached_k,
