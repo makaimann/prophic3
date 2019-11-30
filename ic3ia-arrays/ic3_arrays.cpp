@@ -45,7 +45,8 @@ IC3Array::IC3Array(const ic3ia::TransitionSystem &ts, const ic3ia::Options &opts
   : msat_env_(ts.get_env()), conc_ts_(ts), abs_ts_(msat_env_), l2s_(l2s),
     opts_(opts), af_(conc_ts_),
     aa_(af_.flatten_transition_system(), opts_.use_uf_for_arr_eq),
-    aae_(aa_.abstract_transition_system(), aa_), un_(abs_ts_) {
+    aae_(aa_.abstract_transition_system(), aa_), hr_(abs_ts_),
+    un_(abs_ts_) {
 
   ic3ia::Logger & l = ic3ia::Logger::get();
   l.set_verbosity(verbosity);
@@ -73,9 +74,7 @@ IC3Array::~IC3Array()
 
 msat_truth_value IC3Array::prove()
 {
-
   msat_truth_value res = MSAT_UNDEF;
-  HistoryRefiner hr(abs_ts_);
 
   // heuristic -- add prophecy variables for indices in property up front
   TermSet prop_indices = detect_indices(abs_ts_.prop());
@@ -328,7 +327,7 @@ msat_truth_value IC3Array::prove()
       msat_type _type;
       for (auto elem : indices_to_refine)
       {
-        msat_term v = hr.hist_var(elem.first, reached_k - elem.second, all_created_hist_vars);
+        msat_term v = hr_.hist_var(elem.first, reached_k - elem.second, all_created_hist_vars);
         // update type maps -- need to keep track of this for proph var indices
         _type = orig_types.at(elem.first);
         orig_types[v] = _type;
@@ -341,8 +340,8 @@ msat_truth_value IC3Array::prove()
         std::cout << "\t" << msat_to_smtlib2_term(msat_env_, v) << std::endl;
       }
 
-      const TermMap & next_hist_vars = hr.next_hist_vars();
-      const TermMap & hist_trans = hr.hist_trans();
+      const TermMap & next_hist_vars = hr_.next_hist_vars();
+      const TermMap & hist_trans = hr_.hist_trans();
       for (auto v : all_created_hist_vars)
       {
         abs_ts_.add_statevar(v, next_hist_vars.at(v));

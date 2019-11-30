@@ -38,6 +38,7 @@ namespace ic3ia_array
     ArrayFlattener af_;
     ArrayAbstractor aa_;
     ArrayAxiomEnumerator aae_;
+    HistoryRefiner hr_;
 
     ic3ia::Unroller un_;
     msat_env refiner_;
