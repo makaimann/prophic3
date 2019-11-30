@@ -631,7 +631,8 @@ void IC3Array::refine_abs_ts(TermSet & init_axioms, TermSet & untimed_axioms, Te
     // add axioms to transition system using prophecy vars
     for (auto ax : timed_axioms)
     {
-      untimed_axiom = untime_axiom(ax, idx_to_proph);
+      tmp_idx = aae_.get_index(ax);
+      untimed_axiom = untime_axiom(ax, tmp_idx, idx_to_proph.at(tmp_idx));
       abs_ts_.add_trans(untimed_axiom);
 
       if (!abs_ts_.contains_next(untimed_axiom))
@@ -908,22 +909,17 @@ bool IC3Array::contains_vars(msat_term term, const TermSet &vars) const {
   return data.contains_var;
 }
 
-msat_term IC3Array::untime_axiom(msat_term axiom, TermMap & idx_to_proph)
+msat_term IC3Array::untime_axiom(msat_term axiom, msat_term target, msat_term proph)
 {
   TermSet free_vars;
   get_free_vars(msat_env_, axiom, free_vars);
 
-  // find min and max time, ignoring the index
-  msat_term idx;
+  // find min and max time, ignoring the target
   size_t min_time = -1;
   size_t max_time = 0;
   for (auto v : free_vars)
   {
-    if (idx_to_proph.find(v) != idx_to_proph.end())
-    {
-      idx = v;
-    }
-    else
+    if (v != target)
     {
       size_t time = un_.get_time(v);
       if (time < min_time)
@@ -938,14 +934,13 @@ msat_term IC3Array::untime_axiom(msat_term axiom, TermMap & idx_to_proph)
   }
 
   assert(max_time - min_time <= 1);
-  assert(idx_to_proph.find(idx) != idx_to_proph.end());
 
-  TermList to_subst{idx};
-  TermList vals{idx_to_proph.at(idx)};
+  TermList to_subst{target};
+  TermList vals{proph};
 
   for (auto v : free_vars)
   {
-    if (v != idx)
+    if (v != target)
     {
       if (un_.get_time(v) == min_time)
       {

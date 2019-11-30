@@ -77,9 +77,9 @@ namespace ic3ia_array
      */
     ic3ia::TermMap add_history_vars(const std::unordered_map<msat_term, size_t> targets);
 
-    /* Untimes an axiom given a map of indices to prophecy variables
+    /* Untimes an axiom given a target and its replacement proph var
      * Note: This untiming handles current / next unlike the unroller */
-    msat_term untime_axiom(msat_term axiom, ic3ia::TermMap & idx_to_proph);
+    msat_term untime_axiom(msat_term axiom, msat_term target, msat_term proph);
 
     void print_witness(msat_model model,
                        size_t reached_k,
