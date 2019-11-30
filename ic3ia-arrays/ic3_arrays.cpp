@@ -78,76 +78,334 @@ msat_truth_value IC3Array::prove()
 
   // heuristic -- add prophecy variables for indices in property up front
   TermSet prop_indices = detect_indices(abs_ts_.prop());
-  add_frozen_proph_vars(prop_indices);
+  // frozen proph method takes a map (used later for retaining target info)
+  TermMap prop_indices_map;
+  for (auto i : prop_indices)
+  {
+    // just a dummy map
+    prop_indices_map[i] = i;
+  }
+  add_frozen_proph_vars(prop_indices_map);
 
   std::cout << "Created " << prop_indices.size();
   std::cout << " prophecy variables for the property" << std::endl;
 
-  TermTypeMap & orig_types = aa_.orig_types();
-
-  bool found_untimed_axioms = false;
-  bool found_timed_axioms = false;
-  unsigned int reached_k = 0;
-
-  // TODO: Figure out how to handle False cases someday
   while (res != MSAT_TRUE)
   {
+    std::cout << "Fixing BMC" << std::endl;
+    if(!fix_bmc())
+    {
+      // got a real counter-example
+      return MSAT_FALSE;
+    }
+
+    std::cout << "Fixed BMC up to " << current_k_ << std::endl;
     std::cout << "Running IC3" << std::endl;
-    // Run IC3
-    // NOTE: It is very IMPORTANT that ic3 is instantiated here
-    //       at one point, I had it instantiated outside of the loop
-    //       then it always returned true the second time prove was called...
     IC3 ic3(abs_ts_, opts_, l2s_);
     res = ic3.prove();
 
-    if (res == MSAT_TRUE) {
-      return res;
-    }
-    else if (res == MSAT_FALSE)
+    if (res == MSAT_UNDEF)
     {
-      std::vector<TermList> witness;
-      ic3.witness(witness);
-      reached_k = witness.size() - 1;
-      std::cout << "Found Abstract CEX of length " << reached_k << std::endl;
-    }
-    else
-    {
-      std::cout << "IC3 returned undefined...by construction this should not happen! oops..." << std::endl;
+      std::cout << "IC3 returned undefined..." << std::endl;
       throw std::exception();
     }
+  }
 
-    // Run bmc
-    msat_reset_env(refiner_);
-    msat_assert_formula(refiner_, un_.at_time(abs_ts_.init(), 0));
-    for (int i = 0; i < reached_k; ++i) {
-      msat_assert_formula(refiner_, un_.at_time(abs_ts_.trans(), i));
-    }
-    msat_assert_formula(refiner_,
-			un_.at_time(msat_make_not(refiner_, abs_ts_.prop()),
-				  reached_k));
-    bool broken = msat_solve(refiner_) == MSAT_SAT;
-    //bmc.check_until(reached_k);
-    assert((res != MSAT_FALSE) || broken);
+  return res;
 
-    // TODO: filter axioms with unsat core
-    TermSet untimed_axioms_to_add;
-    // maps timed lemmas to the time of the index involved in the lemma
-    unordered_map<msat_term, size_t> time_of_index;
-    // stores timed axioms that need to be refined
-    TermSet timed_axioms_to_refine;
+  // TODO: Remove all this!
 
-    while (broken) {
-      msat_model model = msat_get_model(refiner_);
+  // TermTypeMap & orig_types = aa_.orig_types();
 
-      // Run refinements
-      msat_term timed_axiom;
+  // bool found_untimed_axioms = false;
+  // bool found_timed_axioms = false;
+  // unsigned int reached_k = 0;
+
+  // // TODO: Figure out how to handle False cases someday
+  // while (res != MSAT_TRUE)
+  // {
+  //   std::cout << "Running IC3" << std::endl;
+  //   // Run IC3
+  //   // NOTE: It is very IMPORTANT that ic3 is instantiated here
+  //   //       at one point, I had it instantiated outside of the loop
+  //   //       then it always returned true the second time prove was called...
+  //   IC3 ic3(abs_ts_, opts_, l2s_);
+  //   res = ic3.prove();
+
+  //   if (res == MSAT_TRUE) {
+  //     return res;
+  //   }
+  //   else if (res == MSAT_FALSE)
+  //   {
+  //     std::vector<TermList> witness;
+  //     ic3.witness(witness);
+  //     reached_k = witness.size() - 1;
+  //     std::cout << "Found Abstract CEX of length " << reached_k << std::endl;
+  //   }
+  //   else
+  //   {
+  //     std::cout << "IC3 returned undefined...by construction this should not happen! oops..." << std::endl;
+  //     throw std::exception();
+  //   }
+
+  //   // Run bmc
+  //   msat_reset_env(refiner_);
+  //   msat_assert_formula(refiner_, un_.at_time(abs_ts_.init(), 0));
+  //   for (int i = 0; i < reached_k; ++i) {
+  //     msat_assert_formula(refiner_, un_.at_time(abs_ts_.trans(), i));
+  //   }
+  //   msat_assert_formula(refiner_,
+	// 		un_.at_time(msat_make_not(refiner_, abs_ts_.prop()),
+	// 			  reached_k));
+  //   bool broken = msat_solve(refiner_) == MSAT_SAT;
+  //   //bmc.check_until(reached_k);
+  //   assert((res != MSAT_FALSE) || broken);
+
+  //   TermSet untimed_axioms_to_add;
+  //   // maps timed lemmas to the time of the index involved in the lemma
+  //   unordered_map<msat_term, size_t> time_of_index;
+  //   // stores timed axioms that need to be refined
+  //   TermSet timed_axioms_to_refine;
+
+  //   while (broken) {
+  //     msat_model model = msat_get_model(refiner_);
+
+  //     // Run refinements
+  //     msat_term timed_axiom;
+  //     msat_term val;
+  //     std::vector<TermSet> axiom_sets = {
+  //         aae_.init_eq_axioms(), aae_.trans_eq_axioms(),
+  //         aae_.prop_eq_axioms(), aae_.const_array_axioms(),
+  //         aae_.store_axioms()};
+
+  //     TermSet violated_axioms;
+
+  //     msat_term f = msat_make_false(msat_env_);
+  //     for (size_t i = 0; i < axiom_sets.size(); ++i) {
+  //       int max_k;
+  //       if (i == 0) {
+  //         max_k = 0;
+  //       } else {
+  //         max_k = reached_k;
+  //       }
+
+  //       // Need to check up to (and include) max_k for single-time
+  //       // e.g. if it has no next, then need to include last time step
+  //       for (size_t k = 0; k <= max_k; ++k) {
+  //         for (auto ax : axiom_sets[i]) {
+  //           timed_axiom = un_.at_time(ax, k);
+  //           // TODO: See if it's faster to just overwrite or to check the cache
+  //           // first
+  //           untime_cache[timed_axiom] = ax;
+
+  //           val = msat_model_eval(model, timed_axiom);
+
+  //           if (val == f) {
+  //             // std::cout << "violated axiom ";
+  //             // std::cout << msat_to_smtlib2_term(msat_env_, timed_axiom) <<
+  //             // std::endl;
+  //             violated_axioms.insert(timed_axiom);
+  //             untimed_axioms_to_add.insert(ax);
+  //           }
+  //         }
+  //       }
+  //     }
+
+  //     found_untimed_axioms = violated_axioms.size();
+
+  //     std::cout << "Found " << violated_axioms.size() << " violated untime-able axioms!"
+  //               << std::endl;
+
+  //     if (!found_untimed_axioms)
+  //     {
+  //       vector<vector<TermSet>> timed_axioms;
+  //       timed_axioms.push_back(aae_.equality_axioms_all_indices(un_, reached_k));
+  //       timed_axioms.push_back(aae_.store_axioms_all_indices(un_, reached_k));
+  //       timed_axioms.push_back(aae_.const_array_axioms_all_indices(un_, reached_k));
+
+  //       for(auto axiom_vec : timed_axioms)
+  //       {
+  //         for (size_t i = 0; i < axiom_vec.size(); ++i)
+  //         {
+  //           for (auto timed_axiom : axiom_vec[i])
+  //           {
+  //             //std::cout << "Checking timed axiom: " << msat_to_smtlib2_term(msat_env_, timed_axiom) << std::endl;
+  //             val = msat_model_eval(model, timed_axiom);
+
+  //             if (val == f)
+  //             {
+  //               violated_axioms.insert(timed_axiom);
+  //               time_of_index[timed_axiom] = i;
+  //               timed_axioms_to_refine.insert(timed_axiom);
+  //             }
+  //           }
+  //         }
+  //       }
+
+  //       found_timed_axioms = violated_axioms.size();
+  //     }
+
+  //     if (!found_untimed_axioms & !found_timed_axioms) {
+  //       print_witness(model, reached_k, aae_);
+  //       // TODO: Use real exceptions
+  //       std::cout << "It looks like there's a concrete counter-example (or some axioms are missing)" << std::endl;
+  //       return MSAT_FALSE;
+  //     }
+  //     else if (!found_untimed_axioms) {
+  //       std::cout << "Found " << violated_axioms.size() << " violated TIMED axioms!" << std::endl;
+  //     }
+
+  //     for (auto ax : violated_axioms) {
+  //       msat_assert_formula(refiner_, ax);
+  //     }
+  //     broken = msat_solve(refiner_) == MSAT_SAT;
+  //     violated_axioms.clear();
+
+  //     if (!MSAT_ERROR_MODEL(model))
+  //     {
+  //       msat_destroy_model(model);
+  //     }
+  //   }
+
+  //   std::cout << "Found " << untimed_axioms_to_add.size() << " untimed axioms"
+  //             << std::endl;
+
+  //   TermSet *untimed_axioms = NULL;
+  //   TermSet *timed_axioms = NULL;
+  //   TermSet red_untimed_axioms;
+  //   TermSet red_timed_axioms;
+  //   if (reduce_axioms(reached_k, untimed_axioms_to_add, timed_axioms_to_refine, red_untimed_axioms, red_timed_axioms)) {
+  //     std::cout << "Reduced Untimed Axioms to "
+  //               << red_untimed_axioms.size() << " axioms."
+  //               << std::endl;
+  //     std::cout << "Reduced timed Axioms to "
+  //               << red_timed_axioms.size() << " axioms."
+  //               << std::endl;
+  //     untimed_axioms = &red_untimed_axioms;
+  //     timed_axioms = &red_timed_axioms;
+  //   } else {
+  //     untimed_axioms = &untimed_axioms_to_add;
+  //     timed_axioms = &timed_axioms_to_refine;
+  //   }
+
+  //   size_t cnt = 0;
+  //   if (timed_axioms->size() == 0)
+  //   {
+  //     // HACK : minor hack
+  //     //        the reducer can sometimes remove critical invariants
+  //     //        if there are two possible axioms, but only one goes into init
+  //     //        it might throw away the init one and use a trans one
+  //     //        but this won't be added to init and we won't progess
+  //     //        In that case, just include all axioms that can be added to init
+  //     if (reached_k == 0)
+  //     {
+  //       for (auto ax : untimed_axioms_to_add)
+  //       {
+  //         if (abs_ts_.only_cur(ax))
+  //         {
+  //           untimed_axioms->insert(ax);
+  //         }
+  //       }
+  //     }
+
+  //     for (auto ax : *(untimed_axioms)) {
+  //       // std::cout << "Added to trans: " << msat_to_smtlib2_term(msat_env_, ax) << std::endl;
+  //       abs_ts_.add_trans(ax);
+
+  //       // if there's no next-state variables, add next version to trans
+  //       if (!abs_ts_.contains_next(ax)) {
+  //         // std::cout << "Added to trans next: " << msat_to_smtlib2_term(msat_env_, abs_ts_.next(ax)) << std::endl;
+  //         abs_ts_.add_trans(abs_ts_.next(ax));
+  //       }
+
+  //       // add to init if there's only current variables (no inputs or next)
+  //       if (abs_ts_.only_cur(ax) && reached_k == 0) {
+  //         // std::cout << "Added to init: " << msat_to_smtlib2_term(msat_env_, ax) << std::endl;
+  //         // only add axioms to init if the counterexample is length 1
+  //         abs_ts_.add_init(ax);
+  //         cnt++;
+  //       }
+
+  //     }
+
+  //     std::cout << "Added " << untimed_axioms->size() << " axioms to trans." << std::endl;
+  //     std::cout << "Added " << cnt << " axioms to init." << std::endl;
+  //   }
+
+  //   untimed_axioms_to_add.clear();
+  //   red_untimed_axioms.clear();
+
+  //   if (found_timed_axioms && timed_axioms->size() > 0)
+  //   {
+  //     unordered_map<msat_term, size_t> indices_to_refine;
+  //     msat_term tmp_idx;
+  //     for (auto ax : *(timed_axioms))
+  //     {
+  //       tmp_idx = aae_.get_index(ax);
+  //       indices_to_refine[un_.untime(tmp_idx)] = reached_k - time_of_index.at(ax);
+  //     }
+
+  //     TermSet hist_vars_to_refine = add_history_vars(indices_to_refine);
+
+  //     // create prophecy variables for these history variables
+  //     add_frozen_proph_vars(hist_vars_to_refine);
+  //   }
+
+  //   assert(abs_ts_.only_cur(abs_ts_.init()));
+  //   assert(abs_ts_.only_cur(abs_ts_.prop()));
+
+  //   timed_axioms_to_refine.clear();
+  //   red_timed_axioms.clear();
+  //   // reset the flag
+  //   found_timed_axioms = false;
+  // }
+  // // TODO: do this correctly
+  // return MSAT_FALSE;
+}
+
+int IC3Array::witness(std::vector<TermList> & out)
+{
+  throw "Not implemented";
+}
+
+bool IC3Array::fix_bmc()
+{
+  msat_reset_env(refiner_);
+  msat_assert_formula(refiner_, un_.at_time(abs_ts_.init(), 0));
+  for(int i = 0; i < current_k_; ++i)
+  {
+    msat_assert_formula(refiner_, un_.at_time(abs_ts_.trans(), i));
+  }
+  msat_term bad = msat_make_not(refiner_, abs_ts_.prop());
+
+  // untimed axioms to add to transition system
+  TermSet untimed_axioms_to_add;
+  // stores timed axioms that need to be refined
+  TermSet timed_axioms_to_refine;
+  // violated axioms to add to BMC run
+  TermSet violated_axioms;
+  // axioms needed to refine initial state with no trans
+  TermSet init_axioms;
+
+  // stop when we reach a bound with no added axioms
+  bool axioms_added;
+  bool broken;
+  bool found_untimed_axioms;
+  bool found_timed_axioms;
+  do
+  {
+    axioms_added = false;
+    broken = msat_solve(refiner_) == MSAT_SAT;
+
+    while(broken)
+    {
+      model_ = msat_get_model(refiner_);
+            msat_term timed_axiom;
       msat_term val;
       std::vector<TermSet> axiom_sets = {
           aae_.init_eq_axioms(), aae_.trans_eq_axioms(),
           aae_.prop_eq_axioms(), aae_.const_array_axioms(),
           aae_.store_axioms()};
-
-      TermSet violated_axioms;
 
       msat_term f = msat_make_false(msat_env_);
       for (size_t i = 0; i < axiom_sets.size(); ++i) {
@@ -155,7 +413,7 @@ msat_truth_value IC3Array::prove()
         if (i == 0) {
           max_k = 0;
         } else {
-          max_k = reached_k;
+          max_k = current_k_;
         }
 
         // Need to check up to (and include) max_k for single-time
@@ -167,7 +425,7 @@ msat_truth_value IC3Array::prove()
             // first
             untime_cache[timed_axiom] = ax;
 
-            val = msat_model_eval(model, timed_axiom);
+            val = msat_model_eval(model_, timed_axiom);
 
             if (val == f) {
               // std::cout << "violated axiom ";
@@ -188,9 +446,9 @@ msat_truth_value IC3Array::prove()
       if (!found_untimed_axioms)
       {
         vector<vector<TermSet>> timed_axioms;
-        timed_axioms.push_back(aae_.equality_axioms_all_indices(un_, reached_k));
-        timed_axioms.push_back(aae_.store_axioms_all_indices(un_, reached_k));
-        timed_axioms.push_back(aae_.const_array_axioms_all_indices(un_, reached_k));
+        timed_axioms.push_back(aae_.equality_axioms_all_indices(un_, current_k_));
+        timed_axioms.push_back(aae_.store_axioms_all_indices(un_, current_k_));
+        timed_axioms.push_back(aae_.const_array_axioms_all_indices(un_, current_k_));
 
         for(auto axiom_vec : timed_axioms)
         {
@@ -199,12 +457,11 @@ msat_truth_value IC3Array::prove()
             for (auto timed_axiom : axiom_vec[i])
             {
               //std::cout << "Checking timed axiom: " << msat_to_smtlib2_term(msat_env_, timed_axiom) << std::endl;
-              val = msat_model_eval(model, timed_axiom);
+              val = msat_model_eval(model_, timed_axiom);
 
               if (val == f)
               {
                 violated_axioms.insert(timed_axiom);
-                time_of_index[timed_axiom] = i;
                 timed_axioms_to_refine.insert(timed_axiom);
               }
             }
@@ -215,10 +472,10 @@ msat_truth_value IC3Array::prove()
       }
 
       if (!found_untimed_axioms & !found_timed_axioms) {
-        print_witness(model, reached_k, aae_);
+        print_witness(model_, current_k_, aae_);
         // TODO: Use real exceptions
         std::cout << "It looks like there's a concrete counter-example (or some axioms are missing)" << std::endl;
-        return MSAT_FALSE;
+        return false;
       }
       else if (!found_untimed_axioms) {
         std::cout << "Found " << violated_axioms.size() << " violated TIMED axioms!" << std::endl;
@@ -227,114 +484,136 @@ msat_truth_value IC3Array::prove()
       for (auto ax : violated_axioms) {
         msat_assert_formula(refiner_, ax);
       }
-      broken = msat_solve(refiner_) == MSAT_SAT;
-      violated_axioms.clear();
 
-      if (!MSAT_ERROR_MODEL(model))
-      {
-        msat_destroy_model(model);
-      }
-    }
-
-    std::cout << "Found " << untimed_axioms_to_add.size() << " untimed axioms"
-              << std::endl;
-
-    TermSet *untimed_axioms = NULL;
-    TermSet *timed_axioms = NULL;
-    TermSet red_untimed_axioms;
-    TermSet red_timed_axioms;
-    if (reduce_axioms(reached_k, untimed_axioms_to_add, timed_axioms_to_refine, red_untimed_axioms, red_timed_axioms)) {
-      std::cout << "Reduced Untimed Axioms to "
-                << red_untimed_axioms.size() << " axioms."
-                << std::endl;
-      std::cout << "Reduced timed Axioms to "
-                << red_timed_axioms.size() << " axioms."
-                << std::endl;
-      untimed_axioms = &red_untimed_axioms;
-      timed_axioms = &red_timed_axioms;
-    } else {
-      untimed_axioms = &untimed_axioms_to_add;
-      timed_axioms = &timed_axioms_to_refine;
-    }
-
-    size_t cnt = 0;
-    if (timed_axioms->size() == 0)
-    {
       // HACK : minor hack
       //        the reducer can sometimes remove critical invariants
       //        if there are two possible axioms, but only one goes into init
       //        it might throw away the init one and use a trans one
       //        but this won't be added to init and we won't progess
       //        In that case, just include all axioms that can be added to init
-      if (reached_k == 0)
+      if (current_k_ == 0)
       {
-        for (auto ax : untimed_axioms_to_add)
+        for (auto ax: violated_axioms)
         {
           if (abs_ts_.only_cur(ax))
           {
-            untimed_axioms->insert(ax);
+            init_axioms.insert(ax);
           }
         }
       }
 
-      for (auto ax : *(untimed_axioms)) {
-        // std::cout << "Added to trans: " << msat_to_smtlib2_term(msat_env_, ax) << std::endl;
-        abs_ts_.add_trans(ax);
+      msat_push_backtrack_point(refiner_);
+      msat_assert_formula(refiner_, un_.at_time(bad, current_k_));
+      broken = msat_solve(refiner_) == MSAT_SAT;
+      msat_pop_backtrack_point(refiner_);
 
-        // if there's no next-state variables, add next version to trans
-        if (!abs_ts_.contains_next(ax)) {
-          // std::cout << "Added to trans next: " << msat_to_smtlib2_term(msat_env_, abs_ts_.next(ax)) << std::endl;
-          abs_ts_.add_trans(abs_ts_.next(ax));
-        }
+      axioms_added = violated_axioms.size();
+      violated_axioms.clear();
 
-        // add to init if there's only current variables (no inputs or next)
-        if (abs_ts_.only_cur(ax) && reached_k == 0) {
-          // std::cout << "Added to init: " << msat_to_smtlib2_term(msat_env_, ax) << std::endl;
-          // only add axioms to init if the counterexample is length 1
-          abs_ts_.add_init(ax);
-          cnt++;
-        }
-
-      }
-
-      std::cout << "Added " << untimed_axioms->size() << " axioms to trans." << std::endl;
-      std::cout << "Added " << cnt << " axioms to init." << std::endl;
-    }
-
-    untimed_axioms_to_add.clear();
-    red_untimed_axioms.clear();
-
-    if (found_timed_axioms && timed_axioms->size() > 0)
-    {
-      unordered_map<msat_term, size_t> indices_to_refine;
-      msat_term tmp_idx;
-      for (auto ax : *(timed_axioms))
+      if (!MSAT_ERROR_MODEL(model_))
       {
-        tmp_idx = aae_.get_index(ax);
-        indices_to_refine[un_.untime(tmp_idx)] = reached_k - time_of_index.at(ax);
+        msat_destroy_model(model_);
       }
-
-      TermSet hist_vars_to_refine = add_history_vars(indices_to_refine);
-
-      // create prophecy variables for these history variables
-      add_frozen_proph_vars(hist_vars_to_refine);
     }
 
-    assert(abs_ts_.only_cur(abs_ts_.init()));
-    assert(abs_ts_.only_cur(abs_ts_.prop()));
+    msat_assert_formula(refiner_, un_.at_time(abs_ts_.trans(), current_k_));
+    current_k_++;
 
-    timed_axioms_to_refine.clear();
-    red_timed_axioms.clear();
-    // reset the flag
+    // reset the flags
+    found_untimed_axioms = false;
     found_timed_axioms = false;
+
+  } while(axioms_added);
+
+  // Reduce the axioms
+  TermSet *untimed_axioms = NULL;
+  TermSet *timed_axioms = NULL;
+  TermSet red_untimed_axioms;
+  TermSet red_timed_axioms;
+  if (reduce_axioms(current_k_, untimed_axioms_to_add, timed_axioms_to_refine, red_untimed_axioms, red_timed_axioms)) {
+    std::cout << "Reduced untimed axioms to "
+              << red_untimed_axioms.size() << " axioms."
+              << std::endl;
+    std::cout << "Reduced timed axioms to "
+              << red_timed_axioms.size() << " axioms."
+              << std::endl;
+    untimed_axioms = &red_untimed_axioms;
+    timed_axioms = &red_timed_axioms;
+  } else {
+    untimed_axioms = &untimed_axioms_to_add;
+    timed_axioms = &timed_axioms_to_refine;
+    // this used to occur but it was likely due to a MathSAT bug.
+    assert(false);
   }
-  // TODO: do this correctly
-  return MSAT_FALSE;
+
+  // HACK continuation of the init refinement hack -- using init_axioms
+  // Fix the transition system
+  refine_abs_ts(init_axioms, *untimed_axioms, *timed_axioms);
+
+  // TODO: Just add timed refinements and re-find untimed axioms
+  //       Has to do with ideas about monotonicity of history variables
+  //       It's also just easier than doing the required substitutions...
+  // TODO: separate timed and untimed axioms finding into helper methods
+
+  return true;
 }
 
-int IC3Array::witness(std::vector<TermList> & out)
+void IC3Array::refine_abs_ts(TermSet & init_axioms, TermSet & untimed_axioms, TermSet & timed_axioms)
 {
-  throw "Not implemented";
+  /* -------------------------------- INIT Axioms ------------------------------------- */
+  for (auto ax : init_axioms)
+  {
+    abs_ts_.add_init(ax);
+  }
+  std::cout << "Added " << init_axioms.size() << " axioms to init." << std::endl;
+
+  /* ------------------------------- UNTIMED Axioms ------------------------------------ */
+
+  for (auto ax : untimed_axioms) {
+    // std::cout << "Added to trans: " << msat_to_smtlib2_term(msat_env_, ax) << std::endl;
+    abs_ts_.add_trans(ax);
+
+    // if there's no next-state variables, add next version to trans
+    if (!abs_ts_.contains_next(ax)) {
+      // std::cout << "Added to trans next: " << msat_to_smtlib2_term(msat_env_, abs_ts_.next(ax)) << std::endl;
+      abs_ts_.add_trans(abs_ts_.next(ax));
+    }
+  }
+
+  std::cout << "Added " << untimed_axioms.size() << " axioms to trans." << std::endl;
+
+  /* -------------------------------- TIMED Axioms ------------------------------------- */
+
+  unordered_map<msat_term, size_t> indices_to_refine;
+  msat_term tmp_idx;
+  for (auto ax : timed_axioms)
+  {
+    tmp_idx = aae_.get_index(ax);
+    indices_to_refine[tmp_idx] = current_k_ - un_.get_time(tmp_idx);
+  }
+
+  TermMap hist_vars_to_refine = add_history_vars(indices_to_refine);
+
+  // create prophecy variables for these history variables
+  TermMap idx_to_proph = add_frozen_proph_vars(hist_vars_to_refine);
+
+  msat_term untimed_axiom;
+  // add axioms to transition system using prophecy vars
+  for (auto ax : timed_axioms)
+  {
+    untimed_axiom = untime_axiom(ax, idx_to_proph);
+    abs_ts_.add_trans(untimed_axiom);
+
+    if (!abs_ts_.contains_next(untimed_axiom))
+    {
+      abs_ts_.add_trans(abs_ts_.next(untimed_axiom));
+    }
+  }
+
+  std::cout << "Added " << timed_axioms.size() << " to trans." << std::endl;
+
+  assert(abs_ts_.only_cur(abs_ts_.init()));
+  assert(abs_ts_.only_cur(abs_ts_.prop()));
 }
 
 TermSet IC3Array::detect_indices(msat_term term)
@@ -364,16 +643,19 @@ TermSet IC3Array::detect_indices(msat_term term)
   return out_indices;
 }
 
-void IC3Array::add_frozen_proph_vars(const ic3ia::TermSet & proph_targets)
+TermMap IC3Array::add_frozen_proph_vars(const ic3ia::TermMap & proph_targets)
 {
+  TermMap idx_to_proph;
   TermTypeMap & orig_types = aa_.orig_types();
   msat_term equalities = msat_make_true(msat_env_);
 
   std::string name;
+  msat_term t;
   msat_type t_type;
   msat_type t_orig_type;
-  for (auto t : proph_targets)
+  for (auto elem : proph_targets)
   {
+    t = elem.second;
     t_type = msat_term_get_type(t);
     t_orig_type = orig_types.at(t);
 
@@ -388,6 +670,9 @@ void IC3Array::add_frozen_proph_vars(const ic3ia::TermSet & proph_targets)
 
     // update member variable
     frozen_proph_vars_[proph] = t;
+
+    // map the original target (i.e. an index) to proph
+    idx_to_proph[elem.first] = proph;
 
     // update type map for this prophecy
     // should match the target
@@ -410,9 +695,11 @@ void IC3Array::add_frozen_proph_vars(const ic3ia::TermSet & proph_targets)
                                 msat_make_not(msat_env_, equalities),
                                 abs_ts_.prop()),
                    abs_ts_.live_prop());
+
+  return idx_to_proph;
 }
 
-TermSet IC3Array::add_history_vars(const std::unordered_map<msat_term, size_t> targets)
+TermMap IC3Array::add_history_vars(const std::unordered_map<msat_term, size_t> targets)
 {
   std::cout << "Found " << targets.size() << " indices which need to be refined." << std::endl;
   for (auto elem : targets)
@@ -423,23 +710,25 @@ TermSet IC3Array::add_history_vars(const std::unordered_map<msat_term, size_t> t
   TermTypeMap & orig_types = aa_.orig_types();
 
   // just the history variables that need to be refined over
-  TermSet hist_vars_to_refine;
+  TermMap hist_vars_to_refine;
   // all created history variables (including intermediate ones)
   TermSet all_created_hist_vars;
   msat_type _type;
+  msat_term untimed_target;
   for (auto elem : targets)
   {
-    msat_term v = hr_.hist_var(elem.first, elem.second, all_created_hist_vars);
+    untimed_target = un_.untime(elem.first);
+    msat_term v = hr_.hist_var(untimed_target, elem.second, all_created_hist_vars);
     // update type maps -- need to keep track of this for proph var indices
-    _type = orig_types.at(elem.first);
+    _type = orig_types.at(untimed_target);
     orig_types[v] = _type;
-    hist_vars_to_refine.insert(v);
+    hist_vars_to_refine[elem.first] = v;
   }
 
   std::cout << "Created the following history variables:" << std::endl;
-  for (auto v : hist_vars_to_refine)
+  for (auto elem : hist_vars_to_refine)
   {
-    std::cout << "\t" << msat_to_smtlib2_term(msat_env_, v) << std::endl;
+    std::cout << "\t" << msat_to_smtlib2_term(msat_env_, elem.second) << std::endl;
   }
 
   const TermMap & next_hist_vars = hr_.next_hist_vars();
@@ -586,6 +875,68 @@ bool IC3Array::contains_vars(msat_term term, const TermSet &vars) const {
   Data data(vars);
   msat_visit_term(msat_env_, term, visit, &data);
   return data.contains_var;
+}
+
+msat_term IC3Array::untime_axiom(msat_term axiom, TermMap & idx_to_proph)
+{
+  TermSet free_vars;
+  get_free_vars(msat_env_, axiom, free_vars);
+
+  // find min and max time, ignoring the index
+  msat_term idx;
+  size_t min_time = -1;
+  size_t max_time = 0;
+  for (auto v : free_vars)
+  {
+    if (idx_to_proph.find(v) != idx_to_proph.end())
+    {
+      idx = v;
+    }
+    else
+    {
+      size_t time = un_.get_time(v);
+      if (time < min_time)
+      {
+        min_time = time;
+      }
+      if (time > max_time)
+      {
+        max_time = time;
+      }
+    }
+  }
+
+  assert(max_time - min_time <= 1);
+  assert(idx_to_proph.find(idx) != idx_to_proph.end());
+
+  TermList to_subst{idx};
+  TermList vals{idx_to_proph.at(idx)};
+
+  for (auto v : free_vars)
+  {
+    if (v != idx)
+    {
+      if (un_.get_time(v) == min_time)
+      {
+        to_subst.push_back(v);
+        vals.push_back(un_.untime(v));
+      }
+      else
+      {
+        assert(un_.get_time(v) == max_time);
+        to_subst.push_back(v);
+        vals.push_back(abs_ts_.next(un_.untime(v)));
+      }
+    }
+  }
+
+  assert(to_subst.size() == vals.size());
+  msat_term res = msat_apply_substitution(msat_env_, axiom,
+                                          to_subst.size(),
+                                          &to_subst[0],
+                                          &vals[0]);
+  assert(!MSAT_ERROR_TERM(res));
+  return res;
 }
 
 bool IC3Array::reduce_axioms(int k, const TermSet & untimed_axioms,

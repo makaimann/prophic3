@@ -44,7 +44,7 @@ namespace ic3ia_array
     msat_env refiner_;
     msat_env reducer_;
 
-
+    size_t current_k_{0};
     size_t num_proph_vars_{0};
 
     // TODO: Look into using unroller's untime feature
@@ -53,14 +53,33 @@ namespace ic3ia_array
     /* Keep track of created prophecy vars */
     ic3ia::TermMap frozen_proph_vars_;
 
+    /* model for the witness */
+    msat_model model_;
+
+    /* Run bmc and add axioms until it reaches a bound that doesn't
+     * any new axioms
+     */
+    bool fix_bmc();
+
+    /* Helper for fix_bmc */
+    void refine_abs_ts(ic3ia::TermSet & init_axioms, ic3ia::TermSet & untimed_axioms, ic3ia::TermSet & timed_axioms);
+
     /* Returns all the original indices that occur in term */
     ic3ia::TermSet detect_indices(msat_term term);
 
-    /* Creates frozen prophecy variables with a target */
-    void add_frozen_proph_vars(const ic3ia::TermSet & proph_targets);
+    /* Creates frozen prophecy variables with a target
+     * returns a map from timed indices to their prophecy variables
+     */
+    ic3ia::TermMap add_frozen_proph_vars(const ic3ia::TermMap & proph_targets);
 
-    /* Creates history variables for various delays */
-    ic3ia::TermSet add_history_vars(const std::unordered_map<msat_term, size_t> targets);
+    /* Creates history variables for various delays
+     * returns a map from timed indices to their history variables
+     */
+    ic3ia::TermMap add_history_vars(const std::unordered_map<msat_term, size_t> targets);
+
+    /* Untimes an axiom given a map of indices to prophecy variables
+     * Note: This untiming handles current / next unlike the unroller */
+    msat_term untime_axiom(msat_term axiom, ic3ia::TermMap & idx_to_proph);
 
     void print_witness(msat_model model,
                        size_t reached_k,
