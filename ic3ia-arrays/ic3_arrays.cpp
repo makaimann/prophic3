@@ -108,8 +108,8 @@ msat_truth_value IC3Array::prove()
     {
       std::vector<TermList> witness;
       ic3.witness(witness);
-      std::cout << "IC3 got counter-example of length: " << witness.size() << std::endl;
-      current_k_ = witness.size();
+      current_k_ = witness.size() - 1;
+      std::cout << "IC3 got counter-example at: " << current_k_ << std::endl;
     }
 
     if (res == MSAT_UNDEF)
@@ -378,14 +378,6 @@ int IC3Array::witness(std::vector<TermList> & out)
 
 bool IC3Array::fix_bmc()
 {
-  msat_reset_env(refiner_);
-  msat_assert_formula(refiner_, un_.at_time(abs_ts_.init(), 0));
-  for(int i = 0; i < current_k_; ++i)
-  {
-    msat_assert_formula(refiner_, un_.at_time(abs_ts_.trans(), i));
-  }
-  msat_term bad = msat_make_not(refiner_, abs_ts_.prop());
-
   // untimed axioms to add to transition system
   TermSet untimed_axioms_to_add;
   // stores timed axioms that need to be refined
@@ -395,7 +387,8 @@ bool IC3Array::fix_bmc()
   // axioms needed to refine initial state with no trans
   TermSet init_axioms;
 
-  // stop when we reach a bound with no added axioms
+  // heuristic stop when we reach a bound greater than 0 with no added axioms
+  bool cont;
   bool axioms_added;
   bool broken;
   bool found_untimed_axioms;
@@ -403,14 +396,21 @@ bool IC3Array::fix_bmc()
   do
   {
     axioms_added = false;
-    msat_push_backtrack_point(refiner_);
+
+    // set up BMC
+    msat_term bad = msat_make_not(refiner_, abs_ts_.prop());
+    msat_reset_env(refiner_);
+    msat_assert_formula(refiner_, un_.at_time(abs_ts_.init(), 0));
+    for(int i = 0; i < current_k_; ++i)
+    {
+      msat_assert_formula(refiner_, un_.at_time(abs_ts_.trans(), i));
+    }
     msat_assert_formula(refiner_, un_.at_time(bad, current_k_));
     broken = msat_solve(refiner_) == MSAT_SAT;
     if (broken)
     {
       model_ = msat_get_model(refiner_);
     }
-    msat_pop_backtrack_point(refiner_);
 
     while(broken)
     {
@@ -504,14 +504,11 @@ bool IC3Array::fix_bmc()
         msat_destroy_model(model_);
       }
 
-      msat_push_backtrack_point(refiner_);
-      msat_assert_formula(refiner_, un_.at_time(bad, current_k_));
       broken = msat_solve(refiner_) == MSAT_SAT;
       if (broken)
       {
         model_ = msat_get_model(refiner_);
       }
-      msat_pop_backtrack_point(refiner_);
 
       violated_axioms.clear();
     }
@@ -575,14 +572,11 @@ bool IC3Array::fix_bmc()
     found_untimed_axioms = false;
     found_timed_axioms = false;
 
-    if (axioms_added)
-    {
-      // increment k
-      msat_assert_formula(refiner_, un_.at_time(abs_ts_.trans(), current_k_));
-      current_k_++;
-    }
+    // heuristic -- don't stop at initial state even if you didn't need to add axioms
+    cont = axioms_added || (current_k_ == 0);
+    current_k_ += cont ? 1 : 0;
 
-  } while(axioms_added);
+  } while(cont);
 
   // TODO: Just add timed refinements and re-find untimed axioms
   //       Has to do with ideas about monotonicity of history variables
@@ -647,7 +641,7 @@ void IC3Array::refine_abs_ts(TermSet & init_axioms, TermSet & untimed_axioms, Te
     }
   }
 
-  std::cout << "Added " << timed_axioms.size() << " to trans." << std::endl;
+  std::cout << "Added " << timed_axioms.size() << " prophecy axioms to trans." << std::endl;
 
   assert(abs_ts_.only_cur(abs_ts_.init()));
   assert(abs_ts_.only_cur(abs_ts_.prop()));
