@@ -75,6 +75,7 @@ msat_term Unroller::at_time_var(msat_term v, unsigned int k)
     msat_term r = msat_make_constant(ts_.get_env(), s);
     cache[v] = r;
     untime_cache_[r] = v;
+    time_lookup_[r] = k;
     return r;
 }
 
@@ -94,6 +95,15 @@ msat_term Unroller::untime(msat_term f)
     // (see above)
     return apply_substitution(ts_.get_env(), f, untime_cache_,
                               [](msat_term v) -> msat_term { return v; });
+}
+
+size_t Unroller::get_time(msat_term var)
+{
+    if (time_lookup_.find(var) == time_lookup_.end())
+    {
+        throw std::exception();
+    }
+    return time_lookup_.at(var);
 }
 
 } // namespace ic3ia

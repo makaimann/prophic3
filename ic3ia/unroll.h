@@ -48,6 +48,9 @@ public:
     msat_term untime(msat_term f);
     ///< replaces every state variable x@k in f with x
 
+    size_t get_time(msat_term var);
+    ///< for variable x@k returns k
+
 private:
     msat_term at_time_var(msat_term v, unsigned int k);
     TermMap &time_cache(unsigned int k);
@@ -57,6 +60,7 @@ private:
     typedef std::vector<TermMap *> TimeCache;
     TimeCache time_cache_;
     TermMap untime_cache_;
+    std::unordered_map<msat_term, size_t> time_lookup_;
 };
 
 } // namespace ic3ia
