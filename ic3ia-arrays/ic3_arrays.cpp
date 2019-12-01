@@ -404,10 +404,18 @@ msat_truth_value IC3Array::prove()
     assert(abs_ts_.only_cur(abs_ts_.init()));
     assert(abs_ts_.only_cur(abs_ts_.prop()));
 
+    if (timed_axioms->size() > 0 || reached_k == 0) {
+      if (check_induction()) {
+	std::cout << "Proved with Induction" << std::endl;
+	return MSAT_TRUE;
+      }
+    }
+
     timed_axioms_to_refine.clear();
     red_timed_axioms.clear();
     // reset the flag
     found_timed_axioms = false;
+
   }
   // TODO: do this correctly
   return MSAT_FALSE;
@@ -634,5 +642,19 @@ bool IC3Array::reduce_axioms(int k, const TermSet & untimed_axioms,
   }
 }
 
+bool IC3Array::check_induction()
+{
+  std::cout << "Trying Induction" << std::endl;
+  msat_config cfg = get_config(NO_MODEL);
+  msat_env env = msat_create_shared_env(cfg, abs_ts_.get_env());
+  msat_destroy_config(cfg);
+
+  msat_assert_formula(env, un_.at_time(abs_ts_.trans(), 0));
+  msat_assert_formula(env, un_.at_time(abs_ts_.prop(), 0));
+  msat_assert_formula(env,
+                      un_.at_time(msat_make_not(env, abs_ts_.prop()), 1));
+  
+  return msat_solve(env) == MSAT_UNSAT;
+}
 
 }

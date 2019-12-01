@@ -54,6 +54,8 @@ namespace ic3ia_array
 		       const ic3ia::TermSet & timed_axioms,
 		       ic3ia::TermSet & out_untimed,
 		       ic3ia::TermSet & out_timed);
+
+    bool check_induction();
   };
 }
 
