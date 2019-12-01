@@ -67,13 +67,14 @@ ic3ia::TermSet ArrayAxiomEnumerator::init_eq_axioms()
   msat_decl read0;
   msat_decl read1;
   msat_type _type;
+
   for (auto e : init_equalities_)
   {
     read0 = read_ufs.at(msat_term_get_arg(e, 0));
     read1 = read_ufs.at(msat_term_get_arg(e, 1));
     _type = orig_types.at(msat_term_get_arg(e, 0));
     enumerate_eq_uf_axioms(axioms, read0, read1, _type, e, witnesses.at(e),
-                           curr_indices_.at(msat_type_repr(_type)),
+                           state_indices_.at(msat_type_repr(_type)),
                            get_finite_domain_lambda(msat_term_get_arg(e, 0)));
   }
   return axioms;
@@ -391,6 +392,15 @@ vector<TermSet> ArrayAxiomEnumerator::const_array_axioms_all_indices(Unroller &u
 void ArrayAxiomEnumerator::add_index(msat_type _type, msat_term i) {
   // TODO: what if the index is an input -- could happen
   string typestr = msat_type_repr(_type);
+  msat_term base_idx = i;
+  if (msat_term_is_int_from_ubv(msat_env_, i))
+  {
+    base_idx = msat_term_get_arg(i, 0);
+  }
+  if (ts_.is_statevar(base_idx))
+  {
+    state_indices_[typestr].insert(i);
+  }
   curr_indices_[typestr].insert(ts_.cur(i));
   all_indices_[typestr].insert(ts_.cur(i));
   all_indices_[typestr].insert(ts_.next(i));

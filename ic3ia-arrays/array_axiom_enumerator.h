@@ -21,14 +21,35 @@ public:
     // lemmas
     std::string typestr;
     TermTypeMap & orig_types = abstractor_.orig_types();
+    msat_term base_idx; // gets assigned the actual var if it's wrapped in ubv_to_int
     for (auto idx : abstractor_.indices()) {
-      // TODO: what if the index is an input -- could happen
       typestr = msat_type_repr(orig_types.at(idx));
+
+      // save state variable indices
+      base_idx = idx;
+      if (msat_term_is_int_from_ubv(msat_env_, idx))
+      {
+        base_idx = msat_term_get_arg(idx, 0);
+      }
+      if (ts.is_statevar(base_idx))
+      {
+        state_indices_[typestr].insert(idx);
+      }
+
       curr_indices_[typestr].insert(ts.cur(idx));
       orig_indices_[typestr].insert(ts.cur(idx));
       orig_indices_set_.insert(ts.cur(idx));
       all_indices_[typestr].insert(ts.cur(idx));
       all_indices_[typestr].insert(ts.next(idx));
+    }
+
+    // provide empty sets for types with no state indices
+    for (auto elem : all_indices_)
+    {
+      if (state_indices_.find(elem.first) == state_indices_.end())
+      {
+        state_indices_[elem.first] = ic3ia::TermSet();
+      }
     }
 
     // Find all the array equalities
@@ -89,6 +110,7 @@ private:
   msat_env msat_env_;
   std::unordered_map<std::string, ic3ia::TermSet> orig_indices_;
   ic3ia::TermSet orig_indices_set_;
+  std::unordered_map<std::string, ic3ia::TermSet> state_indices_;
   std::unordered_map<std::string, ic3ia::TermSet> curr_indices_;
   std::unordered_map<std::string, ic3ia::TermSet> all_indices_;
   // equality ufs present in init

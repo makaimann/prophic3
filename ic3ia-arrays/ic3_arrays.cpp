@@ -136,8 +136,6 @@ bool IC3Array::fix_bmc()
   // violated axioms to add to BMC run
   TermSet violated_axioms;
   // axioms needed to refine initial state with no trans
-  TermSet init_axioms;
-
   // heuristic stop when we reach a bound greater than 0 with no added axioms
   bool cont;
   bool axioms_added;
@@ -264,8 +262,7 @@ bool IC3Array::fix_bmc()
       violated_axioms.clear();
     }
 
-    axioms_added = init_axioms.size();
-    axioms_added |= untimed_axioms_to_add.size();
+    axioms_added = untimed_axioms_to_add.size();
     axioms_added |= timed_axioms_to_refine.size();
 
     // refine the transition system
@@ -291,33 +288,35 @@ bool IC3Array::fix_bmc()
       assert(false);
     }
 
-    // HACK : minor hack
-    //        the reducer can sometimes remove critical invariants
-    //        if there are two possible axioms, but only one goes into init
-    //        it might throw away the init one and use a trans one
-    //        but this won't be added to init and we won't progess
-    //        In that case, just include all axioms that can be added to init
-    if (current_k_ == 0)
-    {
-      for (auto ax: untimed_axioms_to_add)
-      {
-        if (abs_ts_.only_cur(ax))
-        {
-          init_axioms.insert(ax);
-        }
-      }
-    }
+    // TODO: Remove this
+    // // HACK : minor hack
+    // //        the reducer can sometimes remove critical invariants
+    // //        if there are two possible axioms, but only one goes into init
+    // //        it might throw away the init one and use a trans one
+    // //        but this won't be added to init and we won't progess
+    // //        In that case, just include all axioms that can be added to init
+    // if (current_k_ == 0)
+    // {
+    //   for (auto ax: untimed_axioms_to_add)
+    //   {
+    //     if (abs_ts_.only_cur(ax))
+    //     {
+    //       init_axioms.insert(ax);
+    //     }
+    //   }
+    // }
 
     // Fix the transition system
-    refine_abs_ts(init_axioms, *untimed_axioms, *timed_axioms);
+    refine_abs_ts(*untimed_axioms, *timed_axioms);
 
     untimed_axioms_to_add.clear();
     timed_axioms_to_refine.clear();
 
-    if (current_k_ == 0)
-    {
-      init_axioms.clear();
-    }
+    // TODO: Remove this
+    // if (current_k_ == 0)
+    // {
+    //   init_axioms.clear();
+    // }
 
     // reset the flags
     found_untimed_axioms = false;
@@ -337,17 +336,10 @@ bool IC3Array::fix_bmc()
   return true;
 }
 
-void IC3Array::refine_abs_ts(TermSet & init_axioms, TermSet & untimed_axioms, TermSet & timed_axioms)
+void IC3Array::refine_abs_ts(TermSet & untimed_axioms, TermSet & timed_axioms)
 {
-  /* -------------------------------- INIT Axioms ------------------------------------- */
-  for (auto ax : init_axioms)
-  {
-    abs_ts_.add_init(ax);
-  }
-  std::cout << "Added " << init_axioms.size() << " axioms to init." << std::endl;
-
   /* ------------------------------- UNTIMED Axioms ------------------------------------ */
-
+  int init_cnt = 0;
   for (auto ax : untimed_axioms) {
     // std::cout << "Added to trans: " << msat_to_smtlib2_term(msat_env_, ax) << std::endl;
     abs_ts_.add_trans(ax);
@@ -357,9 +349,17 @@ void IC3Array::refine_abs_ts(TermSet & init_axioms, TermSet & untimed_axioms, Te
       // std::cout << "Added to trans next: " << msat_to_smtlib2_term(msat_env_, abs_ts_.next(ax)) << std::endl;
       abs_ts_.add_trans(abs_ts_.next(ax));
     }
+
+    if (abs_ts_.only_cur(ax) && (current_k_ == 0))
+    {
+      abs_ts_.add_init(ax);
+      init_cnt++;
+    }
+
   }
 
   std::cout << "Added " << untimed_axioms.size() << " axioms to trans." << std::endl;
+  std::cout << "Added " << init_cnt << " axioms to init." << std::endl;
 
   /* -------------------------------- TIMED Axioms ------------------------------------- */
 
@@ -461,13 +461,14 @@ TermMap IC3Array::add_frozen_proph_vars(const ic3ia::TermMap & proph_targets)
     // should match the target
     orig_types[proph] = t_orig_type;
 
-    // add as an index
-    aae_.add_index(t_orig_type, proph);
-
     msat_decl proph_decl_next =
       msat_declare_function(msat_env_, (name + ".next").c_str(), t_type);
     msat_term proph_next = msat_make_constant(msat_env_, proph_decl_next);
     abs_ts_.add_statevar(proph, proph_next);
+
+    // add as an index -- must be after making it a statevar
+    // so that the axiom enumerator knows it's a state
+    aae_.add_index(t_orig_type, proph);
 
     // make it frozen
     abs_ts_.add_trans(msat_make_eq(msat_env_, proph_next, proph));

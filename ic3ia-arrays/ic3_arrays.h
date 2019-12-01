@@ -62,7 +62,7 @@ namespace ic3ia_array
     bool fix_bmc();
 
     /* Helper for fix_bmc */
-    void refine_abs_ts(ic3ia::TermSet & init_axioms, ic3ia::TermSet & untimed_axioms, ic3ia::TermSet & timed_axioms);
+    void refine_abs_ts(ic3ia::TermSet & untimed_axioms, ic3ia::TermSet & timed_axioms);
 
     /* Returns all the original indices that occur in term */
     ic3ia::TermSet detect_indices(msat_term term);
