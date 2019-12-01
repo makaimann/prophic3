@@ -53,8 +53,109 @@ void ArrayAbstractor::do_abstraction()
     }
   }
 
+  // initialize for using curr / next
+  // will reinitialize later if needed
   abs_ts_.initialize(new_vars_, new_init, new_trans, new_prop,
                      conc_ts_.live_prop());
+
+  // replace array equalities with uninterpreted functions
+  if (use_eq_uf_)
+  {
+    TermSet equalities;
+    for (auto elem : witnesses_)
+    {
+      equalities.insert(elem.first);
+    }
+    for(auto e : stores_)
+    {
+      equalities.insert(e);
+    }
+
+    // abstract each of these equalities
+    TermMap eq_ufs;
+    for (auto e : equalities)
+    {
+      if (eq_ufs.find(e) != eq_ufs.end())
+      {
+        continue;
+      }
+      else
+      {
+        msat_term lhs = msat_term_get_arg(e, 0);
+        msat_term rhs = msat_term_get_arg(e, 1);
+        msat_type lhs_type = msat_term_get_type(lhs);
+        msat_type rhs_type = msat_term_get_type(rhs);
+        assert(msat_type_equals(lhs_type, rhs_type));
+
+        std::string eqname = "arreq" + std::to_string(eq_id_++);
+
+        msat_type param_types[2] = {lhs_type, rhs_type};
+        msat_type funtype = msat_get_function_type(msat_env_, &param_types[0], 2,
+                                                   msat_get_bool_type(msat_env_));
+        msat_decl eqfun = msat_declare_function(msat_env_, eqname.c_str(), funtype);
+
+        // use the same function for all curr / next combinations
+
+        msat_term args[2] = {abs_ts_.cur(lhs), abs_ts_.cur(rhs)};
+        msat_term eq = msat_make_eq(msat_env_, args[0], args[1]);
+        msat_term abs_eq = msat_make_uf(msat_env_, eqfun, &args[0]);
+        eq_ufs[eq] = abs_eq;
+
+        args[0] = abs_ts_.cur(lhs);
+        args[1] = abs_ts_.next(rhs);
+        eq = msat_make_eq(msat_env_, args[0], args[1]);
+        abs_eq = msat_make_uf(msat_env_, eqfun, &args[0]);
+        eq_ufs[eq] = abs_eq;
+
+        args[0] = abs_ts_.next(lhs);
+        args[1] = abs_ts_.cur(rhs);
+        eq = msat_make_eq(msat_env_, args[0], args[1]);;
+        abs_eq = msat_make_uf(msat_env_, eqfun, &args[0]);
+        eq_ufs[eq] = abs_eq;
+
+        args[0] = abs_ts_.next(lhs);
+        args[1] = abs_ts_.next(rhs);
+        eq = msat_make_eq(msat_env_, args[0], args[1]);
+        abs_eq = msat_make_uf(msat_env_, eqfun, &args[0]);
+        eq_ufs[eq] = abs_eq;
+      }
+    }
+
+    // now substitute those abstract equalities
+    TermSet new_stores;
+    TermMap new_witnesses;
+
+    for (auto s : stores_)
+    {
+      new_stores.insert(eq_ufs.at(s));
+    }
+    stores_ = new_stores;
+
+    for (auto elem : witnesses_)
+    {
+      new_witnesses[eq_ufs.at(elem.first)] = elem.second;
+    }
+    witnesses_ = new_witnesses;
+
+    TermList to_subst;
+    TermList vals;
+    for (auto elem : eq_ufs)
+    {
+      to_subst.push_back(elem.first);
+      vals.push_back(elem.second);
+    }
+
+    new_init = msat_apply_substitution(msat_env_, new_init, to_subst.size(),
+                                       &to_subst[0], &vals[0]);
+    new_trans = msat_apply_substitution(msat_env_, new_trans, to_subst.size(),
+                                       &to_subst[0], &vals[0]);
+    new_prop = msat_apply_substitution(msat_env_, new_prop, to_subst.size(),
+                                       &to_subst[0], &vals[0]);
+
+    // re-initialize
+    abs_ts_.initialize(new_vars_, new_init, new_trans, new_prop,
+                       conc_ts_.live_prop());
+  }
 
   // make const arrays frozenvars
   // if they're not statevars, this will simplify to true
@@ -235,20 +336,15 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
     TermMap &witnesses;
     TermDeclMap &read_ufs;
     TermDeclMap &write_ufs;
-    bool use_eq_uf;
     TermTypeMap &orig_types;
     TermSet &stores;
     TermMap &cache;
-    unsigned int &eq_id;
-    std::unordered_map<std::string, msat_type> & type_map;
     AbstractionData(TermSet &i, TermMap &nv, TermMap &w,
-                    TermDeclMap &r, TermDeclMap &wf, bool ueuf,
+                    TermDeclMap &r, TermDeclMap &wf,
                     TermTypeMap &o, TermSet &s,
-                    TermMap &c, unsigned int &e,
-                    std::unordered_map<std::string, msat_type> & tm)
+                    TermMap &c)
         : indices(i), new_vars(nv), witnesses(w), read_ufs(r),
-          write_ufs(wf), use_eq_uf(ueuf), orig_types(o), stores(s),
-          cache(c), eq_id(e), type_map(tm) {}
+          write_ufs(wf), orig_types(o), stores(s), cache(c) {}
   };
 
   auto visit = [](msat_env e, msat_term t, int preorder,
@@ -283,30 +379,7 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
         msat_term lhs_cache = d->cache.at(lhs);
         msat_term rhs_cache = d->cache.at(rhs);
 
-        msat_term arr_eq;
-        if (d->use_eq_uf &&
-            !msat_term_is_term_ite(e, lhs_cache) && // equality with term ite should be interpreted
-            !msat_term_is_term_ite(e, rhs_cache))
-        {
-          msat_type lhs_abs_type = msat_term_get_type(lhs_cache);
-          msat_type rhs_abs_type = msat_term_get_type(rhs_cache);
-          assert(msat_type_equals(lhs_abs_type, rhs_abs_type));
-
-          std::string eqname = "arreq" + std::to_string(d->eq_id);
-
-          msat_type param_types[2] = {lhs_abs_type, rhs_abs_type};
-          msat_type funtype = msat_get_function_type(e, &param_types[0], 2,
-                                                     msat_get_bool_type(e));
-          msat_decl eqfun = msat_declare_function(e, eqname.c_str(), funtype);
-
-          msat_term cached_args[2] = {lhs_cache, rhs_cache};
-          arr_eq = msat_make_uf(e, eqfun, &cached_args[0]);
-        }
-        else
-        {
-          arr_eq = msat_make_eq(e, lhs_cache, rhs_cache);
-        }
-
+        msat_term arr_eq = msat_make_eq(e, lhs_cache, rhs_cache);
         d->cache[t] = arr_eq;
 
         // assuming arrays have already been flattened
@@ -321,11 +394,14 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
         } else if (msat_term_is_term_ite(e, lhs_cache) ||
                    msat_term_is_term_ite(e, rhs_cache))
         {
+          // equality with an ite is the only one that is always interpreted
+          // other array equalities might use an abstract equality
+          // depending on options
           // don't need a witness
           return MSAT_VISIT_PROCESS;
         }
 
-        std::string witness_name = "witness_" + std::to_string(d->eq_id++);
+        std::string witness_name = "witness_" + std::to_string(d->witnesses.size());
 
         msat_type idx_type;
         msat_is_array_type(e, msat_term_get_type(lhs), &idx_type, nullptr);
@@ -423,8 +499,7 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
 
   AbstractionData data = AbstractionData(
      indices_, new_vars_, witnesses_, read_ufs_, write_ufs_,
-     use_eq_uf_, orig_types_, stores_, cache_, eq_id_,
-     type_map_);
+     orig_types_, stores_, cache_);
   msat_visit_term(msat_env_, term, visit, &data);
   return data.cache.at(term);
 }
