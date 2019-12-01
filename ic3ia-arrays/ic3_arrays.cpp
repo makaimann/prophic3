@@ -583,8 +583,11 @@ bool IC3Array::reduce_axioms(int k, const TermSet & untimed_axioms,
     labels.push_back(l);
 
     msat_term aa = un_.at_time(a, 0);
-    for (int i = 1; i <= k; ++i) {
+    for (int i = 1; i < k; ++i) {
       aa = msat_make_and(reducer_, aa, un_.at_time(a, i));
+    }
+    if (!abs_ts_.contains_next(a)) {
+      aa = msat_make_and(reducer_, aa, un_.at_time(a, k));
     }
     //std::cout << msat_to_smtlib2_term(abs_ts_.get_env(), aa) << std::endl;
     msat_assert_formula(reducer_, msat_make_iff(reducer_, l, aa));
