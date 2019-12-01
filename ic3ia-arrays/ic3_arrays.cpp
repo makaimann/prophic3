@@ -404,11 +404,9 @@ msat_truth_value IC3Array::prove()
     assert(abs_ts_.only_cur(abs_ts_.init()));
     assert(abs_ts_.only_cur(abs_ts_.prop()));
 
-    if (timed_axioms->size() > 0 || reached_k == 0) {
-      if (check_induction()) {
-	std::cout << "Proved with Induction" << std::endl;
-	return MSAT_TRUE;
-      }
+    if (check_induction()) {
+      std::cout << "Proved with Induction" << std::endl;
+      return MSAT_TRUE;
     }
 
     timed_axioms_to_refine.clear();
