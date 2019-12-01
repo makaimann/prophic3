@@ -26,6 +26,7 @@ inline bool is_variable(msat_env env, msat_term term) {
               MSAT_TAG_UNKNOWN &&
           !msat_term_is_number(env, term));
 }
+void detect_const_arrs(msat_env env, msat_term term, ic3ia::TermSet & out_const_arrs);
 
 class ArrayAbstractor {
 public:
@@ -51,6 +52,11 @@ public:
 
     void do_abstraction();
 
+    /* abstracts array vars in conc_ts_
+     * to be called before abstracting individual terms
+     */
+    void abstract_array_vars();
+
     /* abstracts a term */
     msat_term abstract(msat_term term);
 
@@ -66,8 +72,8 @@ public:
     ic3ia::TransitionSystem abs_ts_;
 
     unsigned int eq_id_{0};
-    unsigned int read_id_{0};
     unsigned int lambda_id_{0};
+    unsigned int num_arr_vars_{0};
 
     // the abstraction cache
     ic3ia::TermMap cache_;

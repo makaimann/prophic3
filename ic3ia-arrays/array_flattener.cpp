@@ -37,13 +37,12 @@ void ArrayFlattener::do_flattening()
         msat_term vn = msat_make_constant(msat_env_, vn_decl);
         new_state_vars[elem.first] = vn;
 
-	msat_term arr_eq = msat_make_equal(msat_env_, elem.first, new_vars_.at(elem.first));
-	new_init = msat_make_and(msat_env_, new_init, arr_eq);
+        msat_term arr_eq = msat_make_equal(msat_env_, elem.first, new_vars_.at(elem.first));
+        new_init = msat_make_and(msat_env_, new_init, arr_eq);
     }
 
     msat_term new_trans = flatten(orig_ts_.trans());
 
-    //TODO: liveness prop handling
     flatten_ts_.initialize(new_state_vars, new_init, new_trans, new_prop,
                            orig_ts_.live_prop());
 
@@ -56,14 +55,19 @@ void ArrayFlattener::do_flattening()
 
     for (auto elem : new_vars_) {
       msat_term arr_eq = msat_make_equal(msat_env_, elem.first, new_vars_.at(elem.first));
-      flatten_ts_.add_trans(arr_eq);
+      new_trans = msat_make_and(msat_env_, new_trans, arr_eq);
 
       // add next-state version of invariants (only involves current vars)
-      if (!contains_next(arr_eq, nextvars)) {
+      if (flatten_ts_.only_cur(arr_eq)) {
         msat_term arr_eq_n = flatten_ts_.next(arr_eq);
         new_trans = msat_make_and(msat_env_, new_trans, arr_eq_n);
       }
     }
+
+    // re-initialize with the updated trans
+    // will also re-collect the inputs (some might not have been added yet)
+    flatten_ts_.initialize(new_state_vars, new_init, new_trans, new_prop,
+                           orig_ts_.live_prop());
 
 }
 
@@ -107,7 +111,9 @@ msat_term ArrayFlattener::flatten(const msat_term t) {
         rebuilt = msat_make_term(e, s, &args[0]);
       }
 
-      if (msat_term_is_array_write(e, rebuilt)) {
+      if (msat_term_is_array_write(e, rebuilt) ||
+          (msat_is_array_type(e, _type, nullptr, nullptr) &&
+           msat_term_is_term_ite(e, rebuilt))) {
         // TODO: maybe auto-generate this name in another
         // way? Need to be sure it doesn't clash with
         // user-provided names
