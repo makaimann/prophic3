@@ -653,8 +653,10 @@ bool IC3Array::check_induction()
   msat_assert_formula(env, un_.at_time(abs_ts_.prop(), 0));
   msat_assert_formula(env,
                       un_.at_time(msat_make_not(env, abs_ts_.prop()), 1));
-  
-  return msat_solve(env) == MSAT_UNSAT;
+
+  msat_result res = msat_solve(env);
+  msat_destroy_env(env);
+  return res == MSAT_UNSAT;
 }
 
 }
