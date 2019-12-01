@@ -644,19 +644,37 @@ bool IC3Array::reduce_axioms(int k, const TermSet & untimed_axioms,
 
 bool IC3Array::check_induction()
 {
+  bool ret = false;
   std::cout << "Trying Induction" << std::endl;
   msat_config cfg = get_config(NO_MODEL);
   msat_env env = msat_create_shared_env(cfg, abs_ts_.get_env());
   msat_destroy_config(cfg);
 
-  msat_assert_formula(env, un_.at_time(abs_ts_.trans(), 0));
-  msat_assert_formula(env, un_.at_time(abs_ts_.prop(), 0));
-  msat_assert_formula(env,
-                      un_.at_time(msat_make_not(env, abs_ts_.prop()), 1));
+  msat_term bad = msat_make_not(env, abs_ts_.prop());
+
+  // base case
+  msat_assert_formula(env, un_.at_time(abs_ts_.init(), 0));
+  msat_assert_formula(env, un_.at_time(bad, 0));
 
   msat_result res = msat_solve(env);
+
+  if (res == MSAT_UNSAT) {
+    // inductive case
+    msat_reset_env(env);
+    msat_assert_formula(env, un_.at_time(abs_ts_.trans(), 0));
+    msat_assert_formula(env, un_.at_time(abs_ts_.prop(), 0));
+    msat_assert_formula(env, un_.at_time(bad, 1));
+
+    res = msat_solve(env);
+
+    if (res == MSAT_UNSAT) {
+      ret = true;
+    }
+  } 
+
   msat_destroy_env(env);
-  return res == MSAT_UNSAT;
+
+  return ret;
 }
 
 }
