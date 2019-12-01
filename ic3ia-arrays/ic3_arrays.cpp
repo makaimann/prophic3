@@ -165,10 +165,15 @@ bool IC3Array::fix_bmc()
     {
       msat_term timed_axiom;
       msat_term val;
-      std::vector<TermSet> axiom_sets = {
-          aae_.init_eq_axioms(), aae_.trans_eq_axioms(),
-          aae_.prop_eq_axioms(), aae_.const_array_axioms(),
-          aae_.store_axioms()};
+      std::vector<TermSet> axiom_sets = { aae_.init_eq_axioms(),
+                                          aae_.const_array_axioms(),
+                                          aae_.prop_eq_axioms(),
+                                          aae_.store_axioms() };
+
+      if (current_k_ > 0)
+      {
+        axiom_sets.push_back(aae_.trans_eq_axioms());
+      }
 
       msat_term f = msat_make_false(msat_env_);
       for (size_t i = 0; i < axiom_sets.size(); ++i) {
@@ -267,6 +272,27 @@ bool IC3Array::fix_bmc()
 
     // refine the transition system
 
+    // HACK: minor hack, just filter out non-state variable axioms
+    //       could be added by axiom enumerators other than init_eq_axioms
+    if (current_k_ == 0)
+    {
+      // shouldn't get timed axioms at initial state check
+      assert(timed_axioms_to_refine.size() == 0);
+      TermSet to_remove;
+      for (auto ax : untimed_axioms_to_add)
+      {
+        if (!abs_ts_.only_cur(ax))
+        {
+          to_remove.insert(ax);
+        }
+      }
+
+      for (auto ax : to_remove)
+      {
+        untimed_axioms_to_add.erase(ax);
+      }
+    }
+
     // Reduce the axioms
     TermSet *untimed_axioms = NULL;
     TermSet *timed_axioms = NULL;
@@ -288,35 +314,11 @@ bool IC3Array::fix_bmc()
       assert(false);
     }
 
-    // TODO: Remove this
-    // // HACK : minor hack
-    // //        the reducer can sometimes remove critical invariants
-    // //        if there are two possible axioms, but only one goes into init
-    // //        it might throw away the init one and use a trans one
-    // //        but this won't be added to init and we won't progess
-    // //        In that case, just include all axioms that can be added to init
-    // if (current_k_ == 0)
-    // {
-    //   for (auto ax: untimed_axioms_to_add)
-    //   {
-    //     if (abs_ts_.only_cur(ax))
-    //     {
-    //       init_axioms.insert(ax);
-    //     }
-    //   }
-    // }
-
     // Fix the transition system
     refine_abs_ts(*untimed_axioms, *timed_axioms);
 
     untimed_axioms_to_add.clear();
     timed_axioms_to_refine.clear();
-
-    // TODO: Remove this
-    // if (current_k_ == 0)
-    // {
-    //   init_axioms.clear();
-    // }
 
     // reset the flags
     found_untimed_axioms = false;
@@ -721,6 +723,7 @@ bool IC3Array::reduce_axioms(int k, const TermSet & untimed_axioms,
 			     const TermSet & timed_axioms,
 			     TermSet & out_untimed, TermSet & out_timed)
 {
+
   msat_reset_env(reducer_);
   // bmc problem
   msat_assert_formula(reducer_, un_.at_time(abs_ts_.init(), 0));
