@@ -198,7 +198,6 @@ bool IC3Array::fix_bmc()
             untime_cache[timed_axiom] = ax;
 
             val = msat_model_eval(model_, timed_axiom);
-
             if (val == f) {
               // std::cout << "violated axiom ";
               // std::cout << msat_to_smtlib2_term(msat_env_, timed_axiom) <<
@@ -233,6 +232,9 @@ bool IC3Array::fix_bmc()
 
               if (val == f)
               {
+                // std::cout << "TIMED violated axiom ";
+                // std::cout << msat_to_smtlib2_term(msat_env_, timed_axiom) <<
+                //   std::endl;
                 violated_axioms.insert(timed_axiom);
                 timed_axioms_to_refine.insert(timed_axiom);
               }
@@ -297,6 +299,8 @@ bool IC3Array::fix_bmc()
       }
     }
 
+    /************************************* Fix the transition system ************************************/
+
     TermSet out_timed_axioms;
     if (timed_axioms_to_refine.size())
     {
@@ -310,7 +314,7 @@ bool IC3Array::fix_bmc()
         sorted_map[delay_amount][untimed_idx].insert(timed_ax);
       }
 
-      // place axioms sets in vector
+      // place axiom sets in a vector
       // relying on iteration order for sortedness
       std::vector<ic3ia::TermSet> sorted_timed_axioms;
       for (auto elem0 : sorted_map)
@@ -324,32 +328,44 @@ bool IC3Array::fix_bmc()
       bool ok = reduce_timed_axioms(current_k_, untimed_axioms_to_add,
                                     sorted_timed_axioms, out_timed_axioms);
       assert(ok);
-    }
 
-    // Reduce the axioms
-    TermSet *untimed_axioms = NULL;
-    TermSet *timed_axioms = NULL;
-    TermSet red_untimed_axioms;
-    TermSet red_timed_axioms;
-    if (reduce_axioms(current_k_, untimed_axioms_to_add, out_timed_axioms, red_untimed_axioms, red_timed_axioms)) {
-      std::cout << "Reduced untimed axioms to "
-                << red_untimed_axioms.size() << " axioms."
-                << std::endl;
-      std::cout << "Reduced timed axioms to "
-                << red_timed_axioms.size() << " axioms."
-                << std::endl;
-      untimed_axioms = &red_untimed_axioms;
-      timed_axioms = &red_timed_axioms;
-    } else {
-      untimed_axioms = &untimed_axioms_to_add;
-      timed_axioms = &out_timed_axioms;
-      // this used to occur but it was likely due to a MathSAT bug.
-      assert(false);
-    }
+      // add prophecy variables but not axioms
+      // don't refine with untimed axioms search for them again
+      prophesize_abs_ts(out_timed_axioms, false);
 
-    // Fix the transition system
-    prophesize_abs_ts(*timed_axioms, true);
-    refine_abs_ts(*untimed_axioms);
+      // continue with the same k
+      cont = true;
+    }
+    else
+    {
+      // TODO: currently this only runs when out_timed_axioms is empty
+      //       FIXME -- update reduce_axioms to not have that field
+      // Reduce the axioms
+      TermSet *untimed_axioms = NULL;
+      TermSet *timed_axioms = NULL;
+      TermSet red_untimed_axioms;
+      TermSet red_timed_axioms;
+      if (reduce_axioms(current_k_, untimed_axioms_to_add, out_timed_axioms, red_untimed_axioms, red_timed_axioms)) {
+        std::cout << "Reduced untimed axioms to "
+                  << red_untimed_axioms.size() << " axioms."
+                  << std::endl;
+        std::cout << "Reduced timed axioms to "
+                  << red_timed_axioms.size() << " axioms."
+                  << std::endl;
+        untimed_axioms = &red_untimed_axioms;
+        timed_axioms = &red_timed_axioms;
+      } else {
+        untimed_axioms = &untimed_axioms_to_add;
+        timed_axioms = &out_timed_axioms;
+        // this used to occur but it was likely due to a MathSAT bug.
+        assert(false);
+      }
+      refine_abs_ts(*untimed_axioms);
+
+      // heuristic -- don't stop at initial state even if you didn't need to add axioms
+      cont = axioms_added || (current_k_ == 0);
+      current_k_ += cont ? 1 : 0;
+    }
 
     untimed_axioms_to_add.clear();
     timed_axioms_to_refine.clear();
@@ -357,10 +373,6 @@ bool IC3Array::fix_bmc()
     // reset the flags
     found_untimed_axioms = false;
     found_timed_axioms = false;
-
-    // heuristic -- don't stop at initial state even if you didn't need to add axioms
-    cont = axioms_added || (current_k_ == 0);
-    current_k_ += cont ? 1 : 0;
 
   } while(cont);
 
@@ -759,7 +771,7 @@ msat_term IC3Array::untime_axiom(msat_term axiom, msat_term target, msat_term pr
 }
 
 bool IC3Array::reduce_timed_axioms(int k, const ic3ia::TermSet & untimed_axioms,
-                                   const std::vector<ic3ia::TermSet> sorted_timed_axioms,
+                                   const std::vector<ic3ia::TermSet> & sorted_timed_axioms,
                                    ic3ia::TermSet & out_timed_axioms)
 {
   msat_reset_env(reducer_);

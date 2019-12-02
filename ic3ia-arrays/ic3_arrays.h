@@ -94,7 +94,7 @@ namespace ic3ia_array
 
     /* reduces timed axioms based on vector order (first is highest priority to keep) */
     bool reduce_timed_axioms(int k, const ic3ia::TermSet & untimed_axioms,
-                             const std::vector<ic3ia::TermSet> sorted_timed_axioms,
+                             const std::vector<ic3ia::TermSet> & sorted_timed_axioms,
                              ic3ia::TermSet & out_timed_axioms);
 
     bool reduce_axioms(int k, const ic3ia::TermSet & untimed_axioms,
