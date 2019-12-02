@@ -58,7 +58,7 @@ void ArrayFlattener::do_flattening()
       new_trans = msat_make_and(msat_env_, new_trans, arr_eq);
 
       // add next-state version of invariants (only involves current vars)
-      if (flatten_ts_.only_cur(arr_eq)) {
+      if (!flatten_ts_.contains_next(arr_eq)) {
         msat_term arr_eq_n = flatten_ts_.next(arr_eq);
         new_trans = msat_make_and(msat_env_, new_trans, arr_eq_n);
       }
