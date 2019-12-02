@@ -173,6 +173,7 @@ bool IC3Array::fix_bmc()
     {
       msat_term timed_axiom;
       msat_term val;
+      // note: init_eq_axioms should come first (see comment about max_k below)
       std::vector<TermSet> axiom_sets = { aae_.init_eq_axioms(),
                                           aae_.const_array_axioms(),
                                           aae_.prop_eq_axioms(),
@@ -187,6 +188,7 @@ bool IC3Array::fix_bmc()
       for (size_t i = 0; i < axiom_sets.size(); ++i) {
         int max_k;
         if (i == 0) {
+          // for init_eq_axioms, only check at time 0
           max_k = 0;
         } else {
           max_k = current_k_;
