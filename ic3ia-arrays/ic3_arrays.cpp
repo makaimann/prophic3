@@ -42,10 +42,22 @@ TermList conjunctive_partition(msat_env e, msat_term top)
 
 IC3Array::IC3Array(const ic3ia::TransitionSystem &ts, const ic3ia::Options &opts,
 		   ic3ia::LiveEncoder &l2s, unsigned int verbosity)
-  : msat_env_(ts.get_env()), conc_ts_(ts), abs_ts_(msat_env_), l2s_(l2s),
-    opts_(opts), un_(abs_ts_) {
+  : msat_env_(ts.get_env()),
+    conc_ts_(ts),
+    af_(conc_ts_),
+    aa_(af_.flatten_transition_system(), opts.use_uf_for_arr_eq),
+    abs_ts_(aa_.abstract_transition_system()),
+    aae_(abs_ts_, aa_),
+    hr_(abs_ts_),
+    opts_(opts),
+    l2s_(l2s),
+    un_(abs_ts_) {
+
   ic3ia::Logger & l = ic3ia::Logger::get();
   l.set_verbosity(verbosity);
+
+  assert(abs_ts_.only_cur(abs_ts_.init()));
+  assert(abs_ts_.only_cur(abs_ts_.prop()));
 
   msat_config cfg = get_config(FULL_MODEL);
   refiner_ = msat_create_shared_env(cfg, abs_ts_.get_env());
