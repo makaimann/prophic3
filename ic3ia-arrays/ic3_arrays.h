@@ -62,7 +62,12 @@ namespace ic3ia_array
     bool fix_bmc();
 
     /* Helper for fix_bmc */
-    void refine_abs_ts(ic3ia::TermSet & untimed_axioms, ic3ia::TermSet & timed_axioms);
+    void refine_abs_ts(ic3ia::TermSet & untimed_axioms);
+
+    /* Helper for fix_bmc
+     * If add_axioms is true, it adds the timed_axioms using the prophecy variable
+     */
+    void prophesize_abs_ts(ic3ia::TermSet & timed_axioms, bool add_axioms=false);
 
     /* Returns all the original indices that occur in term */
     ic3ia::TermSet detect_indices(msat_term term);

@@ -345,7 +345,8 @@ bool IC3Array::fix_bmc()
     }
 
     // Fix the transition system
-    refine_abs_ts(*untimed_axioms, *timed_axioms);
+    prophesize_abs_ts(*timed_axioms, true);
+    refine_abs_ts(*untimed_axioms);
 
     untimed_axioms_to_add.clear();
     timed_axioms_to_refine.clear();
@@ -368,9 +369,8 @@ bool IC3Array::fix_bmc()
   return true;
 }
 
-void IC3Array::refine_abs_ts(TermSet & untimed_axioms, TermSet & timed_axioms)
+void IC3Array::refine_abs_ts(TermSet & untimed_axioms)
 {
-  /* ------------------------------- UNTIMED Axioms ------------------------------------ */
   int init_cnt = 0;
   for (auto ax : untimed_axioms) {
     // std::cout << "Added to trans: " << msat_to_smtlib2_term(msat_env_, ax) << std::endl;
@@ -387,29 +387,36 @@ void IC3Array::refine_abs_ts(TermSet & untimed_axioms, TermSet & timed_axioms)
       abs_ts_.add_init(ax);
       init_cnt++;
     }
-
   }
-
   std::cout << "Added " << untimed_axioms.size() << " axioms to trans." << std::endl;
   std::cout << "Added " << init_cnt << " axioms to init." << std::endl;
 
-  /* -------------------------------- TIMED Axioms ------------------------------------- */
+  assert(abs_ts_.only_cur(abs_ts_.init()));
+  assert(abs_ts_.only_cur(abs_ts_.prop()));
+}
 
-  if (timed_axioms.size())
+void IC3Array::prophesize_abs_ts(TermSet & timed_axioms, bool add_axioms)
+{
+  if (timed_axioms.size() == 0)
   {
-    unordered_map<msat_term, size_t> indices_to_refine;
-    msat_term tmp_idx;
-    for (auto ax : timed_axioms)
-    {
-      tmp_idx = aae_.get_index(ax);
-      indices_to_refine[tmp_idx] = current_k_ - un_.get_time(tmp_idx);
-    }
+    return;
+  }
 
-    TermMap hist_vars_to_refine = add_history_vars(indices_to_refine);
+  unordered_map<msat_term, size_t> indices_to_refine;
+  msat_term tmp_idx;
+  for (auto ax : timed_axioms)
+  {
+    tmp_idx = aae_.get_index(ax);
+    indices_to_refine[tmp_idx] = current_k_ - un_.get_time(tmp_idx);
+  }
 
-    // create prophecy variables for these history variables
-    TermMap idx_to_proph = add_frozen_proph_vars(hist_vars_to_refine);
+  TermMap hist_vars_to_refine = add_history_vars(indices_to_refine);
 
+  // create prophecy variables for these history variables
+  TermMap idx_to_proph = add_frozen_proph_vars(hist_vars_to_refine);
+
+  if (add_axioms)
+  {
     msat_term untimed_axiom;
     // add axioms to transition system using prophecy vars
     for (auto ax : timed_axioms)
@@ -423,9 +430,8 @@ void IC3Array::refine_abs_ts(TermSet & untimed_axioms, TermSet & timed_axioms)
         abs_ts_.add_trans(abs_ts_.next(untimed_axiom));
       }
     }
+    std::cout << "Added " << timed_axioms.size() << " prophecy axioms to trans." << std::endl;
   }
-
-  std::cout << "Added " << timed_axioms.size() << " prophecy axioms to trans." << std::endl;
 
   assert(abs_ts_.only_cur(abs_ts_.init()));
   assert(abs_ts_.only_cur(abs_ts_.prop()));
