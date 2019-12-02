@@ -329,7 +329,7 @@ bool IC3Array::fix_bmc()
         }
       }
 
-      bool ok = reduce_timed_axioms(current_k_, untimed_axioms_to_add,
+      bool ok = reduce_timed_axioms(untimed_axioms_to_add,
                                     sorted_timed_axioms, out_timed_axioms);
       assert(ok);
 
@@ -774,29 +774,23 @@ msat_term IC3Array::untime_axiom(msat_term axiom, msat_term target, msat_term pr
   return res;
 }
 
-bool IC3Array::reduce_timed_axioms(int k, const ic3ia::TermSet & untimed_axioms,
+bool IC3Array::reduce_timed_axioms(const ic3ia::TermSet & untimed_axioms,
                                    const std::vector<ic3ia::TermSet> & sorted_timed_axioms,
                                    ic3ia::TermSet & out_timed_axioms)
 {
   msat_reset_env(reducer_);
   // bmc
-  msat_assert_formula(reducer_, un_.at_time(abs_ts_.init(), 0));
-  for (int i = 0; i < k; ++i)
-  {
-    msat_assert_formula(reducer_, un_.at_time(abs_ts_.trans(), i));
-  }
-  msat_assert_formula(reducer_,
-                      un_.at_time(msat_make_not(reducer_, abs_ts_.prop()), k));
+  msat_assert_formula(reducer_, refinement_formula_);
 
   // add all untimed axioms
   for (auto ax : untimed_axioms)
   {
     msat_term axioms = un_.at_time(ax, 0);
-    for (int i = 1; i < k; ++i) {
+    for (int i = 1; i < current_k_; ++i) {
       axioms = msat_make_and(reducer_, axioms, un_.at_time(ax, i));
     }
     if (!abs_ts_.contains_next(ax)) {
-      axioms = msat_make_and(reducer_, axioms, un_.at_time(ax, k));
+      axioms = msat_make_and(reducer_, axioms, un_.at_time(ax, current_k_));
     }
     msat_assert_formula(reducer_, axioms);
   }

@@ -94,7 +94,7 @@ namespace ic3ia_array
     bool contains_vars(msat_term term, const ic3ia::TermSet &vars) const;
 
     /* reduces timed axioms based on vector order (first is highest priority to keep) */
-    bool reduce_timed_axioms(int k, const ic3ia::TermSet & untimed_axioms,
+    bool reduce_timed_axioms(const ic3ia::TermSet & untimed_axioms,
                              const std::vector<ic3ia::TermSet> & sorted_timed_axioms,
                              ic3ia::TermSet & out_timed_axioms);
 
