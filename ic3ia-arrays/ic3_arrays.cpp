@@ -2,6 +2,7 @@
 
 #include "ic3_arrays.h"
 
+#include <map>
 #include <vector>
 
 using namespace ic3ia;
@@ -293,12 +294,41 @@ bool IC3Array::fix_bmc()
       }
     }
 
+    TermSet out_timed_axioms;
+    if (timed_axioms_to_refine.size())
+    {
+      // use map to sort by distance from safety violation
+      std::map<int, std::map<msat_term, ic3ia::TermSet>> sorted_map;
+      for (auto timed_ax : timed_axioms_to_refine)
+      {
+        msat_term tmp_idx = aae_.get_index(timed_ax);
+        int delay_amount = current_k_ - un_.get_time(tmp_idx);
+        msat_term untimed_idx = un_.untime(tmp_idx);
+        sorted_map[delay_amount][untimed_idx].insert(timed_ax);
+      }
+
+      // place axioms sets in vector
+      // relying on iteration order for sortedness
+      std::vector<ic3ia::TermSet> sorted_timed_axioms;
+      for (auto elem0 : sorted_map)
+      {
+        for (auto elem1 : elem0.second)
+        {
+          sorted_timed_axioms.push_back(elem1.second);
+        }
+      }
+
+      bool ok = reduce_timed_axioms(current_k_, untimed_axioms_to_add,
+                                    sorted_timed_axioms, out_timed_axioms);
+      assert(ok);
+    }
+
     // Reduce the axioms
     TermSet *untimed_axioms = NULL;
     TermSet *timed_axioms = NULL;
     TermSet red_untimed_axioms;
     TermSet red_timed_axioms;
-    if (reduce_axioms(current_k_, untimed_axioms_to_add, timed_axioms_to_refine, red_untimed_axioms, red_timed_axioms)) {
+    if (reduce_axioms(current_k_, untimed_axioms_to_add, out_timed_axioms, red_untimed_axioms, red_timed_axioms)) {
       std::cout << "Reduced untimed axioms to "
                 << red_untimed_axioms.size() << " axioms."
                 << std::endl;
@@ -309,7 +339,7 @@ bool IC3Array::fix_bmc()
       timed_axioms = &red_timed_axioms;
     } else {
       untimed_axioms = &untimed_axioms_to_add;
-      timed_axioms = &timed_axioms_to_refine;
+      timed_axioms = &out_timed_axioms;
       // this used to occur but it was likely due to a MathSAT bug.
       assert(false);
     }
@@ -717,6 +747,117 @@ msat_term IC3Array::untime_axiom(msat_term axiom, msat_term target, msat_term pr
                                           &vals[0]);
   assert(!MSAT_ERROR_TERM(res));
   return res;
+}
+
+bool IC3Array::reduce_timed_axioms(int k, const ic3ia::TermSet & untimed_axioms,
+                                   const std::vector<ic3ia::TermSet> sorted_timed_axioms,
+                                   ic3ia::TermSet & out_timed_axioms)
+{
+  msat_reset_env(reducer_);
+  // bmc
+  msat_assert_formula(reducer_, un_.at_time(abs_ts_.init(), 0));
+  for (int i = 0; i < k; ++i)
+  {
+    msat_assert_formula(reducer_, un_.at_time(abs_ts_.trans(), i));
+  }
+  msat_assert_formula(reducer_,
+                      un_.at_time(msat_make_not(reducer_, abs_ts_.prop()), k));
+
+  // add all untimed axioms
+  for (auto ax : untimed_axioms)
+  {
+    msat_term axioms = un_.at_time(ax, 0);
+    for (int i = 1; i < k; ++i) {
+      axioms = msat_make_and(reducer_, axioms, un_.at_time(ax, i));
+    }
+    if (!abs_ts_.contains_next(ax)) {
+      axioms = msat_make_and(reducer_, axioms, un_.at_time(ax, k));
+    }
+    msat_assert_formula(reducer_, axioms);
+  }
+
+  auto lbl = [=](msat_term p) -> msat_term
+             {
+               std::ostringstream buf;
+               buf << ".axiom_red_lbl{" << msat_term_id(p) << "}";
+               std::string name = buf.str();
+               msat_decl d = msat_declare_function(abs_ts_.get_env(), name.c_str(),
+                                                   msat_get_bool_type(abs_ts_.get_env()));
+               return msat_make_constant(abs_ts_.get_env(), d);
+             };
+
+  TermList labels;
+  for (auto ax_set : sorted_timed_axioms)
+  {
+    msat_term l = lbl(*(ax_set.begin()));
+    labels.push_back(l);
+    msat_term aa = msat_make_true(msat_env_);
+    for (auto ax : ax_set)
+    {
+        aa = msat_make_and(msat_env_, aa, ax);
+    }
+    // label -> constraints
+    msat_assert_formula(reducer_,
+                        msat_make_or(reducer_,
+                                     msat_make_not(reducer_, l),
+                                     aa));
+  }
+
+  msat_result s = msat_solve_with_assumptions(reducer_, &labels[0], labels.size());
+  if (s != MSAT_UNSAT)
+  {
+    // not ok -- should be unsat with all assumptions
+    return false;
+  }
+
+  std::vector<bool> unused(labels.size());
+  std::fill(unused.begin(), unused.end(), false);
+
+  // Try disabling each set of timed axioms in reverse order
+  // e.g. first entry is highest priority to keep
+  TermList label_polarities = labels;
+  for (int i = labels.size()-1; i >= 0; i--)
+  {
+    // don't require this set of axioms
+    label_polarities[i] = msat_make_not(reducer_, labels[i]);
+    for (int j = i + 1; j < labels.size(); j++)
+    {
+      if (unused[j])
+      {
+        label_polarities[j] = msat_make_not(reducer_, labels[j]);
+      }
+      else
+      {
+        label_polarities[j] = labels[j];
+      }
+    }
+
+    // check if it's still unsat
+    s = msat_solve_with_assumptions(reducer_, &label_polarities[0], label_polarities.size());
+    if (s == MSAT_UNSAT)
+    {
+      unused[i] = true;
+    }
+  }
+
+  assert(unused.size() == sorted_timed_axioms.size());
+  int removed_cnt = 0;
+  for (int i = 0; i < unused.size(); ++i)
+  {
+    if (!unused[i])
+    {
+      for (auto ax : sorted_timed_axioms[i])
+      {
+        out_timed_axioms.insert(ax);
+      }
+    }
+    else
+    {
+      removed_cnt++;
+    }
+  }
+  std::cout << "Removed " << removed_cnt << " timed axioms sets." << std::endl;
+  return true;
 }
 
 bool IC3Array::reduce_axioms(int k, const TermSet & untimed_axioms,
