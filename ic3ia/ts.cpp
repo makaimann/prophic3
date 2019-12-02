@@ -31,39 +31,42 @@ TransitionSystem::TransitionSystem(msat_env env):
     reset();
 }
 
-bool TransitionSystem::initialize(const TermMap &statevars, msat_term init,
-                                  msat_term trans, msat_term prop,
-                                  bool live_prop) {
-  reset();
 
-  if (MSAT_ERROR_TERM(init) || MSAT_ERROR_TERM(trans) ||
-      MSAT_ERROR_TERM(prop)) {
-    return false;
-  }
+bool TransitionSystem::initialize(
+    const TermMap &statevars,
+    msat_term init, msat_term trans, msat_term prop, bool live_prop)
+{
+    reset();
 
-  for (auto p : statevars) {
-    statevars_.push_back(p.first);
-  }
-  std::sort(statevars_.begin(), statevars_.end());
+    if (MSAT_ERROR_TERM(init) || MSAT_ERROR_TERM(trans) ||
+        MSAT_ERROR_TERM(prop)) {
+        return false;
+    }
 
-  for (auto s : statevars_) {
-    msat_term n = statevars.find(s)->second;
-    nextstatevars_.push_back(n);
-    cur2next_[s] = n;
-    next2cur_[n] = s;
-    statevars_set_.insert(s);
-    nextstatevars_set_.insert(n);
-  }
+    for (auto p : statevars) {
+        statevars_.push_back(p.first);
+    }
+    std::sort(statevars_.begin(), statevars_.end());
 
-  init_ = init;
-  trans_ = trans;
-  live_prop_ = live_prop;
-  prop_ = prop;
+    for (auto s : statevars_) {
+        msat_term n = statevars.find(s)->second;
+        nextstatevars_.push_back(n);
+        cur2next_[s] = n;
+        next2cur_[n] = s;
+        statevars_set_.insert(s);
+        nextstatevars_set_.insert(n);
+    }
 
-  collect_inputs();
+    init_ = init;
+    trans_ = trans;    
+    live_prop_ = live_prop;
+    prop_ = prop;
 
-  return true;
+    collect_inputs();
+
+    return true;
 }
+
 
 void TransitionSystem::reset()
 {
@@ -167,43 +170,45 @@ void TransitionSystem::add_trans(msat_term t)
     trans_ = msat_make_and(env_, trans_, t);
 }
 
-void TransitionSystem::to_vmt(std::ostream &out) const {
-  std::vector<const char *> annots;
-  std::vector<std::string> annotstr;
-  TermList terms;
 
-  for (auto v : statevars_) {
-    terms.push_back(v);
-    annotstr.push_back("next");
-    char *s = msat_term_repr(next(v));
-    annotstr.push_back(std::string("|") + s + "|");
+void TransitionSystem::to_vmt(std::ostream &out) const
+{
+    std::vector<const char *> annots;
+    std::vector<std::string> annotstr;
+    TermList terms;
+
+    for (auto v : statevars_) {
+        terms.push_back(v);
+        annotstr.push_back("next");
+        char *s = msat_term_repr(next(v));
+        annotstr.push_back(std::string("|") + s + "|");
+        msat_free(s);
+    }
+
+    terms.push_back(init_);
+    annotstr.push_back("init");
+    annotstr.push_back("true");
+
+    terms.push_back(trans_);
+    annotstr.push_back("trans");
+    annotstr.push_back("true");
+
+    terms.push_back(prop());
+    if (live_prop_) {
+        annotstr.push_back("live-property");
+    } else {
+        annotstr.push_back("invar-property");
+    }
+    annotstr.push_back("0");
+
+    for (size_t i = 0; i < annotstr.size(); ++i) {
+        annots.push_back(annotstr[i].c_str());
+    }
+
+    char *s = msat_annotated_list_to_smtlib2(env_, terms.size(),
+                                             &terms[0], &annots[0]);
+    out << s;
     msat_free(s);
-  }
-
-  terms.push_back(init_);
-  annotstr.push_back("init");
-  annotstr.push_back("true");
-
-  terms.push_back(trans_);
-  annotstr.push_back("trans");
-  annotstr.push_back("true");
-
-  terms.push_back(prop());
-  if (live_prop_) {
-    annotstr.push_back("live-property");
-  } else {
-    annotstr.push_back("invar-property");
-  }
-  annotstr.push_back("0");
-
-  for (size_t i = 0; i < annotstr.size(); ++i) {
-    annots.push_back(annotstr[i].c_str());
-  }
-
-  char *s =
-      msat_annotated_list_to_smtlib2(env_, terms.size(), &terms[0], &annots[0]);
-  out << s;
-  msat_free(s);
 }
 
 // added by Makai

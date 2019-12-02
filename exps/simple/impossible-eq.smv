@@ -1,0 +1,15 @@
+-- Property should hold
+-- nuXmv 2.0.0 using ic3ia says it is unsafe but cannot produce a counterexample
+MODULE main
+
+IVAR
+  i : integer ;
+
+VAR
+  a : array integer of integer;
+
+INIT a = CONSTARRAY(typeof(a), 0)
+
+TRANS next(a) = WRITE(a, i, 1)
+
+INVARSPEC a != CONSTARRAY(typeof(a), 1)

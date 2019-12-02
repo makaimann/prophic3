@@ -230,6 +230,8 @@ Options get_options(int argc, const char **argv)
             ret.bmc = true;
         } else if (a == "-bmc-k") {
             ok = getint(++i, ret.bmc_max_k);
+        } else if (a == "-no-eq-uf") {
+            ret.use_uf_for_arr_eq = false;
         } else if (a == "-h" || a == "-help" || a == "--help") {
             std::cout << "USAGE: " << argv[0] << " [OPTIONS] FILENAME.vmt"
                       << "\n\n   -v N : set verbosity level"
@@ -262,6 +264,7 @@ Options get_options(int argc, const char **argv)
                       << "k-liveness counter"
                       << "\n   -bmc : use BMC instead of IC3"
                       << "\n   -bmc-k N : max k value for BMC"
+                      << "\n   -no-eq-uf : use actual equalities between abstracted arrays"
                       << std::endl;
             exit(0);
             break;
@@ -283,6 +286,29 @@ Options get_options(int argc, const char **argv)
 
     set_verbosity(ret.verbosity);
     return ret;
+}
+
+void get_free_vars(msat_env env, msat_term term, TermSet & out_free_vars)
+{
+  struct Data {
+    TermSet &free_vars;
+    Data(TermSet &fv) : free_vars(fv){};
+  };
+  auto visit = [](msat_env e, msat_term t, int preorder,
+                  void *data) -> msat_visit_status {
+                 Data *d = static_cast<Data *>(data);
+                 // a variable is a term with no children and no built-in
+                 // interpretation
+                 if (preorder && msat_term_arity(t) == 0 &&
+                     msat_decl_get_tag(e, msat_term_get_decl(t)) == MSAT_TAG_UNKNOWN &&
+                     !msat_term_is_number(e, t)) {
+                   d->free_vars.insert(t);
+                 }
+                 return MSAT_VISIT_PROCESS;
+               };
+
+  Data data(out_free_vars);
+  msat_visit_term(env, term, visit, &data);
 }
 
 }

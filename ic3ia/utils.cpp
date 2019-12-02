@@ -42,7 +42,7 @@ msat_config get_config(ModelGeneration model, bool interpolation)
     // already-satisfied clauses. Example: given a clause (P | (t >= 0)), if P
     // is true, the value of (t >= 0) doesn't matter, and so it is a "ghost"
     OPT_("dpll.ghost_filtering", "true");
-
+ 
     // Handling disequalities might be potentially quite expensive (especially
     // over the integers, where splitting of !(t = 0) into ((t < 0) | (t > 0))
     // is needed), so we want to avoid this as much as possible. If (t = 0)

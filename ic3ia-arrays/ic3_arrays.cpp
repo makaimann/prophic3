@@ -42,10 +42,22 @@ TermList conjunctive_partition(msat_env e, msat_term top)
 
 IC3Array::IC3Array(const ic3ia::TransitionSystem &ts, const ic3ia::Options &opts,
 		   ic3ia::LiveEncoder &l2s, unsigned int verbosity)
-  : msat_env_(ts.get_env()), conc_ts_(ts), abs_ts_(msat_env_), l2s_(l2s),
-    opts_(opts), un_(abs_ts_) {
+  : msat_env_(ts.get_env()),
+    conc_ts_(ts),
+    af_(conc_ts_),
+    aa_(af_.flatten_transition_system(), opts.use_uf_for_arr_eq),
+    abs_ts_(aa_.abstract_transition_system()),
+    aae_(abs_ts_, aa_),
+    hr_(abs_ts_),
+    opts_(opts),
+    l2s_(l2s),
+    un_(abs_ts_) {
+
   ic3ia::Logger & l = ic3ia::Logger::get();
   l.set_verbosity(verbosity);
+
+  assert(abs_ts_.only_cur(abs_ts_.init()));
+  assert(abs_ts_.only_cur(abs_ts_.prop()));
 
   msat_config cfg = get_config(FULL_MODEL);
   refiner_ = msat_create_shared_env(cfg, abs_ts_.get_env());
@@ -65,10 +77,16 @@ IC3Array::~IC3Array()
   
 msat_truth_value IC3Array::prove()
 {
+  assert(conc_ts_.only_cur(conc_ts_.init()));
+  assert(conc_ts_.only_cur(conc_ts_.prop()));
   ArrayFlattener af(conc_ts_);
   abs_ts_ = af.flatten_transition_system();
-  ArrayAbstractor aa(abs_ts_);
+  assert(abs_ts_.only_cur(abs_ts_.init()));
+  assert(abs_ts_.only_cur(abs_ts_.prop()));
+  ArrayAbstractor aa(abs_ts_, opts_.use_uf_for_arr_eq);
   abs_ts_ = aa.abstract_transition_system();
+  assert(abs_ts_.only_cur(abs_ts_.init()));
+  assert(abs_ts_.only_cur(abs_ts_.prop()));
   ArrayAxiomEnumerator aae =
       ArrayAxiomEnumerator(abs_ts_, aa);
 
@@ -173,11 +191,6 @@ msat_truth_value IC3Array::prove()
           aae.init_eq_axioms(), aae.trans_eq_axioms(),
           aae.prop_eq_axioms(), aae.const_array_axioms(),
           aae.store_axioms()};
-      // std::vector<std::string> axiom_names = {"Init Eq",
-      //                                         "Trans Eq",
-      //                                         "Prop Eq",
-      //                                         "Const Array Axioms",
-      //                                         "Store Axioms"};
 
       TermSet violated_axioms;
 
@@ -277,10 +290,10 @@ msat_truth_value IC3Array::prove()
     TermSet red_timed_axioms;
     if (reduce_axioms(reached_k, untimed_axioms_to_add, timed_axioms_to_refine, red_untimed_axioms, red_timed_axioms)) {
       std::cout << "Reduced Untimed Axioms to "
-		<< red_untimed_axioms.size() << " axioms."
+                << red_untimed_axioms.size() << " axioms."
                 << std::endl;
       std::cout << "Reduced timed Axioms to "
-		<< red_timed_axioms.size() << " axioms."
+                << red_timed_axioms.size() << " axioms."
                 << std::endl;
       untimed_axioms = &red_untimed_axioms;
       timed_axioms = &red_timed_axioms;
@@ -292,17 +305,36 @@ msat_truth_value IC3Array::prove()
     size_t cnt = 0;
     if (timed_axioms->size() == 0)
     {
+      // HACK : minor hack
+      //        the reducer can sometimes remove critical invariants
+      //        if there are two possible axioms, but only one goes into init
+      //        it might throw away the init one and use a trans one
+      //        but this won't be added to init and we won't progess
+      //        In that case, just include all axioms that can be added to init
+      if (reached_k == 0)
+      {
+        for (auto ax : untimed_axioms_to_add)
+        {
+          if (abs_ts_.only_cur(ax))
+          {
+            untimed_axioms->insert(ax);
+          }
+        }
+      }
+
       for (auto ax : *(untimed_axioms)) {
-        //std::cout << msat_to_smtlib2_term(msat_env_, ax) << std::endl;
+        // std::cout << "Added to trans: " << msat_to_smtlib2_term(msat_env_, ax) << std::endl;
         abs_ts_.add_trans(ax);
 
         // if there's no next-state variables, add next version to trans
         if (!abs_ts_.contains_next(ax)) {
+          // std::cout << "Added to trans next: " << msat_to_smtlib2_term(msat_env_, abs_ts_.next(ax)) << std::endl;
           abs_ts_.add_trans(abs_ts_.next(ax));
         }
 
         // add to init if there's only current variables (no inputs or next)
         if (abs_ts_.only_cur(ax) && reached_k == 0) {
+          // std::cout << "Added to init: " << msat_to_smtlib2_term(msat_env_, ax) << std::endl;
           // only add axioms to init if the counterexample is length 1
           abs_ts_.add_init(ax);
           cnt++;
@@ -378,7 +410,12 @@ msat_truth_value IC3Array::prove()
 
       // set the new property
       abs_ts_.set_prop(pr.prop(), abs_ts_.live_prop());
+
     }
+
+    assert(abs_ts_.only_cur(abs_ts_.init()));
+    assert(abs_ts_.only_cur(abs_ts_.prop()));
+
     timed_axioms_to_refine.clear();
     red_timed_axioms.clear();
     // reset the flag
@@ -558,8 +595,11 @@ bool IC3Array::reduce_axioms(int k, const TermSet & untimed_axioms,
     labels.push_back(l);
 
     msat_term aa = un_.at_time(a, 0);
-    for (int i = 1; i <= k; ++i) {
+    for (int i = 1; i < k; ++i) {
       aa = msat_make_and(reducer_, aa, un_.at_time(a, i));
+    }
+    if (!abs_ts_.contains_next(a)) {
+      aa = msat_make_and(reducer_, aa, un_.at_time(a, k));
     }
     //std::cout << msat_to_smtlib2_term(abs_ts_.get_env(), aa) << std::endl;
     msat_assert_formula(reducer_, msat_make_iff(reducer_, l, aa));
