@@ -344,29 +344,11 @@ bool IC3Array::fix_bmc()
     }
     else
     {
-      // TODO: currently this only runs when out_timed_axioms is empty
-      //       FIXME -- update reduce_axioms to not have that field
       // Reduce the axioms
-      TermSet *untimed_axioms = NULL;
-      TermSet *timed_axioms = NULL;
       TermSet red_untimed_axioms;
-      TermSet red_timed_axioms;
-      if (reduce_axioms(untimed_axioms_to_add, out_timed_axioms, red_untimed_axioms, red_timed_axioms)) {
-        std::cout << "Reduced untimed axioms to "
-                  << red_untimed_axioms.size() << " axioms."
-                  << std::endl;
-        std::cout << "Reduced timed axioms to "
-                  << red_timed_axioms.size() << " axioms."
-                  << std::endl;
-        untimed_axioms = &red_untimed_axioms;
-        timed_axioms = &red_timed_axioms;
-      } else {
-        untimed_axioms = &untimed_axioms_to_add;
-        timed_axioms = &out_timed_axioms;
-        // this used to occur but it was likely due to a MathSAT bug.
-        assert(false);
-      }
-      refine_abs_ts(*untimed_axioms);
+      bool ok = reduce_axioms(untimed_axioms_to_add, red_untimed_axioms);
+      assert(ok);
+      refine_abs_ts(red_untimed_axioms);
 
       // heuristic -- don't stop at initial state even if you didn't need to add axioms
       cont = axioms_added || (current_k_ == 0);
@@ -882,8 +864,7 @@ bool IC3Array::reduce_timed_axioms(const ic3ia::TermSet & untimed_axioms,
 }
 
 bool IC3Array::reduce_axioms(const TermSet & untimed_axioms,
-			     const TermSet & timed_axioms,
-			     TermSet & out_untimed, TermSet & out_timed)
+                             TermSet & out_untimed)
 {
 
   msat_reset_env(reducer_);
@@ -917,13 +898,6 @@ bool IC3Array::reduce_axioms(const TermSet & untimed_axioms,
     msat_assert_formula(reducer_, msat_make_iff(reducer_, l, aa));
   };
 
-  TermList cur_timed_axioms(timed_axioms.begin(), timed_axioms.end());
-  for (msat_term a : cur_timed_axioms) {
-    msat_term l = lbl(a);
-    labels.push_back(l);
-    msat_assert_formula(reducer_, msat_make_iff(reducer_, l, a));
-  }
-
   msat_result s = msat_solve_with_assumptions(reducer_, &labels[0], labels.size());
   if (s == MSAT_UNSAT) {
     size_t ucsz = 0;
@@ -938,16 +912,6 @@ bool IC3Array::reduce_axioms(const TermSet & untimed_axioms,
       msat_term l = labels[i];
       if (core.find(l) != core.end()) {
         out_untimed.insert(a);
-      }
-    }
-
-    const size_t offset = cur_untimed_axioms.size();
-    out_timed.clear();
-    for (size_t i = 0; i < cur_timed_axioms.size(); ++i) {
-      msat_term a = cur_timed_axioms[i];
-      msat_term l = labels[i + offset];
-      if (core.find(l) != core.end()) {
-        out_timed.insert(a);
       }
     }
 

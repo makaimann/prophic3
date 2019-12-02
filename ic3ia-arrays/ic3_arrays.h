@@ -99,9 +99,7 @@ namespace ic3ia_array
                              ic3ia::TermSet & out_timed_axioms);
 
     bool reduce_axioms(const ic3ia::TermSet & untimed_axioms,
-		       const ic3ia::TermSet & timed_axioms,
-		       ic3ia::TermSet & out_untimed,
-		       ic3ia::TermSet & out_timed);
+                       ic3ia::TermSet & out_untimed);
   };
 }
 
