@@ -42,7 +42,8 @@ namespace ic3ia_array
 
     msat_env refiner_;
     msat_env reducer_;
-
+    msat_term refinement_formula_;
+    
     size_t current_k_{0};
     size_t num_proph_vars_{0};
 
@@ -97,7 +98,7 @@ namespace ic3ia_array
                              const std::vector<ic3ia::TermSet> & sorted_timed_axioms,
                              ic3ia::TermSet & out_timed_axioms);
 
-    bool reduce_axioms(int k, const ic3ia::TermSet & untimed_axioms,
+    bool reduce_axioms(const ic3ia::TermSet & untimed_axioms,
 		       const ic3ia::TermSet & timed_axioms,
 		       ic3ia::TermSet & out_untimed,
 		       ic3ia::TermSet & out_timed);

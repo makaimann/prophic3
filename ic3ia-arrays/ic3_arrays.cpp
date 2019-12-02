@@ -152,13 +152,17 @@ bool IC3Array::fix_bmc()
 
     // set up BMC
     msat_term bad = msat_make_not(refiner_, abs_ts_.prop());
-    msat_reset_env(refiner_);
-    msat_assert_formula(refiner_, un_.at_time(abs_ts_.init(), 0));
+    refinement_formula_ = un_.at_time(abs_ts_.init(), 0);
     for(int i = 0; i < current_k_; ++i)
     {
-      msat_assert_formula(refiner_, un_.at_time(abs_ts_.trans(), i));
+      refinement_formula_ = msat_make_and(refiner_, refinement_formula_,
+					  un_.at_time(abs_ts_.trans(), i));
     }
-    msat_assert_formula(refiner_, un_.at_time(bad, current_k_));
+    refinement_formula_ = msat_make_and(refiner_, refinement_formula_,
+					un_.at_time(bad, current_k_));
+
+    msat_reset_env(refiner_);
+    msat_assert_formula(refiner_, refinement_formula_);
     broken = msat_solve(refiner_) == MSAT_SAT;
     if (broken)
     {
@@ -345,7 +349,7 @@ bool IC3Array::fix_bmc()
       TermSet *timed_axioms = NULL;
       TermSet red_untimed_axioms;
       TermSet red_timed_axioms;
-      if (reduce_axioms(current_k_, untimed_axioms_to_add, out_timed_axioms, red_untimed_axioms, red_timed_axioms)) {
+      if (reduce_axioms(untimed_axioms_to_add, out_timed_axioms, red_untimed_axioms, red_timed_axioms)) {
         std::cout << "Reduced untimed axioms to "
                   << red_untimed_axioms.size() << " axioms."
                   << std::endl;
@@ -881,19 +885,14 @@ bool IC3Array::reduce_timed_axioms(int k, const ic3ia::TermSet & untimed_axioms,
   return true;
 }
 
-bool IC3Array::reduce_axioms(int k, const TermSet & untimed_axioms,
+bool IC3Array::reduce_axioms(const TermSet & untimed_axioms,
 			     const TermSet & timed_axioms,
 			     TermSet & out_untimed, TermSet & out_timed)
 {
 
   msat_reset_env(reducer_);
   // bmc problem
-  msat_assert_formula(reducer_, un_.at_time(abs_ts_.init(), 0));
-  for (int i = 0; i < k; ++i) {
-    msat_assert_formula(reducer_, un_.at_time(abs_ts_.trans(), i));
-  }
-  msat_assert_formula(reducer_,
-                      un_.at_time(msat_make_not(reducer_, abs_ts_.prop()), k));
+  msat_assert_formula(reducer_, refinement_formula_);
 
   auto lbl = [=](msat_term p) -> msat_term
              {
@@ -912,11 +911,11 @@ bool IC3Array::reduce_axioms(int k, const TermSet & untimed_axioms,
     labels.push_back(l);
 
     msat_term aa = un_.at_time(a, 0);
-    for (int i = 1; i < k; ++i) {
+    for (int i = 1; i < current_k_; ++i) {
       aa = msat_make_and(reducer_, aa, un_.at_time(a, i));
     }
     if (!abs_ts_.contains_next(a)) {
-      aa = msat_make_and(reducer_, aa, un_.at_time(a, k));
+      aa = msat_make_and(reducer_, aa, un_.at_time(a, current_k_));
     }
     //std::cout << msat_to_smtlib2_term(abs_ts_.get_env(), aa) << std::endl;
     msat_assert_formula(reducer_, msat_make_iff(reducer_, l, aa));
