@@ -490,7 +490,7 @@ TermMap IC3Array::add_history_vars(const std::unordered_map<msat_term, size_t> t
   std::cout << "Found " << targets.size() << " indices which need to be refined." << std::endl;
   for (auto elem : targets)
   {
-    std::cout << "\t" << msat_to_smtlib2_term(msat_env_, elem.first) << ":" << elem.second << std::endl;
+    std::cout << "\t" << msat_to_smtlib2_term(msat_env_, un_.untime(elem.first)) << ":" << elem.second << std::endl;
   }
 
   TermTypeMap & orig_types = aa_.orig_types();
