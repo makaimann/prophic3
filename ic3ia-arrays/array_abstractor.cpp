@@ -330,6 +330,7 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
   }
 
   struct AbstractionData {
+    const TransitionSystem &conc_ts;
     TermList args;
     TermSet &indices;
     TermMap &new_vars;
@@ -339,12 +340,13 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
     TermTypeMap &orig_types;
     TermSet &stores;
     TermMap &cache;
-    AbstractionData(TermSet &i, TermMap &nv, TermMap &w,
+    AbstractionData(const TransitionSystem &ts,
+		    TermSet &i, TermMap &nv, TermMap &w,
                     TermDeclMap &r, TermDeclMap &wf,
                     TermTypeMap &o, TermSet &s,
                     TermMap &c)
-        : indices(i), new_vars(nv), witnesses(w), read_ufs(r),
-          write_ufs(wf), orig_types(o), stores(s), cache(c) {}
+      : conc_ts(ts), indices(i), new_vars(nv), witnesses(w), read_ufs(r),
+	write_ufs(wf), orig_types(o), stores(s), cache(c) {}
   };
 
   auto visit = [](msat_env e, msat_term t, int preorder,
@@ -408,17 +410,19 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
         msat_decl decl_witness =
             msat_declare_function(e, witness_name.c_str(), idx_type);
         msat_term witness = msat_make_constant(e, decl_witness);
-        msat_decl decl_witnessN =
-            msat_declare_function(e, (witness_name + ".next").c_str(), idx_type);
-        msat_term witnessN = msat_make_constant(e, decl_witnessN);
-        d->witnesses[arr_eq] = idx_to_int(e, witness);
+	d->witnesses[arr_eq] = idx_to_int(e, witness);
         d->orig_types[idx_to_int(e, witness)] = idx_type;
         d->indices.insert(idx_to_int(e, witness));
         // TODO: figure out cleanest way to get next-state version of lemmas as well
         // e.g. equal(next(arr), next(arr2)) -> ...
+	if (!d->conc_ts.contains_next(t)) {
+	  msat_decl decl_witnessN =
+            msat_declare_function(e, (witness_name + ".next").c_str(), idx_type);
+	  msat_term witnessN = msat_make_constant(e, decl_witnessN);
+	  // update state variables
+	  d->new_vars[witness] = witnessN;
+        }
 
-        // update state variables
-        d->new_vars[witness] = witnessN;
       } else if (msat_term_is_array_read(e, t)) {
         // replace array reads with uninterpreted functions
         msat_term arr = msat_term_get_arg(t, 0);
@@ -498,7 +502,7 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
   };
 
   AbstractionData data = AbstractionData(
-     indices_, new_vars_, witnesses_, read_ufs_, write_ufs_,
+     conc_ts_, indices_, new_vars_, witnesses_, read_ufs_, write_ufs_,
      orig_types_, stores_, cache_);
   msat_visit_term(msat_env_, term, visit, &data);
   return data.cache.at(term);
