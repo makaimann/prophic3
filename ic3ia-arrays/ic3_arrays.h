@@ -53,6 +53,13 @@ namespace ic3ia_array
     /* Keep track of created prophecy vars */
     ic3ia::TermMap frozen_proph_vars_;
 
+    /**
+     * List of initial state predicates
+     * as a heuristic, we add prophecy variable
+     * equalities as predicates
+     */
+    ic3ia::TermList preds_;
+
     /* model for the witness */
     msat_model model_;
 

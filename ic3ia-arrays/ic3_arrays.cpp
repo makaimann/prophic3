@@ -106,6 +106,7 @@ msat_truth_value IC3Array::prove()
     std::cout << "Fixed BMC up to " << current_k_ << std::endl;
     std::cout << "Running IC3" << std::endl;
     IC3 ic3(abs_ts_, opts_, l2s_);
+    ic3.set_initial_predicates(preds_);
     res = ic3.prove();
 
     if (res == MSAT_FALSE)
@@ -489,8 +490,12 @@ TermMap IC3Array::add_frozen_proph_vars(const ic3ia::TermMap & proph_targets)
     msat_term proph = msat_make_constant(msat_env_, proph_decl);
 
     // store the target equality
+    msat_term proph_eq = msat_make_eq(msat_env_, proph, t);
     equalities = msat_make_and(msat_env_, equalities,
-                               msat_make_eq(msat_env_, proph, t));
+                               proph_eq);
+
+    // heuristic -- add these equalities as initial predicates
+    preds_.push_back(proph_eq);
 
     // update member variable
     frozen_proph_vars_[proph] = t;
