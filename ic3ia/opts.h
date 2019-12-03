@@ -88,7 +88,7 @@ struct Options {
         witness_check_script = "";
         ltl_single_fairness_sorted = true;
         use_uf_for_arr_eq = true;
-        use_hist_eq_initial_preds = false;
+        use_hist_eq_initial_preds = true;
     }
 };
 
