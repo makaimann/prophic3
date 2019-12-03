@@ -494,9 +494,6 @@ TermMap IC3Array::add_frozen_proph_vars(const ic3ia::TermMap & proph_targets)
     equalities = msat_make_and(msat_env_, equalities,
                                proph_eq);
 
-    // heuristic -- add these equalities as initial predicates
-    preds_.push_back(proph_eq);
-
     // update member variable
     frozen_proph_vars_[proph] = t;
 
@@ -566,7 +563,15 @@ TermMap IC3Array::add_history_vars(const std::unordered_map<msat_term, size_t> t
   for (auto v : all_created_hist_vars)
   {
     abs_ts_.add_statevar(v, next_hist_vars.at(v));
-    abs_ts_.add_trans(hist_trans.at(v));
+    msat_term hist_eq = hist_trans.at(v);
+    abs_ts_.add_trans(hist_eq);
+
+    if (opts_.use_hist_eq_initial_preds)
+    {
+      // heuristic -- use these equalities as initial predicates
+      preds_.push_back(hist_eq);
+    }
+
   }
 
   return hist_vars_to_refine;
