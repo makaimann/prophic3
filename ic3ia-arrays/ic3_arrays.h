@@ -107,6 +107,9 @@ namespace ic3ia_array
 
     bool reduce_axioms(const ic3ia::TermSet & untimed_axioms,
                        ic3ia::TermSet & out_untimed);
+
+    // print system for debugging
+    void print_system(ic3ia::TransitionSystem & ts, std::string name) const;
   };
 }
 

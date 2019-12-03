@@ -955,5 +955,40 @@ bool IC3Array::reduce_axioms(const TermSet & untimed_axioms,
   }
 }
 
+void IC3Array::print_system(ic3ia::TransitionSystem & ts, std::string name) const
+{
+  msat_env env = ts.get_env();
+  std::cout << "Printing Transition System: " << name << std::endl;
+
+  std::cout << "STATEVARS" << std::endl;
+  for (auto sv : ts.statevars())
+  {
+    std::cout << "\t" << msat_to_smtlib2_term(env, sv) << std::endl;
+  }
+
+  std::cout << "INPUTS" << std::endl;
+  for (auto i : ts.inputvars())
+  {
+    std::cout << "\t" << msat_to_smtlib2_term(env, i) << std::endl;
+  }
+
+  std::cout << std::endl;
+  std::cout << "INIT" << std::endl;
+  for (auto c : conjunctive_partition(env, ts.init()))
+  {
+    std::cout << "\t" << msat_to_smtlib2_term(env, c) << std::endl;
+  }
+
+  std::cout << std::endl;
+  std::cout << "TRANS" << std::endl;
+  for (auto c : conjunctive_partition(env, ts.trans()))
+  {
+    std::cout << "\t" << msat_to_smtlib2_term(env, c) << std::endl;
+  }
+
+  std::cout << std::endl;
+  std::cout << "PROP" << std::endl;
+  std::cout << "\t" << msat_to_smtlib2_term(env, ts.prop()) << std::endl;
+}
 
 }
