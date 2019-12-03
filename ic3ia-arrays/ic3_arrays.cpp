@@ -568,8 +568,8 @@ TermMap IC3Array::add_history_vars(const std::unordered_map<msat_term, size_t> t
 
     if (opts_.use_hist_eq_initial_preds)
     {
-      // heuristic -- use these equalities as initial predicates
-      preds_.push_back(hist_eq);
+      // heuristic -- use the current-state version of these equalities as initial predicates
+      preds_.push_back(abs_ts_.cur(hist_eq));
     }
 
   }
