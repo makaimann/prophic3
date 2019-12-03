@@ -57,6 +57,7 @@ struct Options {
     // Added by Makai
     bool use_uf_for_arr_eq;
     bool use_hist_eq_initial_preds;
+    bool lazy_array_axioms;
 
     Options()
     {
@@ -89,6 +90,7 @@ struct Options {
         ltl_single_fairness_sorted = true;
         use_uf_for_arr_eq = true;
         use_hist_eq_initial_preds = true;
+	lazy_array_axioms = false;
     }
 };
 

@@ -224,8 +224,13 @@ bool IC3Array::fix_bmc()
               // std::endl;
               violated_axioms.insert(timed_axiom);
               untimed_axioms_to_add.insert(ax);
+
+	      if (opts_.lazy_array_axioms) {
+		break;
+	      }
             }
           }
+
         }
       }
 
@@ -257,9 +262,14 @@ bool IC3Array::fix_bmc()
                 //   std::endl;
                 violated_axioms.insert(timed_axiom);
                 timed_axioms_to_refine.insert(timed_axiom);
-              }
+
+		if (opts_.lazy_array_axioms) {
+		  break;
+		}
+	      }
             }
           }
+
         }
 
         found_timed_axioms = violated_axioms.size();
