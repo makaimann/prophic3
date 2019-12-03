@@ -8,8 +8,8 @@ using namespace ic3ia;
 
 namespace ic3ia_array {
 
-ArrayAbstractor::ArrayAbstractor(const TransitionSystem &ts, bool use_eq_uf)
-  : msat_env_(ts.get_env()), conc_ts_(ts), use_eq_uf_(use_eq_uf), abs_ts_(msat_env_) {
+ArrayAbstractor::ArrayAbstractor(const TransitionSystem &ts, bool use_eq_uf, bool use_single_uf)
+  : msat_env_(ts.get_env()), conc_ts_(ts), use_eq_uf_(use_eq_uf), use_single_uf_(use_single_uf), abs_ts_(msat_env_) {
   do_abstraction();
 }
 
@@ -195,6 +195,10 @@ void ArrayAbstractor::abstract_array_vars()
     }
   }
 
+  // these are used if use_single_uf is true
+  std::unordered_map<std::string, msat_decl> type2read;
+  std::unordered_map<std::string, msat_decl> type2write;
+
   msat_type abs_type;
   msat_type arridxtype;
   msat_type arrelemtype;
@@ -234,26 +238,57 @@ void ArrayAbstractor::abstract_array_vars()
     // keep track of the original index sort
     orig_types_[arr_abs] = arridxtype;
 
-    // create a read function for these arrays
-    msat_type read_param_types[2] = {abs_type,
-                                     msat_get_integer_type(msat_env_)};
-    msat_type read_funtype =
-      msat_get_function_type(msat_env_, &read_param_types[0], 2, arrelemtype);
-    std::string readname = "read_" + std::to_string(num_arr_vars_);
-    msat_decl readfun = msat_declare_function(msat_env_, readname.c_str(), read_funtype);
+    std::string abs_typestr = msat_type_repr(abs_type);
+    msat_decl readfun;
+    if (use_single_uf_ && type2read.find(abs_typestr) != type2read.end())
+    {
+      readfun = type2read.at(abs_typestr);
+    }
+    else
+    {
+      // create a read function for these arrays
+      msat_type read_param_types[2] = {abs_type,
+                                       msat_get_integer_type(msat_env_)};
+      msat_type read_funtype =
+        msat_get_function_type(msat_env_, &read_param_types[0], 2, arrelemtype);
+      std::string readname = "read_" + std::to_string(num_arr_vars_);
+      readfun = msat_declare_function(msat_env_, readname.c_str(), read_funtype);
+
+      if (use_single_uf_)
+      {
+        // save this readfun for the type
+        type2read[abs_typestr] = readfun;
+      }
+    }
+
+    // save the readfun for looking up by the abstract array
     read_ufs_[arr_abs] = readfun;
 
-    // create a write function for these arrays
-    msat_type write_param_types[3] = {abs_type,
-                                      msat_get_integer_type(msat_env_),
-                                      arrelemtype};
-    msat_type write_funtype = msat_get_function_type(msat_env_, &write_param_types[0], 3, abs_type);
-    std::string writename = "write_" + std::to_string(num_arr_vars_);
-    msat_decl writefun = msat_declare_function(msat_env_, writename.c_str(), write_funtype);
+    msat_decl writefun;
+    if (use_single_uf_ && type2write.find(abs_typestr) != type2write.end())
+    {
+      writefun = type2write.at(abs_typestr);
+    }
+    else
+    {
+      // create a write function for these arrays
+      msat_type write_param_types[3] = {abs_type,
+                                        msat_get_integer_type(msat_env_),
+                                        arrelemtype};
+      msat_type write_funtype = msat_get_function_type(msat_env_, &write_param_types[0], 3, abs_type);
+      std::string writename = "write_" + std::to_string(num_arr_vars_);
+      writefun = msat_declare_function(msat_env_, writename.c_str(), write_funtype);
+
+      if (use_single_uf_)
+      {
+        // save this writefun for the type
+        type2write[abs_typestr] = writefun;
+      }
+    }
+
     write_ufs_[arr_abs] = writefun;
 
     num_arr_vars_++;
-
     if (conc_ts_.is_statevar(v))
     {
       msat_decl decl_arrabsN = msat_declare_function(msat_env_,

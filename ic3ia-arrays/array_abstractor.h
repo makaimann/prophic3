@@ -30,7 +30,7 @@ void detect_const_arrs(msat_env env, msat_term term, ic3ia::TermSet & out_const_
 
 class ArrayAbstractor {
 public:
-    ArrayAbstractor(const ic3ia::TransitionSystem &ts, bool use_eq_uf);
+    ArrayAbstractor(const ic3ia::TransitionSystem &ts, bool use_eq_uf, bool use_single_uf);
     ~ArrayAbstractor();
 
     const ic3ia::TransitionSystem &abstract_transition_system() const
@@ -69,6 +69,10 @@ public:
     // sets whether array equality is abstracted with a UF
     // or if it's an equality between the abstract arrays (of uninterpreted sort)
     bool use_eq_uf_;
+    // if true, uses a single read/write UF per array *sort*
+    // if false, uses a read/write UF per array *variable*
+    bool use_single_uf_;
+
     ic3ia::TransitionSystem abs_ts_;
 
     unsigned int eq_id_{0};
