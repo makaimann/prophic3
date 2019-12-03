@@ -1,4 +1,5 @@
 #include "assert.h"
+#include <fstream>
 
 #include "ic3_arrays.h"
 
@@ -94,6 +95,7 @@ msat_truth_value IC3Array::prove()
   std::cout << "Created " << prop_indices.size();
   std::cout << " prophecy variables for the property" << std::endl;
 
+  int iter_cnt = 0;
   while (res != MSAT_TRUE)
   {
     std::cout << "Fixing BMC" << std::endl;
@@ -102,6 +104,17 @@ msat_truth_value IC3Array::prove()
       // got a real counter-example
       return MSAT_FALSE;
     }
+
+    if (!opts_.trace.empty())
+    {
+      ofstream f;
+      std::string filename = opts_.trace;
+      filename += "_abs_system_" + std::to_string(iter_cnt) + ".vmt";
+      f.open(filename);
+      abs_ts_.to_vmt(f);
+      f.close();
+    }
+    iter_cnt++;
 
     std::cout << "Fixed BMC up to " << current_k_ << std::endl;
     std::cout << "Running IC3" << std::endl;
