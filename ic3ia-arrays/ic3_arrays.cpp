@@ -237,9 +237,9 @@ bool IC3Array::fix_bmc()
       if (!found_untimed_axioms)
       {
         vector<vector<TermSet>> timed_axioms;
-        timed_axioms.push_back(aae_.equality_axioms_all_indices(un_, current_k_));
-        timed_axioms.push_back(aae_.store_axioms_all_indices(un_, current_k_));
-        timed_axioms.push_back(aae_.const_array_axioms_all_indices(un_, current_k_));
+        timed_axioms.push_back(aae_.equality_axioms_all_idx_times(un_, current_k_));
+        timed_axioms.push_back(aae_.store_axioms_all_idx_times(un_, current_k_));
+        timed_axioms.push_back(aae_.const_array_axioms_all_idx_times(un_, current_k_));
 
         for(auto axiom_vec : timed_axioms)
         {

@@ -193,7 +193,7 @@ ic3ia::TermSet ArrayAxiomEnumerator::store_axioms()
   return axioms;
 }
 
-vector<TermSet> ArrayAxiomEnumerator::equality_axioms_all_indices(Unroller &un,
+vector<TermSet> ArrayAxiomEnumerator::equality_axioms_all_idx_times(Unroller &un,
                                                           size_t k) {
   const ic3ia::TermMap &witnesses = abstractor_.witnesses();
   vector<TermSet> axioms;
@@ -249,7 +249,7 @@ vector<TermSet> ArrayAxiomEnumerator::equality_axioms_all_indices(Unroller &un,
   return axioms;
 }
 
-vector<TermSet> ArrayAxiomEnumerator::store_axioms_all_indices(Unroller &un,
+vector<TermSet> ArrayAxiomEnumerator::store_axioms_all_idx_times(Unroller &un,
                                                                size_t k) {
   vector<TermSet> axioms;
   TermTypeMap &orig_types = abstractor_.orig_types();
@@ -326,7 +326,7 @@ vector<TermSet> ArrayAxiomEnumerator::store_axioms_all_indices(Unroller &un,
   return axioms;
 }
 
-vector<TermSet> ArrayAxiomEnumerator::const_array_axioms_all_indices(Unroller &un,
+vector<TermSet> ArrayAxiomEnumerator::const_array_axioms_all_idx_times(Unroller &un,
                                                                      size_t k)
 {
   vector<TermSet> axioms;
