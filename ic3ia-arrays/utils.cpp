@@ -234,8 +234,8 @@ Options get_options(int argc, const char **argv)
             ret.use_uf_for_arr_eq = false;
         } else if (a == "-no-hist-eq-preds") {
           ret.use_hist_eq_initial_preds = false;
-        } else if (a == "-no-lazy-array-axioms") {
-	  ret.lazy_array_axioms = false;
+        } else if (a == "lazy-array-axioms") {
+	  ret.lazy_array_axioms = true;
 	} else if (a == "-h" || a == "-help" || a == "--help") {
             std::cout << "USAGE: " << argv[0] << " [OPTIONS] FILENAME.vmt"
                       << "\n\n   -v N : set verbosity level"
