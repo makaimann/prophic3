@@ -228,7 +228,7 @@ bool IC3Array::fix_bmc()
 
             // had issues trying to evaluate the model on a constant true
             // which can sometimes occur depending on the options
-            if (msat_term_is_true(reducer_, timed_axiom))
+            if (msat_term_is_true(refiner_, timed_axiom))
             {
               continue;
             }
@@ -237,10 +237,10 @@ bool IC3Array::fix_bmc()
             if (MSAT_ERROR_TERM(val))
             {
               std::cerr << "Got error term when evaluating model on "
-                        << msat_to_smtlib2_term(reducer_, timed_axiom) << std::endl;
+                        << msat_to_smtlib2_term(refiner_, timed_axiom) << std::endl;
               throw std::exception();
             }
-            else if (msat_term_is_false(reducer_, val)) {
+            else if (msat_term_is_false(refiner_, val)) {
               // std::cout << "violated axiom ";
               // std::cout << msat_to_smtlib2_term(msat_env_, timed_axiom) <<
               // std::endl;
@@ -278,7 +278,7 @@ bool IC3Array::fix_bmc()
 
               // had issues trying to evaluate the model on a constant true
               // which can sometimes occur depending on the options
-              if (msat_term_is_true(reducer_, timed_axiom))
+              if (msat_term_is_true(refiner_, timed_axiom))
               {
                 continue;
               }
@@ -287,10 +287,10 @@ bool IC3Array::fix_bmc()
               if (MSAT_ERROR_TERM(val))
               {
                 std::cerr << "Got error term when evaluating model on "
-                          << msat_to_smtlib2_term(reducer_, timed_axiom) << std::endl;
+                          << msat_to_smtlib2_term(refiner_, timed_axiom) << std::endl;
                 throw std::exception();
               }
-              else if (msat_term_is_false(reducer_, val))
+              else if (msat_term_is_false(refiner_, val))
               {
                 // std::cout << "TIMED violated axiom ";
                 // std::cout << msat_to_smtlib2_term(msat_env_, timed_axiom) <<
