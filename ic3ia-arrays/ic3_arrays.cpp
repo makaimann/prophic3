@@ -198,7 +198,6 @@ bool IC3Array::fix_bmc()
         axiom_sets.push_back(aae_.trans_eq_axioms());
       }
 
-      msat_term f = msat_make_false(msat_env_);
       for (size_t i = 0; i < axiom_sets.size(); ++i) {
         int max_k;
         if (i == 0) {
@@ -217,14 +216,21 @@ bool IC3Array::fix_bmc()
             // first
             untime_cache[timed_axiom] = ax;
 
+            // had issues trying to evaluate the model on a constant true
+            // which can sometimes occur depending on the options
+            if (msat_term_is_true(reducer_, timed_axiom))
+            {
+              continue;
+            }
+
             val = msat_model_eval(model_, timed_axiom);
             if (MSAT_ERROR_TERM(val))
             {
               std::cerr << "Got error term when evaluating model on "
-                        << msat_to_smtlib2_term(msat_env_, timed_axiom) << std::endl;
+                        << msat_to_smtlib2_term(reducer_, timed_axiom) << std::endl;
               throw std::exception();
             }
-            if (val == f) {
+            else if (msat_term_is_false(reducer_, val)) {
               // std::cout << "violated axiom ";
               // std::cout << msat_to_smtlib2_term(msat_env_, timed_axiom) <<
               // std::endl;
@@ -259,14 +265,22 @@ bool IC3Array::fix_bmc()
             for (auto timed_axiom : axiom_vec[i])
             {
               //std::cout << "Checking timed axiom: " << msat_to_smtlib2_term(msat_env_, timed_axiom) << std::endl;
+
+              // had issues trying to evaluate the model on a constant true
+              // which can sometimes occur depending on the options
+              if (msat_term_is_true(reducer_, timed_axiom))
+              {
+                continue;
+              }
+
               val = msat_model_eval(model_, timed_axiom);
               if (MSAT_ERROR_TERM(val))
               {
                 std::cerr << "Got error term when evaluating model on "
-                          << msat_to_smtlib2_term(msat_env_, timed_axiom) << std::endl;
+                          << msat_to_smtlib2_term(reducer_, timed_axiom) << std::endl;
                 throw std::exception();
               }
-              if (val == f)
+              else if (msat_term_is_false(reducer_, val))
               {
                 // std::cout << "TIMED violated axiom ";
                 // std::cout << msat_to_smtlib2_term(msat_env_, timed_axiom) <<
@@ -274,10 +288,10 @@ bool IC3Array::fix_bmc()
                 violated_axioms.insert(timed_axiom);
                 timed_axioms_to_refine.insert(timed_axiom);
 
-		if (opts_.lazy_array_axioms) {
-		  break;
-		}
-	      }
+                if (opts_.lazy_array_axioms) {
+                  break;
+                }
+              }
             }
           }
 
