@@ -218,6 +218,12 @@ bool IC3Array::fix_bmc()
             untime_cache[timed_axiom] = ax;
 
             val = msat_model_eval(model_, timed_axiom);
+            if (MSAT_ERROR_TERM(val))
+            {
+              std::cerr << "Got error term when evaluating model on "
+                        << msat_to_smtlib2_term(msat_env_, timed_axiom) << std::endl;
+              throw std::exception();
+            }
             if (val == f) {
               // std::cout << "violated axiom ";
               // std::cout << msat_to_smtlib2_term(msat_env_, timed_axiom) <<
@@ -254,7 +260,12 @@ bool IC3Array::fix_bmc()
             {
               //std::cout << "Checking timed axiom: " << msat_to_smtlib2_term(msat_env_, timed_axiom) << std::endl;
               val = msat_model_eval(model_, timed_axiom);
-
+              if (MSAT_ERROR_TERM(val))
+              {
+                std::cerr << "Got error term when evaluating model on "
+                          << msat_to_smtlib2_term(msat_env_, timed_axiom) << std::endl;
+                throw std::exception();
+              }
               if (val == f)
               {
                 // std::cout << "TIMED violated axiom ";
