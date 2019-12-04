@@ -62,10 +62,20 @@ IC3Array::IC3Array(const ic3ia::TransitionSystem &ts, const ic3ia::Options &opts
   assert(abs_ts_.only_cur(abs_ts_.prop()));
 
   msat_config cfg = get_config(FULL_MODEL);
+  if (!opts.trace.empty()) {
+    std::string name = opts.trace + ".arr_ref.smt2";
+    msat_set_option(cfg, "debug.api_call_trace", "1");
+    msat_set_option(cfg, "debug.api_call_trace_filename", name.c_str());
+  }
   refiner_ = msat_create_shared_env(cfg, abs_ts_.get_env());
   msat_destroy_config(cfg);
 
   cfg = get_config(NO_MODEL);
+  if (!opts.trace.empty()) {
+    std::string name = opts.trace + ".arr_red.smt2";
+    msat_set_option(cfg, "debug.api_call_trace", "1");
+    msat_set_option(cfg, "debug.api_call_trace_filename", name.c_str());
+  }
   reducer_ = msat_create_shared_env(cfg, abs_ts_.get_env());
   msat_destroy_config(cfg);
 
