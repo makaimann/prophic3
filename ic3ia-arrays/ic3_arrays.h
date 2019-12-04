@@ -60,9 +60,6 @@ namespace ic3ia_array
      */
     ic3ia::TermList preds_;
 
-    /* model for the witness */
-    msat_model model_;
-
     /* Run bmc and add axioms until it reaches a bound that doesn't
      * any new axioms
      */

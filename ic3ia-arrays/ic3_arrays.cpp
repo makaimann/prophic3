@@ -188,10 +188,6 @@ bool IC3Array::fix_bmc()
     msat_reset_env(refiner_);
     msat_assert_formula(refiner_, refinement_formula_);
     broken = msat_solve(refiner_) == MSAT_SAT;
-    if (broken)
-    {
-      model_ = msat_get_model(refiner_);
-    }
 
     while(broken)
     {
@@ -233,7 +229,7 @@ bool IC3Array::fix_bmc()
               continue;
             }
 
-            val = msat_model_eval(model_, timed_axiom);
+            val = msat_get_model_value(refiner_, timed_axiom);
             if (MSAT_ERROR_TERM(val))
             {
               std::cerr << "Got error term when evaluating model on "
@@ -283,14 +279,14 @@ bool IC3Array::fix_bmc()
                 continue;
               }
 
-              val = msat_model_eval(model_, timed_axiom);
+              val = msat_get_model_value(refiner_, timed_axiom);
               if (MSAT_ERROR_TERM(val))
               {
                 std::cerr << "Got error term when evaluating model on "
-                          << msat_to_smtlib2_term(reducer_, timed_axiom) << std::endl;
+                          << msat_to_smtlib2_term(refiner_, timed_axiom) << std::endl;
                 throw std::exception();
               }
-              else if (msat_term_is_false(reducer_, val))
+              else if (msat_term_is_false(refiner_, val))
               {
                 // std::cout << "TIMED violated axiom ";
                 // std::cout << msat_to_smtlib2_term(msat_env_, timed_axiom) <<
@@ -311,9 +307,12 @@ bool IC3Array::fix_bmc()
       }
 
       if (!found_untimed_axioms & !found_timed_axioms) {
-        print_witness(model_, current_k_, aae_);
+	/* model for the witness */
+	msat_model model = msat_get_model(refiner_);
+        print_witness(model, current_k_, aae_);
         // TODO: Use real exceptions
         std::cout << "It looks like there's a concrete counter-example (or some axioms are missing)" << std::endl;
+        msat_destroy_model(model);
         return false;
       }
       else if (!found_untimed_axioms) {
@@ -324,16 +323,7 @@ bool IC3Array::fix_bmc()
         msat_assert_formula(refiner_, ax);
       }
 
-      if (!MSAT_ERROR_MODEL(model_))
-      {
-        msat_destroy_model(model_);
-      }
-
       broken = msat_solve(refiner_) == MSAT_SAT;
-      if (broken)
-      {
-        model_ = msat_get_model(refiner_);
-      }
 
       violated_axioms.clear();
     }
