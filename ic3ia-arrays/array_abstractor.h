@@ -96,7 +96,7 @@ public:
     ic3ia::TermSet stores_;
 
     // new variables for abstract transition system -- internal use only
-    ic3ia::TermMap new_vars_;
+    ic3ia::TermMap new_state_vars_;
     // removed variables from concrete transition system -- internal use only
     ic3ia::TermSet removed_vars_;
 
