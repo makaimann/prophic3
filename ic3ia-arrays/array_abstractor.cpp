@@ -30,10 +30,35 @@ void ArrayAbstractor::do_abstraction()
   }
 
   msat_term new_init = abstract(conc_ts_.init());
-  msat_term new_trans = abstract(conc_ts_.trans());
   msat_term new_prop = abstract(conc_ts_.prop());
 
   // need to promote inputs that occur in new_init / new_prop to states
+  // this includes the created witnesses which don't explicitly appear
+  //   in init/prop but might be needed for refinements
+
+  // first -- promote witnesses
+  for (auto elem : witnesses_)
+  {
+    msat_term witness = elem.second;
+
+    // might have to unpack witness
+    // could be (ubv_to_int witness)
+    if (msat_term_is_int_from_ubv(msat_env_, witness))
+    {
+      witness = msat_term_get_arg(witness, 0);
+    }
+    assert(is_variable(msat_env_, witness));
+
+    msat_decl witness_decl = msat_term_get_decl(witness);
+    std::string witness_name(msat_decl_get_name(witness_decl));
+    msat_decl witness_declN = msat_declare_function(msat_env_,
+                                                    (witness_name + ".next").c_str(),
+                                                    msat_term_get_type(witness));
+    msat_term witnessN = msat_make_constant(msat_env_, witness_declN);
+    new_vars_[witness] = witnessN;
+  }
+
+  // then promote any inputs appearing in init / prop to state variables
   TermSet free_vars;
   get_free_vars(msat_env_, new_init, free_vars);
   get_free_vars(msat_env_, new_prop, free_vars);
@@ -52,6 +77,8 @@ void ArrayAbstractor::do_abstraction()
       orig_types_[fvN] = fv_type;
     }
   }
+
+  msat_term new_trans = abstract(conc_ts_.trans());
 
   // initialize for using curr / next
   // will reinitialize later if needed
@@ -166,6 +193,7 @@ void ArrayAbstractor::do_abstraction()
     abs_ts_.add_trans(msat_make_eq(msat_env_, abs_ts_.next(abs_ca), abs_ca));
   }
 
+  // create the lambdas used to refer to indices which have never been seen before
   create_lambdas();
 }
 
@@ -445,19 +473,11 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
         msat_decl decl_witness =
             msat_declare_function(e, witness_name.c_str(), idx_type);
         msat_term witness = msat_make_constant(e, decl_witness);
-	d->witnesses[arr_eq] = idx_to_int(e, witness);
+        d->witnesses[arr_eq] = idx_to_int(e, witness);
         d->orig_types[idx_to_int(e, witness)] = idx_type;
         d->indices.insert(idx_to_int(e, witness));
         // TODO: figure out cleanest way to get next-state version of lemmas as well
         // e.g. equal(next(arr), next(arr2)) -> ...
-	if (!d->conc_ts.contains_next(t)) {
-	  msat_decl decl_witnessN =
-            msat_declare_function(e, (witness_name + ".next").c_str(), idx_type);
-	  msat_term witnessN = msat_make_constant(e, decl_witnessN);
-	  // update state variables
-	  d->new_vars[witness] = witnessN;
-        }
-
       } else if (msat_term_is_array_read(e, t)) {
         // replace array reads with uninterpreted functions
         msat_term arr = msat_term_get_arg(t, 0);

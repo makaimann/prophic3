@@ -321,4 +321,11 @@ void get_free_vars(msat_env env, msat_term term, TermSet & out_free_vars)
   msat_visit_term(env, term, visit, &data);
 }
 
+bool is_variable(msat_env env, msat_term term)
+{
+  return (msat_term_arity(term) == 0 &&
+          msat_decl_get_tag(env, msat_term_get_decl(term)) == MSAT_TAG_UNKNOWN &&
+          !msat_term_is_number(env, term));
+}
+
 }

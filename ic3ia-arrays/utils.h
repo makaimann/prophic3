@@ -16,4 +16,6 @@ bool read_ts(const Options &opts, TransitionSystem &ts, LTLEncoder &ltl,
 Options get_options(int argc, const char **argv);
 
 void get_free_vars(msat_env env, msat_term term, TermSet & out_free_vars);
+
+bool is_variable(msat_env env, msat_term term);
 }
