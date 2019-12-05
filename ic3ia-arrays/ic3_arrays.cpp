@@ -217,6 +217,13 @@ bool IC3Array::fix_bmc()
         // e.g. if it has no next, then need to include last time step
         for (size_t k = 0; k <= max_k; ++k) {
           for (auto ax : axiom_sets[i]) {
+            // don't check axioms with times beyond the current time-step
+            // (because of next)
+            if (k == max_k && abs_ts_.contains_next(ax))
+            {
+              continue;
+            }
+
             timed_axiom = un_.at_time(ax, k);
             // TODO: See if it's faster to just overwrite or to check the cache
             // first
