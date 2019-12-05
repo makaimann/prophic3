@@ -120,6 +120,11 @@
 **** The current approach is more general, but maybe we should follow it up with a top-level propagator that's also aware of the axioms to be generated
 *** Possibly speed things up with additional equality lemmas
 **** e.g. eq(arr0, arr1) -> arr0 = arr1 (or maybe we should just use = to begin with. Why bother with the UF?)
+* Interesting benchmarks
+**  quic3
+*** array_swap_twice.smt2.vmt: takes a long time to reduce axioms
+*** array_monotonic_true-unreach-call.smt2.vmt: doesn't add any array axioms and produces a ton of predicates of the same shape
+**** (<= y 124), (<= y 126), (<= y 128), etc...
 * Rationale
 ** for not adding untimed axioms if there are timed axioms to be refined
    history variables do not preserve monotonicity. i.e. if you fix a counter-example at time 5, there could be a counterexample at time 4
