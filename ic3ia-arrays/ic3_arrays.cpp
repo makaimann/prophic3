@@ -241,7 +241,7 @@ bool IC3Array::fix_bmc()
             {
               std::cerr << "Got error term when evaluating model on "
                         << msat_to_smtlib2_term(refiner_, timed_axiom) << std::endl;
-              throw std::exception();
+              // throw std::exception();
             }
             else if (msat_term_is_false(refiner_, val)) {
               // std::cout << "violated axiom ";
@@ -291,7 +291,7 @@ bool IC3Array::fix_bmc()
               {
                 std::cerr << "Got error term when evaluating model on "
                           << msat_to_smtlib2_term(refiner_, timed_axiom) << std::endl;
-                throw std::exception();
+                // throw std::exception();
               }
               else if (msat_term_is_false(refiner_, val))
               {
