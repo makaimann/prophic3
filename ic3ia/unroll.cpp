@@ -50,7 +50,9 @@ msat_term Unroller::at_time(msat_term f, unsigned int k)
                 return at_time_var(v, k);
             }
         };
-    return apply_substitution(ts_.get_env(), f, time_cache(k), subst);
+    msat_term timed_f = apply_substitution(ts_.get_env(), f, time_cache(k), subst);
+    time_lookup_[timed_f] = k;
+    return timed_f;
 }
 
 
@@ -75,7 +77,6 @@ msat_term Unroller::at_time_var(msat_term v, unsigned int k)
     msat_term r = msat_make_constant(ts_.get_env(), s);
     cache[v] = r;
     untime_cache_[r] = v;
-    time_lookup_[r] = k;
     return r;
 }
 
@@ -101,6 +102,7 @@ size_t Unroller::get_time(msat_term var)
 {
     if (time_lookup_.find(var) == time_lookup_.end())
     {
+        std::cout << "Could not find " << msat_to_smtlib2_term(ts_.get_env(), var) << std::endl;
         throw std::exception();
     }
     return time_lookup_.at(var);
