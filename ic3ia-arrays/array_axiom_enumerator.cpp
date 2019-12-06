@@ -455,12 +455,7 @@ vector<TermSet> ArrayAxiomEnumerator::const_array_axioms_all_idx_times(Unroller 
 void ArrayAxiomEnumerator::add_index(msat_type orig_idx_type, msat_term i) {
   // TODO: what if the index is an input -- could happen
   string typestr = msat_type_repr(orig_idx_type);
-  msat_term base_idx = i;
-  if (msat_term_is_int_from_ubv(msat_env_, i))
-  {
-    base_idx = msat_term_get_arg(i, 0);
-  }
-  if (ts_.is_statevar(base_idx))
+  if (ts_.only_cur(i))
   {
     state_indices_[typestr].insert(i);
   }
