@@ -1,0 +1,14 @@
+MODULE main
+
+VAR
+  a : array integer of integer;
+  i : integer;
+
+INIT a = CONSTARRAY(typeof(a), 1)
+INIT i = 0
+
+TRANS next(a) = WRITE(a, i, READ(a, i - 1))
+
+TRANS next(i) = i + 1
+
+INVARSPEC READ(a, i) > 0
