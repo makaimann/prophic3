@@ -153,12 +153,12 @@ private:
    * domain lambda)
    */
   void enumerate_store_equalities(ic3ia::TermSet &axioms, msat_decl read_res, msat_decl read_arg,
-                                  msat_term store_eq, msat_type _type,
+                                  msat_term store_eq, msat_type orig_idx_type,
                                   ic3ia::TermSet &indices, msat_term lambda);
 
   /* Enumerate store axioms on all indices: forall i . arr[i] = val */
   void enumerate_const_array_axioms(ic3ia::TermSet &axioms, msat_decl read, msat_term arr,
-                                    msat_type _type, msat_term val, ic3ia::TermSet &indices);
+                                    msat_type orig_idx_type, msat_term val, ic3ia::TermSet &indices);
 
   // TODO: Figure out if we can remove some of these lemmas
   //       probably don't need them all
@@ -178,7 +178,7 @@ private:
    * domain lambda)
    */
   void enumerate_eq_uf_axioms(ic3ia::TermSet &axioms, msat_decl read0,
-                              msat_decl read1, msat_type _type, msat_term eq_uf,
+                              msat_decl read1, msat_type orig_idx_type, msat_term eq_uf,
                               msat_term witness, ic3ia::TermSet &indices,
                               msat_term lambda);
 

@@ -263,8 +263,8 @@ void ArrayAbstractor::abstract_array_vars()
     msat_term arr_abs = msat_make_constant(msat_env_, decl_arrabs);
     cache_[v] = arr_abs;
     removed_vars_.insert(v);
-    // keep track of the original index sort
-    orig_types_[arr_abs] = arridxtype;
+    // keep track of the original type
+    orig_types_[arr_abs] = _type;
 
     std::string abs_typestr = msat_type_repr(abs_type);
     msat_decl readfun;
@@ -328,8 +328,8 @@ void ArrayAbstractor::abstract_array_vars()
       // added to map for convenience
       read_ufs_[arr_absN]  = readfun;
       write_ufs_[arr_absN] = writefun;
-      // map next to type
-      orig_types_[arr_absN] = arridxtype;
+      // map next to type also
+      orig_types_[arr_absN] = _type;
       cache_[conc_ts_.next(v)] = arr_absN;
     }
   }
