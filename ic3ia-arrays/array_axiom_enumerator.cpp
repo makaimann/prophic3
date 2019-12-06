@@ -246,7 +246,7 @@ vector<TermSet> ArrayAxiomEnumerator::equality_axioms_all_idx_times(Unroller &un
       read1 = read_ufs.at(msat_term_get_arg(e, 1));
       _type = orig_types.at(msat_term_get_arg(e, 0));
 
-      for (size_t i = 0; i <= k; i++) {
+      for (size_t i = 0; i < k; i++) {
         msat_term e_i = un.at_time(e, i);
         msat_term witness_i = un.at_time(witnesses.at(e), i);
 
@@ -337,7 +337,7 @@ vector<TermSet> ArrayAxiomEnumerator::store_axioms_all_idx_times(Unroller &un,
     read0 = read_ufs.at(arr0);
     read1 = read_ufs.at(arr1);
 
-    for (size_t i = 0; i <= k; i++) {
+    for (size_t i = 0; i < k; i++) {
       msat_term arr0_i = un.at_time(arr0, i);
       msat_term e_i = un.at_time(e, i);
 
@@ -425,7 +425,7 @@ vector<TermSet> ArrayAxiomEnumerator::const_array_axioms_all_idx_times(Unroller 
     val = msat_term_get_arg(ca, 0);
     read = read_ufs.at(abs_ca);
 
-    for (size_t i = 0; i <= k; i++)
+    for (size_t i = 0; i < k; i++)
     {
       msat_term abs_ca_i = un.at_time(abs_ca, i);
 
