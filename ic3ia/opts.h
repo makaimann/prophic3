@@ -59,6 +59,7 @@ struct Options {
     bool use_hist_eq_initial_preds;
     bool lazy_array_axioms;
     bool use_single_uf;
+    bool unsatcore_array_refiner;
 
     Options()
     {
@@ -93,6 +94,7 @@ struct Options {
         use_hist_eq_initial_preds = true;
         lazy_array_axioms = false;
         use_single_uf = false;
+	unsatcore_array_refiner = false;
     }
 };
 
