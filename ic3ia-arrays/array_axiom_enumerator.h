@@ -86,19 +86,19 @@ public:
 
   /** Enumerate equality axioms over indices at all times
    *  un - the unroller to use for timing
-   *  k - the maximum time-step (exclusive e.g. the length of the CEX)
+   *  k - the maximum time-step (inclusive)
    */
   std::vector<ic3ia::TermSet> equality_axioms_all_idx_times(ic3ia::Unroller &un, size_t k);
 
   /** Enumerate store axioms over indices at all times
    *  un - the unroller to use for timing
-   *  k - the maximum time-step (exclusive)
+   *  k - the maximum time-step (inclusive)
    */
   std::vector<ic3ia::TermSet> store_axioms_all_idx_times(ic3ia::Unroller &un, size_t k);
 
   /** Enumerate const array axioms over indices at all times
    *  un - the unroller to use for timing
-   *  k - the maximum time-step (exclusive)
+   *  k - the maximum time-step (inclusive)
    */
   std::vector<ic3ia::TermSet> const_array_axioms_all_idx_times(ic3ia::Unroller &un, size_t k);
 

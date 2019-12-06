@@ -201,17 +201,35 @@ vector<TermSet> ArrayAxiomEnumerator::equality_axioms_all_idx_times(Unroller &un
   TermDeclMap &read_ufs = abstractor_.read_ufs();
   TermTypeMap &orig_types = abstractor_.orig_types();
 
+  std::unordered_set<std::string> s_typestrs;
+  for (auto elem : orig_indices_)
+  {
+    s_typestrs.insert(elem.first);
+  }
+
   // create all the timed indices and lambdas
   std::vector<unordered_map<string, TermSet>> timed_indices;
-  timed_indices.reserve(k);
-  for (int j = 0; j < k; j++) {
-    timed_indices.push_back(unordered_map<string, TermSet>());
+  timed_indices.reserve(k+1); // [0, k]
+  for (int i = 0; i <= k; i++)
+  {
     axioms.push_back(TermSet());
+    timed_indices.push_back(unordered_map<string, TermSet>());
+    for (auto ts : s_typestrs)
+    {
+      timed_indices[i][ts] = TermSet();
+    }
+  }
+  for (int j = 0; j < k; j++) {
     for (auto elem : orig_indices_) {
       string typestr = elem.first;
       for (auto i : elem.second)
       {
         timed_indices[j][typestr].insert(un.at_time(i, j));
+        // if it's a state variable, add the version at k also
+        if (j == k - 1 && ts_.is_statevar(i))
+        {
+          timed_indices[k][typestr].insert(un.at_time(i, k));
+        }
       }
     }
   }
@@ -228,11 +246,11 @@ vector<TermSet> ArrayAxiomEnumerator::equality_axioms_all_idx_times(Unroller &un
       read1 = read_ufs.at(msat_term_get_arg(e, 1));
       _type = orig_types.at(msat_term_get_arg(e, 0));
 
-      for (size_t i = 0; i < k; i++) {
+      for (size_t i = 0; i <= k; i++) {
         msat_term e_i = un.at_time(e, i);
         msat_term witness_i = un.at_time(witnesses.at(e), i);
 
-        for (size_t j = 0; j < k; j++) {
+        for (size_t j = 0; j <= k; j++) {
           // TODO: If this is too expensive, cache by e beforehand
           msat_term lambda_j = get_finite_domain_lambda(msat_term_get_arg(e, 0));
           if (!MSAT_ERROR_TERM(lambda_j)) {
@@ -254,17 +272,36 @@ vector<TermSet> ArrayAxiomEnumerator::store_axioms_all_idx_times(Unroller &un,
   vector<TermSet> axioms;
   TermTypeMap &orig_types = abstractor_.orig_types();
 
+  std::unordered_set<std::string> s_typestrs;
+  for (auto elem : orig_indices_)
+  {
+    s_typestrs.insert(elem.first);
+  }
+
   // create all the timed indices and lambdas
   std::vector<unordered_map<string, TermSet>> timed_indices;
-  timed_indices.reserve(k);
-  for (int j = 0; j < k; j++) {
-    timed_indices.push_back(unordered_map<string, TermSet>());
+  timed_indices.reserve(k+1); // [0, k]
+  for (int i = 0; i <= k; i++)
+  {
     axioms.push_back(TermSet());
+    timed_indices.push_back(unordered_map<string, TermSet>());
+    for (auto ts : s_typestrs)
+    {
+      timed_indices[i][ts] = TermSet();
+    }
+  }
+  for (int j = 0; j < k; j++) {
     for (auto elem : orig_indices_) {
       string typestr = elem.first;
       for (auto i : elem.second)
       {
         timed_indices[j][typestr].insert(un.at_time(i, j));
+
+        // if it's a state variable, add the version at k also
+        if (j == k - 1 && ts_.is_statevar(i))
+        {
+          timed_indices[k][typestr].insert(un.at_time(i, k));
+        }
       }
     }
   }
@@ -300,7 +337,7 @@ vector<TermSet> ArrayAxiomEnumerator::store_axioms_all_idx_times(Unroller &un,
     read0 = read_ufs.at(arr0);
     read1 = read_ufs.at(arr1);
 
-    for (size_t i = 0; i < k; i++) {
+    for (size_t i = 0; i <= k; i++) {
       msat_term arr0_i = un.at_time(arr0, i);
       msat_term e_i = un.at_time(e, i);
 
@@ -309,7 +346,7 @@ vector<TermSet> ArrayAxiomEnumerator::store_axioms_all_idx_times(Unroller &un,
       //       have already been checked
       //       IMPORTANT: That only holds for STATE indices, because inputs
       //                   don't have next
-      for (size_t j = 0; j < k; j++) {
+      for (size_t j = 0; j <= k; j++) {
         // TODO: If this is too expensive, cache by e beforehand
         msat_term lambda_j = get_finite_domain_lambda(arr0);
         if (!MSAT_ERROR_TERM(lambda_j)) {
@@ -332,17 +369,36 @@ vector<TermSet> ArrayAxiomEnumerator::const_array_axioms_all_idx_times(Unroller 
   vector<TermSet> axioms;
   TermTypeMap &orig_types = abstractor_.orig_types();
 
+  std::unordered_set<std::string> s_typestrs;
+  for (auto elem : orig_indices_)
+  {
+    s_typestrs.insert(elem.first);
+  }
+
   // create all the timed indices and lambdas
   std::vector<unordered_map<string, TermSet>> timed_indices;
-  timed_indices.reserve(k);
-  for (int j = 0; j < k; j++) {
-    timed_indices.push_back(unordered_map<string, TermSet>());
+  timed_indices.reserve(k + 1); // [0, k]
+  for (int i = 0; i <= k; i++)
+  {
     axioms.push_back(TermSet());
+    timed_indices.push_back(unordered_map<string, TermSet>());
+    for (auto ts : s_typestrs)
+    {
+      timed_indices[i][ts] = TermSet();
+    }
+  }
+  for (int j = 0; j < k; j++) {
     for (auto elem : orig_indices_) {
       string typestr = elem.first;
       for (auto i : elem.second)
       {
         timed_indices[j][typestr].insert(un.at_time(i, j));
+
+        // if it's a state variable, add the version at k also
+        if (j == k - 1 && ts_.is_statevar(i))
+        {
+          timed_indices[k][typestr].insert(un.at_time(i, k));
+        }
       }
     }
   }
@@ -369,11 +425,11 @@ vector<TermSet> ArrayAxiomEnumerator::const_array_axioms_all_idx_times(Unroller 
     val = msat_term_get_arg(ca, 0);
     read = read_ufs.at(abs_ca);
 
-    for (size_t i = 0; i < k; i++)
+    for (size_t i = 0; i <= k; i++)
     {
       msat_term abs_ca_i = un.at_time(abs_ca, i);
 
-      for (size_t j = 0; j < k; j++)
+      for (size_t j = 0; j <= k; j++)
       {
         // TODO: If this is too expensive, cache by e beforehand
         msat_term lambda_j = get_finite_domain_lambda(abs_ca);
