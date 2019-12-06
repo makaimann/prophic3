@@ -703,17 +703,19 @@ void ArrayAxiomEnumerator::collect_equalities(msat_term term, ic3ia::TermSet & s
   msat_visit_term(msat_env_, term, visit, &data);
 }
 
-void set_univ_prop_template(msat_term prop, TermMap targets_to_proph)
+void ArrayAxiomEnumerator::set_univ_prop_template(msat_term prop, TermMap targets_to_proph)
 {
   // not expecting to call this more than once
   assert(!template_vars_.size());
+  msat_env env = ts_.get_env();
 
+  int cnt = 0;
   for (auto elem : targets_to_proph)
   {
-    msat_decl d = msat_declare_function(msat_env_,
-                                        "__template_var_" + std::to_string(i),
+    msat_decl d = msat_declare_function(env,
+                                        ("__template_var_" + std::to_string(cnt++)).c_str(),
                                         msat_term_get_type(elem.first));
-    msat_term t = msat_make_constant(msat_env_, d);
+    msat_term t = msat_make_constant(env, d);
 
     // important that these two line up
     template_vars_.push_back(t);
@@ -722,7 +724,7 @@ void set_univ_prop_template(msat_term prop, TermMap targets_to_proph)
 
   assert(proph_substitutions_.size() == targets_to_proph.size());
 
-  univ_prop_template_ = msat_apply_substitution(msat_env_, prop, proph_substitutions_.size(),
+  univ_prop_template_ = msat_apply_substitution(env, prop, proph_substitutions_.size(),
                                                 &template_vars_[0], &proph_substitutions_[0]);
 }
 

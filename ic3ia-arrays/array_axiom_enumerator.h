@@ -106,6 +106,14 @@ public:
    */
   msat_term get_index(msat_term ax) const;
 
+  /* Sets up the state elements for universal property instantiations
+   * This should be passed the original (unmodified) property, before
+   * we start to add prophecy variables
+   * targets_to_proph maps prophecy targets occurring in the property
+   * to propehcy variables that were introduced
+   */
+  void set_univ_prop_template(msat_term prop, ic3ia::TermMap targets_to_proph);
+
   // debugging
   ArrayAbstractor &get_abstractor() { return abstractor_; };
   std::unordered_map<std::string, ic3ia::TermSet> &all_indices() { return all_indices_; };
@@ -132,12 +140,12 @@ private:
   // state for universal instantiations of the property in pre-state
   // stores a template for universal instantiations of the property
   msat_term univ_prop_template_;
-  ic3ia::TermMap proph_substitutions_;
+  ic3ia::TermList proph_substitutions_;
   // temporary template vars
   // these should always be replaced via substitution
   // by either prophecy variables or instantiations over indices
   // the univ_prop_template_ uses these vars
-  TermList template_vars_;
+  ic3ia::TermList template_vars_;
 
   /* logical implication */
   msat_term implies(msat_term antecedent, msat_term consequent);
@@ -194,14 +202,6 @@ private:
 
   /* Collect all array equality UFs from the given term and add to set s */
   void collect_equalities(msat_term term, ic3ia::TermSet & s);
-
-  /* Sets up the state elements for universal property instantiations
-   * This should be passed the original (unmodified) property, before
-   * we start to add prophecy variables
-   * targets_to_proph maps prophecy targets occurring in the property
-   * to propehcy variables that were introduced
-   */
-  void set_univ_prop_template(msat_term prop, TermMap targets_to_proph);
 
 };
   } // namespace ic3ia_array
