@@ -26,12 +26,7 @@ public:
       typestr = msat_type_repr(orig_types.at(idx));
 
       // save state variable indices
-      base_idx = idx;
-      if (msat_term_is_int_from_ubv(msat_env_, idx))
-      {
-        base_idx = msat_term_get_arg(idx, 0);
-      }
-      if (ts.is_statevar(base_idx))
+      if (ts.only_cur(idx))
       {
         state_indices_[typestr].insert(idx);
       }
