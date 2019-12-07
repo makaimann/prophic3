@@ -508,7 +508,7 @@ msat_term ArrayAxiomEnumerator::get_index(msat_term ax) const
 void ArrayAxiomEnumerator::set_univ_prop_template(msat_term prop, TermMap targets_to_proph)
 {
   // not expecting to call this more than once
-  assert(!template_vars_.size());
+  //assert(!template_vars_.size());
 
   TermList targets;
   int cnt = 0;
@@ -534,43 +534,57 @@ void ArrayAxiomEnumerator::set_univ_prop_template(msat_term prop, TermMap target
 
 TermSet ArrayAxiomEnumerator::univ_prop_instantiation_axioms()
 {
+  TermSet prop_preds;
+  ic3ia::get_predicates(msat_env_, univ_prop_template_, prop_preds, false);
+
   TermSet axioms;
 
   TermTypeMap & orig_types = abstractor_.orig_types();
 
-  if (!template_vars_.size())
-  {
+  if (!template_vars_.size()) {
     return axioms;
   }
 
-  msat_term proph_instantiation = msat_apply_substitution(msat_env_, univ_prop_template_, template_vars_.size(),
-                                                          &template_vars_[0], &proph_substitutions_[0]);
+  for (auto pred : prop_preds) {
+    for (int i = 0; i < 2; ++i) {
+      msat_term lit = (i == 0) ? pred : msat_make_not(msat_env_, pred);
+      msat_term proph_instantiation =
+	msat_apply_substitution(msat_env_, lit, template_vars_.size(),
+				&template_vars_[0], &proph_substitutions_[0]);
 
-  std::vector<TermSet> index_sets;
-  // need to use the correct types
-  // note: proph_substitutions_ is in the same order as template_vars_ for substituting
-  for (auto p : proph_substitutions_)
-  {
-    // prophecy variable was added to orig_types by main loop
-    // can use it to figure out which index set to use to match the type
-    index_sets.push_back(all_indices_.at(msat_type_repr(orig_types.at(p))));
-  }
+      std::vector<TermSet> index_sets;
+      // need to use the correct types
+      // note: proph_substitutions_ is in the same order as template_vars_ for substituting
+      for (auto p : proph_substitutions_) {
+	// prophecy variable was added to orig_types by main loop
+	// can use it to figure out which index set to use to match the type
+	index_sets.push_back(all_indices_.at(msat_type_repr(orig_types.at(p))));
+      }
 
-  std::vector<std::vector<msat_term>> substitutions = cartesian_product(index_sets);
-  msat_term instantiation;
-  for (std::vector<msat_term> sub : substitutions)
-  {
-    assert(sub.size() == template_vars_.size());
-    instantiation = msat_apply_substitution(msat_env_, univ_prop_template_, template_vars_.size(),
-                                            &template_vars_[0], &sub[0]);
-    axioms.insert(implies(proph_instantiation, instantiation));
-  }
+      std::vector<std::vector<msat_term>> substitutions =
+	cartesian_product(index_sets);
+      msat_term instantiation;
+      for (std::vector<msat_term> sub : substitutions) {
+	assert(sub.size() == template_vars_.size());
+	instantiation =
+	  msat_apply_substitution(msat_env_, lit, template_vars_.size(),
+				  &template_vars_[0], &sub[0]);
+	if (proph_instantiation != instantiation) {
+	  // std::cout << "univ axiom "
+	  // 	    << msat_to_smtlib2_term(msat_env_, proph_instantiation)
+	  // 	    << " -> "
+	  // 	    << msat_to_smtlib2_term(msat_env_, instantiation)
+	  // 	    << std::endl;
+	  axioms.insert(implies(proph_instantiation, instantiation));
+	}
+      }
 
-  // remove true from set (in case there was a trivial substitution)
-  msat_term t = msat_make_true(msat_env_);
-  if (axioms.find(t) != axioms.end())
-  {
-    axioms.erase(t);
+      // remove true from set (in case there was a trivial substitution)
+      msat_term t = msat_make_true(msat_env_);
+      if (axioms.find(t) != axioms.end()) {
+	axioms.erase(t);
+      }
+    }
   }
 
   return axioms;

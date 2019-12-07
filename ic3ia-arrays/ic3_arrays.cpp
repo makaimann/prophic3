@@ -275,7 +275,8 @@ bool IC3Array::fix_bmc()
 
       // try universal property instantiations in the pre-state if there weren't any
       // regular untimed axioms that could rule out this model
-      if (opts_.use_univ_prop_instantiations && (current_k_ != 0) && !found_untimed_axioms)
+      if (opts_.use_univ_prop_instantiations &&
+	  (current_k_ != 0) && !found_untimed_axioms)
       {
         TermSet univ_prop_instantiations = aae_.univ_prop_instantiation_axioms();
         for (size_t k = 0; k < current_k_; ++k) {
