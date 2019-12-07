@@ -278,7 +278,7 @@ bool IC3Array::fix_bmc()
       if (opts_.use_univ_prop_instantiations && (current_k_ != 0) && !found_untimed_axioms)
       {
         TermSet univ_prop_instantiations = aae_.univ_prop_instantiation_axioms();
-        for (size_t k = 0; k <= current_k_; ++k) {
+        for (size_t k = 0; k < current_k_; ++k) {
           for (auto ax : univ_prop_instantiations) {
             // don't check axioms with times beyond the current time-step
             // (because of next)
@@ -375,8 +375,8 @@ bool IC3Array::fix_bmc()
       }
 
       if (!found_untimed_axioms & !found_timed_axioms) {
-	/* model for the witness */
-	msat_model model = msat_get_model(refiner_);
+        /* model for the witness */
+        msat_model model = msat_get_model(refiner_);
         print_witness(model, current_k_, aae_);
         // TODO: Use real exceptions
         std::cout << "It looks like there's a concrete counter-example (or some axioms are missing)" << std::endl;
