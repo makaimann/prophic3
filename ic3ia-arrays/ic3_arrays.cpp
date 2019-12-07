@@ -100,7 +100,19 @@ msat_truth_value IC3Array::prove()
     // just a dummy map
     prop_indices_map[i] = i;
   }
+
+  // property before being rewritten
+  msat_term prop = abs_ts_.prop();
   add_frozen_proph_vars(prop_indices_map);
+
+  TermMap targets_to_proph;
+  // next function wants reverse order
+  // only prophecy variables in this map so far are the ones we just added
+  for (auto elem : frozen_proph_vars_)
+  {
+    targets_to_proph[elem.second] = elem.first;
+  }
+  aae_.set_univ_prop_template(prop, targets_to_proph);
 
   std::cout << "Created " << prop_indices.size();
   std::cout << " prophecy variables for the property" << std::endl;
