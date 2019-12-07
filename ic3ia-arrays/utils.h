@@ -22,7 +22,4 @@ void get_free_vars(msat_env env, msat_term term, TermSet & out_free_vars);
 
 bool is_variable(msat_env env, msat_term term);
 
-template<class T>
-std::vector<std::vector<T>> cartesian_product(std::vector<std::set<T>> sets);
-
 }

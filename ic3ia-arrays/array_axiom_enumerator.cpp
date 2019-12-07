@@ -9,6 +9,42 @@ using namespace ic3ia;
 
 namespace ic3ia_array {
 
+// helpers
+
+
+std::vector<std::vector<msat_term>> cartesian_product_helper(int idx,
+                                                     std::vector<TermSet> sets,
+                                                     std::vector<std::vector<msat_term>> products)
+{
+  if (idx < sets.size())
+  {
+    std::vector<std::vector<msat_term>> new_products;
+    for (auto s : sets[idx])
+    {
+      for (auto v : products)
+      {
+        v.push_back(s);
+        new_products.push_back(v);
+      }
+    }
+    return cartesian_product_helper(idx+1, sets, new_products);
+  }
+  else
+  {
+    return products;
+  }
+}
+
+std::vector<std::vector<msat_term>> cartesian_product(std::vector<TermSet> sets)
+{
+  std::vector<std::vector<msat_term>> start_product;
+  for (auto s : sets[0])
+  {
+    start_product.push_back(std::vector<msat_term>({s}));
+  }
+  return cartesian_product_helper(1, sets, start_product);
+}
+
 msat_term ArrayAxiomEnumerator::implies(msat_term antecedent, msat_term consequent)
 {
   return msat_make_or(msat_env_, msat_make_not(msat_env_, antecedent),
@@ -469,6 +505,70 @@ msat_term ArrayAxiomEnumerator::get_index(msat_term ax) const
   return axioms_to_index_.at(ax);
 }
 
+void ArrayAxiomEnumerator::set_univ_prop_template(msat_term prop, TermMap targets_to_proph)
+{
+  // not expecting to call this more than once
+  assert(!template_vars_.size());
+
+  TermList targets;
+  int cnt = 0;
+  for (auto elem : targets_to_proph)
+  {
+    msat_decl d = msat_declare_function(msat_env_,
+                                        ("__template_var_" + std::to_string(cnt++)).c_str(),
+                                        msat_term_get_type(elem.first));
+    msat_term t = msat_make_constant(msat_env_, d);
+
+    // important that these all line up
+    template_vars_.push_back(t);
+    targets.push_back(elem.first);
+    proph_substitutions_.push_back(elem.second);
+  }
+
+  assert(template_vars_.size() == targets.size());
+  assert(proph_substitutions_.size() == targets_to_proph.size());
+
+  univ_prop_template_ = msat_apply_substitution(msat_env_, prop, targets.size(),
+                                                &targets[0], &template_vars_[0]);
+}
+
+TermSet ArrayAxiomEnumerator::univ_prop_instantiation_axioms()
+{
+  TermSet axioms;
+
+  TermTypeMap & orig_types = abstractor_.orig_types();
+
+  if (!template_vars_.size())
+  {
+    return axioms;
+  }
+
+  msat_term proph_instantiation = msat_apply_substitution(msat_env_, univ_prop_template_, template_vars_.size(),
+                                                          &template_vars_[0], &proph_substitutions_[0]);
+
+  std::vector<TermSet> index_sets;
+  // need to use the correct types
+  // note: proph_substitutions_ is in the same order as template_vars_ for substituting
+  for (auto p : proph_substitutions_)
+  {
+    // prophecy variable was added to orig_types by main loop
+    // can use it to figure out which index set to use to match the type
+    index_sets.push_back(all_indices_.at(msat_type_repr(orig_types.at(p))));
+  }
+
+  std::vector<std::vector<msat_term>> substitutions = cartesian_product(index_sets);
+  msat_term instantiation;
+  for (std::vector<msat_term> sub : substitutions)
+  {
+    instantiation = msat_apply_substitution(msat_env_, univ_prop_template_, template_vars_.size(),
+                                            &template_vars_[0], &proph_substitutions_[0]);
+    axioms.insert(implies(proph_instantiation, instantiation));
+  }
+
+  return axioms;
+
+}
+
 // protected helper functions
 void ArrayAxiomEnumerator::enumerate_store_equalities(TermSet &axioms, msat_decl read_res, msat_decl read_arg,
                                                       msat_term store_eq, msat_type orig_idx_type,
@@ -701,31 +801,6 @@ void ArrayAxiomEnumerator::collect_equalities(msat_term term, ic3ia::TermSet & s
 
   Data data(abstractor_.witnesses(), s);
   msat_visit_term(msat_env_, term, visit, &data);
-}
-
-void ArrayAxiomEnumerator::set_univ_prop_template(msat_term prop, TermMap targets_to_proph)
-{
-  // not expecting to call this more than once
-  assert(!template_vars_.size());
-  msat_env env = ts_.get_env();
-
-  int cnt = 0;
-  for (auto elem : targets_to_proph)
-  {
-    msat_decl d = msat_declare_function(env,
-                                        ("__template_var_" + std::to_string(cnt++)).c_str(),
-                                        msat_term_get_type(elem.first));
-    msat_term t = msat_make_constant(env, d);
-
-    // important that these two line up
-    template_vars_.push_back(t);
-    proph_substitutions_.push_back(elem.second);
-  }
-
-  assert(proph_substitutions_.size() == targets_to_proph.size());
-
-  univ_prop_template_ = msat_apply_substitution(env, prop, proph_substitutions_.size(),
-                                                &template_vars_[0], &proph_substitutions_[0]);
 }
 
 } // namespace ic3ia_array

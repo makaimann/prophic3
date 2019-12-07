@@ -7,8 +7,13 @@
 #include "bmc.h"
 
 #include "array_abstractor.h"
+#include "utils.h" // for cartesian_product
 
 namespace ic3ia_array {
+
+// helpers
+std::vector<std::vector<msat_term>> cartesian_product(std::vector<ic3ia::TermSet> sets);
+
 class ArrayAxiomEnumerator {
 public:
   ArrayAxiomEnumerator(const ic3ia::TransitionSystem &ts,
@@ -113,6 +118,10 @@ public:
    * to propehcy variables that were introduced
    */
   void set_univ_prop_template(msat_term prop, ic3ia::TermMap targets_to_proph);
+
+  /* Enumerates universal property instantiations */
+  ic3ia::TermSet univ_prop_instantiation_axioms();
+
 
   // debugging
   ArrayAbstractor &get_abstractor() { return abstractor_; };
