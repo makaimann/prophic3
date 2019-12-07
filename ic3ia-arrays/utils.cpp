@@ -328,4 +328,39 @@ bool is_variable(msat_env env, msat_term term)
           !msat_term_is_number(env, term));
 }
 
+template <class T>
+std::vector<std::vector<T>> cartesian_product_helper(int idx,
+                                                     std::vector<std::set<T>> sets,
+                                                     std::vector<std::vector<T>> products)
+{
+  if (idx < sets.size())
+  {
+    std::vector<std::vector<T>> new_products;
+    for (auto s : sets[idx])
+    {
+      for (auto v : products)
+      {
+        v.push_back(s);
+        new_products.push_back(v);
+      }
+    }
+    return cartesian_product_helper(idx+1, sets, new_products);
+  }
+  else
+  {
+    return products;
+  }
+}
+
+template <class T>
+std::vector<std::vector<T>> cartesian_product(std::vector<std::set<T>> sets)
+{
+  std::vector<std::vector<T>> start_product;
+  for (auto s : sets[0])
+  {
+    start_product.push_back(std::vector<T>({s}));
+  }
+  return cartesian_product_helper<T>(1, sets, start_product);
+}
+
 }
