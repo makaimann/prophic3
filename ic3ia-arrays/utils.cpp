@@ -238,6 +238,8 @@ Options get_options(int argc, const char **argv)
           ret.lazy_array_axioms = true;
         } else if (a == "-use-single-uf") {
           ret.use_single_uf = true;
+        } else if (a == "-use-univ-prop-inst") {
+          ret.use_univ_prop_instantiations = true;
         } else if (a == "-h" || a == "-help" || a == "--help") {
             std::cout << "USAGE: " << argv[0] << " [OPTIONS] FILENAME.vmt"
                       << "\n\n   -v N : set verbosity level"
@@ -275,6 +277,8 @@ Options get_options(int argc, const char **argv)
                       << "\n   -lazy-array-axioms : add refining axioms lazily (one per BMC model)"
                       << "\n   -use-single-uf : use a single UF per array type (without this option "
                       << "it's per array variable)"
+                      << "\n   -use-univ-prop-inst : assume property in the pre-state and instantiate "
+                      << "universally quantified axioms"
                       << std::endl;
             exit(0);
             break;

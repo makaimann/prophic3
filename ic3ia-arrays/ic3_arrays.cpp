@@ -273,9 +273,58 @@ bool IC3Array::fix_bmc()
 
       found_untimed_axioms = violated_axioms.size();
 
+      // try universal property instantiations in the pre-state if there weren't any
+      // regular untimed axioms that could rule out this model
+      if (opts_.use_univ_prop_instantiations && (current_k_ != 0) && !found_untimed_axioms)
+      {
+        TermSet univ_prop_instantiations = aae_.univ_prop_instantiation_axioms();
+        for (size_t k = 0; k <= current_k_; ++k) {
+          for (auto ax : univ_prop_instantiations) {
+            // don't check axioms with times beyond the current time-step
+            // (because of next)
+            if (k == current_k_ && abs_ts_.contains_next(ax))
+            {
+              continue;
+            }
+
+            timed_axiom = un_.at_time(ax, k);
+            untime_cache[timed_axiom] = ax;
+
+            // had issues trying to evaluate the model on a constant true
+            // which can sometimes occur depending on the options
+            if (msat_term_is_true(refiner_, timed_axiom))
+            {
+              continue;
+            }
+
+            val = msat_get_model_value(refiner_, timed_axiom);
+            if (MSAT_ERROR_TERM(val))
+            {
+              std::cerr << "Got error term when evaluating model on "
+                        << msat_to_smtlib2_term(refiner_, timed_axiom) << std::endl;
+              throw std::exception();
+            }
+            else if (msat_term_is_false(refiner_, val)) {
+              // std::cout << "violated axiom ";
+              // std::cout << msat_to_smtlib2_term(msat_env_, timed_axiom) <<
+              // std::endl;
+              violated_axioms.insert(timed_axiom);
+              untimed_axioms_to_add.insert(ax);
+
+              if (opts_.lazy_array_axioms) {
+                break;
+              }
+            }
+          }
+        }
+      }
+
+      found_untimed_axioms = violated_axioms.size();
+
       std::cout << "Found " << violated_axioms.size() << " violated untime-able axioms!"
                 << std::endl;
 
+      // now check for timed axioms if there weren't any untime-able axioms
       if (!found_untimed_axioms)
       {
         vector<vector<TermSet>> timed_axioms;
