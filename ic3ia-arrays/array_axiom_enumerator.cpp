@@ -578,17 +578,16 @@ TermSet ArrayAxiomEnumerator::univ_prop_instantiation_axioms()
 	  axioms.insert(implies(proph_instantiation, instantiation));
 	}
       }
-
-      // remove true from set (in case there was a trivial substitution)
-      msat_term t = msat_make_true(msat_env_);
-      if (axioms.find(t) != axioms.end()) {
-	axioms.erase(t);
-      }
     }
   }
 
-  return axioms;
+  // remove true from set (in case there was a trivial substitution)
+  msat_term t = msat_make_true(msat_env_);
+  if (axioms.find(t) != axioms.end()) {
+    axioms.erase(t);
+  }
 
+  return axioms;
 }
 
 // protected helper functions
