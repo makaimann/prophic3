@@ -232,6 +232,12 @@ Options get_options(int argc, const char **argv)
             ok = getint(++i, ret.bmc_max_k);
         } else if (a == "-no-eq-uf") {
             ret.use_uf_for_arr_eq = false;
+        } else if (a == "-no-hist-eq-preds") {
+          ret.use_hist_eq_initial_preds = false;
+        } else if (a == "-lazy-array-axioms") {
+          ret.lazy_array_axioms = true;
+        } else if (a == "-use-single-uf") {
+          ret.use_single_uf = true;
         } else if (a == "-h" || a == "-help" || a == "--help") {
             std::cout << "USAGE: " << argv[0] << " [OPTIONS] FILENAME.vmt"
                       << "\n\n   -v N : set verbosity level"
@@ -265,6 +271,10 @@ Options get_options(int argc, const char **argv)
                       << "\n   -bmc : use BMC instead of IC3"
                       << "\n   -bmc-k N : max k value for BMC"
                       << "\n   -no-eq-uf : use actual equalities between abstracted arrays"
+                      << "\n   -no-hist-eq-preds : don't use history equalities as initial predicates"
+                      << "\n   -lazy-array-axioms : add refining axioms lazily (one per BMC model)"
+                      << "\n   -use-single-uf : use a single UF per array type (without this option "
+                      << "it's per array variable)"
                       << std::endl;
             exit(0);
             break;
@@ -309,6 +319,13 @@ void get_free_vars(msat_env env, msat_term term, TermSet & out_free_vars)
 
   Data data(out_free_vars);
   msat_visit_term(env, term, visit, &data);
+}
+
+bool is_variable(msat_env env, msat_term term)
+{
+  return (msat_term_arity(term) == 0 &&
+          msat_decl_get_tag(env, msat_term_get_decl(term)) == MSAT_TAG_UNKNOWN &&
+          !msat_term_is_number(env, term));
 }
 
 }

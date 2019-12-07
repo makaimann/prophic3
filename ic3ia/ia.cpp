@@ -98,7 +98,6 @@ Refiner::Refiner(const TransitionSystem &ts, const Options &opts,
     predminimizer_(ts, opts, abs, un_)
 {
     minpreds_ = opts.minpreds;
-
     msat_config cfg = get_config(FULL_MODEL, true);
     if (!opts.trace.empty()) {
         std::string name = opts.trace + ".itp.smt2";
@@ -107,16 +106,6 @@ Refiner::Refiner(const TransitionSystem &ts, const Options &opts,
     }
     solver_ = msat_create_shared_env(cfg, ts_.get_env());
     msat_destroy_config(cfg);
-
-    msat_config cfg_unsat_only = get_config(FULL_MODEL, true);
-    if (!opts.trace.empty()) {
-        std::string name = opts.trace + "-unsat-only-solver.itp.smt2";
-        msat_set_option(cfg_unsat_only, "debug.api_call_trace", "1");
-        msat_set_option(cfg_unsat_only, "debug.api_call_trace_filename", name.c_str());
-    }
-    msat_set_option(cfg_unsat_only, "theory.eq_propagation", "false");
-    solver_unsat_only_ = msat_create_shared_env(cfg_unsat_only, solver_);
-    msat_destroy_config(cfg_unsat_only);
 
     predabs_ = msat_make_true(ts_.get_env());
 }
@@ -127,27 +116,37 @@ Refiner::~Refiner()
     if (!MSAT_ERROR_ENV(solver_)) {
         msat_destroy_env(solver_);
     }
-    if (!MSAT_ERROR_ENV(solver_unsat_only_))
-    {
-        msat_destroy_env(solver_unsat_only_);
-    }
 }
 
 
 bool Refiner::refine(const std::vector<TermList> &cex)
 {
-    msat_env env = solver_unsat_only_;
-    msat_result res = check_abstract_cex(env, cex);
+    // reset the interpolating solver
+    msat_reset_env(solver_);
+    preds_.clear();
+    groups_.clear();
 
-    if (res == MSAT_SAT)
-    {
-        // cannot trust sat result from this solver configuration
-        // re-run with other solver
-        logger(2) << "got sat from approximate solver" << endlog;
-        logger(2) << "re-running with eq_propagation enabled" << endlog;
-        env = solver_;
-        res = check_abstract_cex(env, cex);
+    // create the interpolation groups
+    for (size_t k = groups_.size(); k < cex.size(); ++k) {
+        groups_.push_back(msat_create_itp_group(solver_));
     }
+
+    logger(3) << "entering abstraction refinement" << endlog;
+
+    // generate the BMC problem for the input abstract counterexample trace,
+    // putting each step in a different interpolation group
+    for (size_t k = 0; k < cex.size(); ++k) {
+        msat_set_itp_group(solver_, groups_[k]);
+        msat_term s = make_and(solver_, cex[k]);
+        msat_assert_formula(solver_, un_.at_time(s, k));
+        if (k != cex.size()-1) {
+            msat_assert_formula(solver_, un_.at_time(ts_.trans(), k));
+        }
+        logger(3) << "abstract state " << k << ": " << logterm(solver_, s)
+                  << endlog;
+    }
+    // check whether the counterexample is concrete
+    msat_result res = msat_solve(solver_);    
 
     if (res == MSAT_UNSAT) {
         logger(3) << "counterexample is spurious, extracting interpolants"
@@ -155,11 +154,7 @@ bool Refiner::refine(const std::vector<TermList> &cex)
         // compute a sequence interpolant for the spurious cex trace, and
         // extract the atomic predicates occurring in each element of the
         // sequence (after proper untiming -- see Unroller::untime())
-        if (!extract_predicates(env))
-        {
-            logger(0) << "failed to get an interpolant" << endlog;
-            throw std::exception();
-        }
+        extract_predicates(solver_);
         if (minpreds_) {
             minimize_predicates(cex);
         }
@@ -171,63 +166,22 @@ bool Refiner::refine(const std::vector<TermList> &cex)
 }
 
 
-msat_result Refiner::check_abstract_cex(msat_env interpolator_, const std::vector<TermList> &cex)
+void Refiner::extract_predicates(msat_env env)
 {
-    // reset the interpolating solver
-    msat_reset_env(interpolator_);
-    preds_.clear();
-    groups_.clear();
-
-    // create the interpolation groups
-    for (size_t k = groups_.size(); k < cex.size(); ++k) {
-        groups_.push_back(msat_create_itp_group(interpolator_));
-    }
-
-    logger(3) << "entering abstraction refinement" << endlog;
-
-    // generate the BMC problem for the input abstract counterexample trace,
-    // putting each step in a different interpolation group
-    for (size_t k = 0; k < cex.size(); ++k) {
-        msat_set_itp_group(interpolator_, groups_[k]);
-        msat_term s = make_and(interpolator_, cex[k]);
-        msat_assert_formula(interpolator_, un_.at_time(s, k));
-        if (k != cex.size()-1) {
-            msat_assert_formula(interpolator_, un_.at_time(ts_.trans(), k));
-        }
-        logger(3) << "abstract state " << k << ": " << logterm(interpolator_, s)
-                  << endlog;
-    }
-    // check whether the counterexample is concrete
-    return msat_solve(interpolator_);
-}
-
-
-bool Refiner::extract_predicates(msat_env env)
-{
-    // TODO: Figure out if we should keep predicates
-    //       from previous interpolation attempt even if
-    //       it had failed to produce an interpolant later
     preds_.clear();
 
-    TermList interpolants;
     for (size_t i = 1; i < groups_.size(); ++i) {
         msat_term t = msat_get_interpolant(env, &groups_[0], i);
         if (MSAT_ERROR_TERM(t))
         {
-            return false;
+          std::cout << "Failed to get interpolant." << std::endl;
+          throw std::exception();
         }
 
         logger(3) << "got interpolant " << i << ": " << logterm(env, t)
                   << endlog;
-        interpolants.push_back(t);
+        get_predicates(env, un_.untime(t), preds_);
     }
-
-    for (auto i : interpolants)
-    {
-        get_predicates(env, un_.untime(i), preds_);
-    }
-
-    return true;
 }
 
 

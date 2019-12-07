@@ -120,6 +120,26 @@
 **** The current approach is more general, but maybe we should follow it up with a top-level propagator that's also aware of the axioms to be generated
 *** Possibly speed things up with additional equality lemmas
 **** e.g. eq(arr0, arr1) -> arr0 = arr1 (or maybe we should just use = to begin with. Why bother with the UF?)
+* Known Bugs
+** DONE not refining correctly when there are multiple read/write functions in fibonacci-ind.smv
+   CLOSED: [2019-12-06 Fri 11:32]
+**  nuXmv bug for checking fibonacci invariant
+**  nuXmv bug for impossible-eq
+**  ic3ia finds no new predicates on simple-fib (when writing 2 and checking that result is greater than 0)
+**  segfault on lockserv.vmt with -no-eq-uf and -use-single-uf
+** DONE issue in get_time of unroller
+   CLOSED: [2019-12-06 Fri 11:32]
+** assert(ok) failure in ia.cpp for -no-eq-uf -use-single-uf on bjesse-ivar: sent to Alberto
+** occasionally get error term from model evaluation. happens more with -no-eq-uf and -use-single-uf
+*** when this happens, it typically happens for lots of axioms and so we conclude false because we missed so many
+*** currently throw an exception when that happens to avoid the incorrect result
+* Other Issues
+** Can't represent the right universal invariants for increasing-array.smv
+* Interesting benchmarks
+**  quic3
+*** array_swap_twice.smt2.vmt: takes a long time to reduce axioms
+*** array_monotonic_true-unreach-call.smt2.vmt: doesn't add any array axioms and produces a ton of predicates of the same shape
+**** (<= y 124), (<= y 126), (<= y 128), etc...
 * Rationale
 ** for not adding untimed axioms if there are timed axioms to be refined
    history variables do not preserve monotonicity. i.e. if you fix a counter-example at time 5, there could be a counterexample at time 4

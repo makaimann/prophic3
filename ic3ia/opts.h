@@ -56,6 +56,9 @@ struct Options {
     bool ltl_single_fairness_sorted;
     // Added by Makai
     bool use_uf_for_arr_eq;
+    bool use_hist_eq_initial_preds;
+    bool lazy_array_axioms;
+    bool use_single_uf;
 
     Options()
     {
@@ -87,6 +90,9 @@ struct Options {
         witness_check_script = "";
         ltl_single_fairness_sorted = true;
         use_uf_for_arr_eq = true;
+        use_hist_eq_initial_preds = true;
+        lazy_array_axioms = false;
+        use_single_uf = false;
     }
 };
 

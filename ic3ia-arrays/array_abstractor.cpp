@@ -8,8 +8,8 @@ using namespace ic3ia;
 
 namespace ic3ia_array {
 
-ArrayAbstractor::ArrayAbstractor(const TransitionSystem &ts, bool use_eq_uf)
-  : msat_env_(ts.get_env()), conc_ts_(ts), use_eq_uf_(use_eq_uf), abs_ts_(msat_env_) {
+ArrayAbstractor::ArrayAbstractor(const TransitionSystem &ts, bool use_eq_uf, bool use_single_uf)
+  : msat_env_(ts.get_env()), conc_ts_(ts), use_eq_uf_(use_eq_uf), use_single_uf_(use_single_uf), abs_ts_(msat_env_) {
   do_abstraction();
 }
 
@@ -22,24 +22,49 @@ void ArrayAbstractor::do_abstraction()
   abstract_array_vars();
 
   // add all old state elements unless they've been removed
-  // new_vars_ already contains state mapping for new state vars
+  // new_state_vars_ already contains state mapping for new state vars
   for (auto sv : conc_ts_.statevars()) {
     if (removed_vars_.find(sv) == removed_vars_.end()) {
-      new_vars_[sv] = conc_ts_.next(sv);
+      new_state_vars_[sv] = conc_ts_.next(sv);
     }
   }
 
   msat_term new_init = abstract(conc_ts_.init());
-  msat_term new_trans = abstract(conc_ts_.trans());
   msat_term new_prop = abstract(conc_ts_.prop());
 
   // need to promote inputs that occur in new_init / new_prop to states
+  // this includes the created witnesses which don't explicitly appear
+  //   in init/prop but might be needed for refinements
+
+  // first -- promote witnesses
+  for (auto elem : witnesses_)
+  {
+    msat_term witness = elem.second;
+
+    // might have to unpack witness
+    // could be (ubv_to_int witness)
+    if (msat_term_is_int_from_ubv(msat_env_, witness))
+    {
+      witness = msat_term_get_arg(witness, 0);
+    }
+    assert(is_variable(msat_env_, witness));
+
+    msat_decl witness_decl = msat_term_get_decl(witness);
+    std::string witness_name(msat_decl_get_name(witness_decl));
+    msat_decl witness_declN = msat_declare_function(msat_env_,
+                                                    (witness_name + ".next").c_str(),
+                                                    msat_term_get_type(witness));
+    msat_term witnessN = msat_make_constant(msat_env_, witness_declN);
+    new_state_vars_[witness] = witnessN;
+  }
+
+  // then promote any inputs appearing in init / prop to state variables
   TermSet free_vars;
   get_free_vars(msat_env_, new_init, free_vars);
   get_free_vars(msat_env_, new_prop, free_vars);
   for (auto fv : free_vars)
   {
-    if (new_vars_.find(fv) == new_vars_.end())
+    if (new_state_vars_.find(fv) == new_state_vars_.end())
     {
       msat_type fv_type = msat_term_get_type(fv);
       std::string name = msat_term_repr(fv);
@@ -47,15 +72,17 @@ void ArrayAbstractor::do_abstraction()
                                                  (name + ".next").c_str(),
                                                  fv_type);
       msat_term fvN = msat_make_constant(msat_env_, decl_fvN);
-      new_vars_[fv] = fvN;
+      new_state_vars_[fv] = fvN;
       // map next to type
       orig_types_[fvN] = fv_type;
     }
   }
 
+  msat_term new_trans = abstract(conc_ts_.trans());
+
   // initialize for using curr / next
   // will reinitialize later if needed
-  abs_ts_.initialize(new_vars_, new_init, new_trans, new_prop,
+  abs_ts_.initialize(new_state_vars_, new_init, new_trans, new_prop,
                      conc_ts_.live_prop());
 
   // replace array equalities with uninterpreted functions
@@ -153,7 +180,7 @@ void ArrayAbstractor::do_abstraction()
                                        &to_subst[0], &vals[0]);
 
     // re-initialize
-    abs_ts_.initialize(new_vars_, new_init, new_trans, new_prop,
+    abs_ts_.initialize(new_state_vars_, new_init, new_trans, new_prop,
                        conc_ts_.live_prop());
   }
 
@@ -166,6 +193,7 @@ void ArrayAbstractor::do_abstraction()
     abs_ts_.add_trans(msat_make_eq(msat_env_, abs_ts_.next(abs_ca), abs_ca));
   }
 
+  // create the lambdas used to refer to indices which have never been seen before
   create_lambdas();
 }
 
@@ -194,6 +222,10 @@ void ArrayAbstractor::abstract_array_vars()
       arrays.insert(i);
     }
   }
+
+  // these are used if use_single_uf is true
+  std::unordered_map<std::string, msat_decl> type2read;
+  std::unordered_map<std::string, msat_decl> type2write;
 
   msat_type abs_type;
   msat_type arridxtype;
@@ -231,42 +263,73 @@ void ArrayAbstractor::abstract_array_vars()
     msat_term arr_abs = msat_make_constant(msat_env_, decl_arrabs);
     cache_[v] = arr_abs;
     removed_vars_.insert(v);
-    // keep track of the original index sort
-    orig_types_[arr_abs] = arridxtype;
+    // keep track of the original type
+    orig_types_[arr_abs] = _type;
 
-    // create a read function for these arrays
-    msat_type read_param_types[2] = {abs_type,
-                                     msat_get_integer_type(msat_env_)};
-    msat_type read_funtype =
-      msat_get_function_type(msat_env_, &read_param_types[0], 2, arrelemtype);
-    std::string readname = "read_" + std::to_string(num_arr_vars_);
-    msat_decl readfun = msat_declare_function(msat_env_, readname.c_str(), read_funtype);
+    std::string abs_typestr = msat_type_repr(abs_type);
+    msat_decl readfun;
+    if (use_single_uf_ && type2read.find(abs_typestr) != type2read.end())
+    {
+      readfun = type2read.at(abs_typestr);
+    }
+    else
+    {
+      // create a read function for these arrays
+      msat_type read_param_types[2] = {abs_type,
+                                       msat_get_integer_type(msat_env_)};
+      msat_type read_funtype =
+        msat_get_function_type(msat_env_, &read_param_types[0], 2, arrelemtype);
+      std::string readname = "read_" + std::to_string(num_arr_vars_);
+      readfun = msat_declare_function(msat_env_, readname.c_str(), read_funtype);
+
+      if (use_single_uf_)
+      {
+        // save this readfun for the type
+        type2read[abs_typestr] = readfun;
+      }
+    }
+
+    // save the readfun for looking up by the abstract array
     read_ufs_[arr_abs] = readfun;
 
-    // create a write function for these arrays
-    msat_type write_param_types[3] = {abs_type,
-                                      msat_get_integer_type(msat_env_),
-                                      arrelemtype};
-    msat_type write_funtype = msat_get_function_type(msat_env_, &write_param_types[0], 3, abs_type);
-    std::string writename = "write_" + std::to_string(num_arr_vars_);
-    msat_decl writefun = msat_declare_function(msat_env_, writename.c_str(), write_funtype);
+    msat_decl writefun;
+    if (use_single_uf_ && type2write.find(abs_typestr) != type2write.end())
+    {
+      writefun = type2write.at(abs_typestr);
+    }
+    else
+    {
+      // create a write function for these arrays
+      msat_type write_param_types[3] = {abs_type,
+                                        msat_get_integer_type(msat_env_),
+                                        arrelemtype};
+      msat_type write_funtype = msat_get_function_type(msat_env_, &write_param_types[0], 3, abs_type);
+      std::string writename = "write_" + std::to_string(num_arr_vars_);
+      writefun = msat_declare_function(msat_env_, writename.c_str(), write_funtype);
+
+      if (use_single_uf_)
+      {
+        // save this writefun for the type
+        type2write[abs_typestr] = writefun;
+      }
+    }
+
     write_ufs_[arr_abs] = writefun;
 
     num_arr_vars_++;
-
     if (conc_ts_.is_statevar(v))
     {
       msat_decl decl_arrabsN = msat_declare_function(msat_env_,
                                                      (name + ".next").c_str(),
                                                      abs_type);
       msat_term arr_absN = msat_make_constant(msat_env_, decl_arrabsN);
-      new_vars_[arr_abs] = arr_absN;
+      new_state_vars_[arr_abs] = arr_absN;
       // use the same read/write function for the next-state
       // added to map for convenience
       read_ufs_[arr_absN]  = readfun;
       write_ufs_[arr_absN] = writefun;
-      // map next to type
-      orig_types_[arr_absN] = arridxtype;
+      // map next to type also
+      orig_types_[arr_absN] = _type;
       cache_[conc_ts_.next(v)] = arr_absN;
     }
   }
@@ -330,21 +393,22 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
   }
 
   struct AbstractionData {
+    const TransitionSystem &conc_ts;
     TermList args;
     TermSet &indices;
-    TermMap &new_vars;
     TermMap &witnesses;
     TermDeclMap &read_ufs;
     TermDeclMap &write_ufs;
     TermTypeMap &orig_types;
     TermSet &stores;
     TermMap &cache;
-    AbstractionData(TermSet &i, TermMap &nv, TermMap &w,
+    AbstractionData(const TransitionSystem &ts,
+                    TermSet &i, TermMap &w,
                     TermDeclMap &r, TermDeclMap &wf,
                     TermTypeMap &o, TermSet &s,
                     TermMap &c)
-        : indices(i), new_vars(nv), witnesses(w), read_ufs(r),
-          write_ufs(wf), orig_types(o), stores(s), cache(c) {}
+      : conc_ts(ts), indices(i), witnesses(w), read_ufs(r),
+        write_ufs(wf), orig_types(o), stores(s), cache(c) {}
   };
 
   auto visit = [](msat_env e, msat_term t, int preorder,
@@ -408,17 +472,11 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
         msat_decl decl_witness =
             msat_declare_function(e, witness_name.c_str(), idx_type);
         msat_term witness = msat_make_constant(e, decl_witness);
-        msat_decl decl_witnessN =
-            msat_declare_function(e, (witness_name + ".next").c_str(), idx_type);
-        msat_term witnessN = msat_make_constant(e, decl_witnessN);
         d->witnesses[arr_eq] = idx_to_int(e, witness);
         d->orig_types[idx_to_int(e, witness)] = idx_type;
         d->indices.insert(idx_to_int(e, witness));
         // TODO: figure out cleanest way to get next-state version of lemmas as well
         // e.g. equal(next(arr), next(arr2)) -> ...
-
-        // update state variables
-        d->new_vars[witness] = witnessN;
       } else if (msat_term_is_array_read(e, t)) {
         // replace array reads with uninterpreted functions
         msat_term arr = msat_term_get_arg(t, 0);
@@ -498,7 +556,7 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
   };
 
   AbstractionData data = AbstractionData(
-     indices_, new_vars_, witnesses_, read_ufs_, write_ufs_,
+     conc_ts_, indices_, witnesses_, read_ufs_, write_ufs_,
      orig_types_, stores_, cache_);
   msat_visit_term(msat_env_, term, visit, &data);
   return data.cache.at(term);

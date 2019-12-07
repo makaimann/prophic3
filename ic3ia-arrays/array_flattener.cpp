@@ -27,8 +27,11 @@ void ArrayFlattener::do_flattening()
     msat_term new_init = flatten(orig_ts_.init());
     msat_term new_prop = flatten(orig_ts_.prop());
 
+    // make a copy of the new vars in init and prop
+    TermMap init_prop_new_vars = new_vars_;
+
     // create state vars for new variables appearing in init and prop
-    for (auto elem : new_vars_) {
+    for (auto elem : init_prop_new_vars) {
         msat_decl v_decl = msat_term_get_decl(elem.first);
         std::string name(msat_decl_get_name(v_decl));
         msat_decl vn_decl =
@@ -46,19 +49,14 @@ void ArrayFlattener::do_flattening()
     flatten_ts_.initialize(new_state_vars, new_init, new_trans, new_prop,
                            orig_ts_.live_prop());
 
-    // create set of next state variables -- faster look up for contains_next
-    TermSet nextvars;
-    for (auto nv : flatten_ts_.nextstatevars())
-    {
-      nextvars.insert(nv);
-    }
-
     for (auto elem : new_vars_) {
       msat_term arr_eq = msat_make_equal(msat_env_, elem.first, new_vars_.at(elem.first));
       new_trans = msat_make_and(msat_env_, new_trans, arr_eq);
 
       // add next-state version of invariants (only involves current vars)
-      if (!flatten_ts_.contains_next(arr_eq)) {
+      // these come from init / prop (because needed to make them states)
+      if (init_prop_new_vars.find(elem.first) != init_prop_new_vars.end())
+      {
         msat_term arr_eq_n = flatten_ts_.next(arr_eq);
         new_trans = msat_make_and(msat_env_, new_trans, arr_eq_n);
       }
@@ -135,42 +133,6 @@ msat_term ArrayFlattener::flatten(const msat_term t) {
   msat_visit_term(msat_env_, t, visit, &data);
 
   return cache_[t];
-}
-
-bool ArrayFlattener::contains_next(const msat_term term, TermSet &next_vars) {
-  // TODO: need to use new state variables for checking
-  //       maybe easier to build the new transition system first
-
-  struct Data {
-    bool *has_next;
-    TermSet &next_vars;
-    Data(bool *h, TermSet &nv) : has_next(h), next_vars(nv) {}
-  };
-
-  bool has_next = false;
-
-  auto visit = [](msat_env e, msat_term t, int preorder,
-                  void *data) -> msat_visit_status {
-    Data *d = static_cast<Data *>(data);
-    if (!preorder) {
-      // only need to check preorder
-      return MSAT_VISIT_ABORT;
-    }
-
-    msat_decl decl = msat_term_get_decl(t);
-    if (!MSAT_ERROR_DECL(decl)) {
-      if (d->next_vars.find(t) != d->next_vars.end()) {
-        *d->has_next = true;
-        return MSAT_VISIT_ABORT;
-      }
-    }
-
-    return MSAT_VISIT_PROCESS;
-  };
-
-  Data data(&has_next, next_vars);
-  msat_visit_term(msat_env_, term, visit, &data);
-  return *data.has_next;
 }
 
 } // namespace ic3ia_array

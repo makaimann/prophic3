@@ -21,14 +21,41 @@ public:
     // lemmas
     std::string typestr;
     TermTypeMap & orig_types = abstractor_.orig_types();
+    msat_term base_idx; // gets assigned the actual var if it's wrapped in ubv_to_int
     for (auto idx : abstractor_.indices()) {
-      // TODO: what if the index is an input -- could happen
       typestr = msat_type_repr(orig_types.at(idx));
+
+      // save state variable indices
+      if (ts.only_cur(idx))
+      {
+        state_indices_[typestr].insert(idx);
+      }
+
       curr_indices_[typestr].insert(ts.cur(idx));
       orig_indices_[typestr].insert(ts.cur(idx));
       orig_indices_set_.insert(ts.cur(idx));
       all_indices_[typestr].insert(ts.cur(idx));
       all_indices_[typestr].insert(ts.next(idx));
+    }
+
+    // provide empty sets for types with no state indices
+    for (auto elem : all_indices_)
+    {
+      if (state_indices_.find(elem.first) == state_indices_.end())
+      {
+        state_indices_[elem.first] = ic3ia::TermSet();
+      }
+    }
+
+    // don't count witnesses as original indices
+    for (auto elem : abstractor_.witnesses())
+    {
+      msat_term w = elem.second;
+      typestr = msat_type_repr(orig_types.at(w));
+      if (orig_indices_[typestr].find(w) != orig_indices_[typestr].end())
+      {
+        orig_indices_[typestr].erase(w);
+      }
     }
 
     // Find all the array equalities
@@ -54,21 +81,21 @@ public:
 
   /** Enumerate equality axioms over indices at all times
    *  un - the unroller to use for timing
-   *  k - the maximum time-step (exclusive e.g. the length of the CEX)
+   *  k - the maximum time-step (inclusive)
    */
-  std::vector<ic3ia::TermSet> equality_axioms_all_indices(ic3ia::Unroller &un, size_t k);
+  std::vector<ic3ia::TermSet> equality_axioms_all_idx_times(ic3ia::Unroller &un, size_t k);
 
   /** Enumerate store axioms over indices at all times
    *  un - the unroller to use for timing
-   *  k - the maximum time-step (exclusive)
+   *  k - the maximum time-step (inclusive)
    */
-  std::vector<ic3ia::TermSet> store_axioms_all_indices(ic3ia::Unroller &un, size_t k);
+  std::vector<ic3ia::TermSet> store_axioms_all_idx_times(ic3ia::Unroller &un, size_t k);
 
   /** Enumerate const array axioms over indices at all times
    *  un - the unroller to use for timing
-   *  k - the maximum time-step (exclusive)
+   *  k - the maximum time-step (inclusive)
    */
-  std::vector<ic3ia::TermSet> const_array_axioms_all_indices(ic3ia::Unroller &un, size_t k);
+  std::vector<ic3ia::TermSet> const_array_axioms_all_idx_times(ic3ia::Unroller &un, size_t k);
 
   /* Adds an index to the index set (mostly used for adding prophecy vars) */
   void add_index(msat_type _type, msat_term i);
@@ -89,6 +116,7 @@ private:
   msat_env msat_env_;
   std::unordered_map<std::string, ic3ia::TermSet> orig_indices_;
   ic3ia::TermSet orig_indices_set_;
+  std::unordered_map<std::string, ic3ia::TermSet> state_indices_;
   std::unordered_map<std::string, ic3ia::TermSet> curr_indices_;
   std::unordered_map<std::string, ic3ia::TermSet> all_indices_;
   // equality ufs present in init
@@ -125,12 +153,12 @@ private:
    * domain lambda)
    */
   void enumerate_store_equalities(ic3ia::TermSet &axioms, msat_decl read_res, msat_decl read_arg,
-                                  msat_term store_eq, msat_type _type,
+                                  msat_term store_eq, msat_type orig_idx_type,
                                   ic3ia::TermSet &indices, msat_term lambda);
 
   /* Enumerate store axioms on all indices: forall i . arr[i] = val */
   void enumerate_const_array_axioms(ic3ia::TermSet &axioms, msat_decl read, msat_term arr,
-                                    msat_type _type, msat_term val, ic3ia::TermSet &indices);
+                                    msat_type orig_idx_type, msat_term val, ic3ia::TermSet &indices);
 
   // TODO: Figure out if we can remove some of these lemmas
   //       probably don't need them all
@@ -150,7 +178,7 @@ private:
    * domain lambda)
    */
   void enumerate_eq_uf_axioms(ic3ia::TermSet &axioms, msat_decl read0,
-                              msat_decl read1, msat_type _type, msat_term eq_uf,
+                              msat_decl read1, msat_type orig_idx_type, msat_term eq_uf,
                               msat_term witness, ic3ia::TermSet &indices,
                               msat_term lambda);
 
