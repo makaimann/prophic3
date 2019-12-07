@@ -560,9 +560,17 @@ TermSet ArrayAxiomEnumerator::univ_prop_instantiation_axioms()
   msat_term instantiation;
   for (std::vector<msat_term> sub : substitutions)
   {
+    assert(sub.size() == template_vars_.size());
     instantiation = msat_apply_substitution(msat_env_, univ_prop_template_, template_vars_.size(),
-                                            &template_vars_[0], &proph_substitutions_[0]);
+                                            &template_vars_[0], &sub[0]);
     axioms.insert(implies(proph_instantiation, instantiation));
+  }
+
+  // remove true from set (in case there was a trivial substitution)
+  msat_term t = msat_make_true(msat_env_);
+  if (axioms.find(t) != axioms.end())
+  {
+    axioms.erase(t);
   }
 
   return axioms;
