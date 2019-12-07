@@ -10,4 +10,4 @@ INIT a = CONSTARRAY(typeof(a), 1)
 
 TRANS next(a) = WRITE(a, i, READ(a, i1))
 
-INVARSPEC prop_i >= 0 -> (READ(a, prop_i) > 0)
+INVARSPEC READ(a, prop_i) > 0
