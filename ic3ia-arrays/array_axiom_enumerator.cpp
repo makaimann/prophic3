@@ -508,7 +508,7 @@ msat_term ArrayAxiomEnumerator::get_index(msat_term ax) const
 void ArrayAxiomEnumerator::set_univ_prop_template(msat_term prop, TermMap targets_to_proph)
 {
   // not expecting to call this more than once
-  assert(!template_vars_.size());
+  //assert(!template_vars_.size());
 
   TermList targets;
   int cnt = 0;
