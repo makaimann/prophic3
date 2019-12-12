@@ -186,6 +186,7 @@ bool IC3Array::fix_bmc()
   {
     axioms_added = false;
 
+    std::cout << "--- Trying BMC " << current_k_ << " ---" << std::endl;
     // set up BMC
     msat_term bad = msat_make_not(refiner_, abs_ts_.prop());
     refinement_formula_ = un_.at_time(abs_ts_.init(), 0);
