@@ -395,7 +395,7 @@ bool IC3Array::fix_bmc()
 
     if (opts_.unsatcore_array_refiner) {
       size_t ucsz = 0;
-      msat_term *uc = msat_get_unsat_assumptions(reducer_, &ucsz);
+      msat_term *uc = msat_get_unsat_assumptions(refiner_, &ucsz);
       assert(uc);
       TermSet core(uc, uc+ucsz);
       msat_free(uc);
