@@ -1,0 +1,24 @@
+MODULE main
+
+VAR
+  a : array integer of integer;
+  i : integer;
+  prop_i : integer;
+  i1 : integer;
+  i2 : integer;
+
+INIT a = CONSTARRAY(typeof(a), 1)
+INIT i = 2
+
+-- proph = epsilon x . read(a, x) <= 0
+-- exists x . read(a, x) <= 0 -> read(a, proph) <= 0
+-- NEW UNIVERSAL INVARIANT INSTANTIATION TEMPLATE
+-- TRANS next(proph) = proph
+-- INVAR read(a, proph) > 0 -> read(a, i1) > 0
+-- INVAR read(a, proph) > 0 -> read(a, i2) > 0
+
+TRANS next(a) = WRITE(a, i, READ(a, i1) + READ(a, i2))
+
+TRANS next(i) = i + 1
+
+INVARSPEC prop_i >= 0 -> (READ(a, prop_i) > 0)

@@ -82,8 +82,12 @@ msat_config get_config(ModelGeneration model, bool interpolation)
         // interpolation for BV requires the lazy solver
         OPT_("theory.bv.bit_blast_mode", "0");
         OPT_("theory.bv.eager", "false");
+	// This option is a hack to handle interpolation failure in the
+	// case of QF_UFLIA
+	//OPT_("theory.la.interpolation_laz_split_mixed_eq", "false");
+	// Note: this is not needed anymore
     }
-    
+
     OPT_("model_generation", "false");
     OPT_("bool_model_generation", "false");
     switch (model) {

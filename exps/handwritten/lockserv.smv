@@ -1,0 +1,45 @@
+MODULE main
+
+IVAR
+  n : integer;
+
+VAR
+  server_holds_lock : boolean;
+--  lock_msg : array integer of boolean;
+  grant_msg : array integer of boolean;
+  unlock_msg : array integer of boolean;
+  holds_lock : array integer of boolean;
+  prop_n1 : integer;
+  prop_n2 : integer;
+
+INIT server_holds_lock
+-- INIT lock_msg = CONSTARRAY(typeof(lock_msg), FALSE)
+INIT grant_msg = CONSTARRAY(typeof(grant_msg), FALSE)
+INIT unlock_msg = CONSTARRAY(typeof(unlock_msg), FALSE)
+INIT holds_lock = CONSTARRAY(typeof(holds_lock), FALSE)
+
+TRANS ((server_holds_lock &
+        !next(server_holds_lock) &
+        next(grant_msg) = WRITE(grant_msg, n, TRUE) &
+        next(unlock_msg) = unlock_msg &
+        next(holds_lock) = holds_lock ) |
+
+      ( READ(grant_msg, n) &
+        next(server_holds_lock) = server_holds_lock &
+        next(grant_msg) = WRITE(grant_msg, n, FALSE) &
+        next(unlock_msg) = unlock_msg &
+        next(holds_lock) = WRITE(holds_lock, n, TRUE) ) |
+
+      ( READ(holds_lock, n) &
+        next(server_holds_lock) = server_holds_lock &
+        next(grant_msg) = grant_msg &
+        next(unlock_msg) = WRITE(unlock_msg, n, TRUE) &
+        next(holds_lock) = WRITE(holds_lock, n, FALSE) ) |
+
+      ( READ(unlock_msg, n) &
+        next(server_holds_lock) &
+        next(grant_msg) = grant_msg &
+        next(unlock_msg) = WRITE(unlock_msg, n, FALSE) &
+        next(holds_lock) = holds_lock ) )
+      
+INVARSPEC (READ(holds_lock, prop_n1) & READ(holds_lock, prop_n2)) -> (prop_n1 = prop_n2)

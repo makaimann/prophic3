@@ -26,12 +26,7 @@ public:
       typestr = msat_type_repr(orig_types.at(idx));
 
       // save state variable indices
-      base_idx = idx;
-      if (msat_term_is_int_from_ubv(msat_env_, idx))
-      {
-        base_idx = msat_term_get_arg(idx, 0);
-      }
-      if (ts.is_statevar(base_idx))
+      if (ts.only_cur(idx))
       {
         state_indices_[typestr].insert(idx);
       }
@@ -86,19 +81,19 @@ public:
 
   /** Enumerate equality axioms over indices at all times
    *  un - the unroller to use for timing
-   *  k - the maximum time-step (exclusive e.g. the length of the CEX)
+   *  k - the maximum time-step (inclusive)
    */
   std::vector<ic3ia::TermSet> equality_axioms_all_idx_times(ic3ia::Unroller &un, size_t k);
 
   /** Enumerate store axioms over indices at all times
    *  un - the unroller to use for timing
-   *  k - the maximum time-step (exclusive)
+   *  k - the maximum time-step (inclusive)
    */
   std::vector<ic3ia::TermSet> store_axioms_all_idx_times(ic3ia::Unroller &un, size_t k);
 
   /** Enumerate const array axioms over indices at all times
    *  un - the unroller to use for timing
-   *  k - the maximum time-step (exclusive)
+   *  k - the maximum time-step (inclusive)
    */
   std::vector<ic3ia::TermSet> const_array_axioms_all_idx_times(ic3ia::Unroller &un, size_t k);
 
@@ -158,12 +153,12 @@ private:
    * domain lambda)
    */
   void enumerate_store_equalities(ic3ia::TermSet &axioms, msat_decl read_res, msat_decl read_arg,
-                                  msat_term store_eq, msat_type _type,
+                                  msat_term store_eq, msat_type orig_idx_type,
                                   ic3ia::TermSet &indices, msat_term lambda);
 
   /* Enumerate store axioms on all indices: forall i . arr[i] = val */
   void enumerate_const_array_axioms(ic3ia::TermSet &axioms, msat_decl read, msat_term arr,
-                                    msat_type _type, msat_term val, ic3ia::TermSet &indices);
+                                    msat_type orig_idx_type, msat_term val, ic3ia::TermSet &indices);
 
   // TODO: Figure out if we can remove some of these lemmas
   //       probably don't need them all
@@ -183,7 +178,7 @@ private:
    * domain lambda)
    */
   void enumerate_eq_uf_axioms(ic3ia::TermSet &axioms, msat_decl read0,
-                              msat_decl read1, msat_type _type, msat_term eq_uf,
+                              msat_decl read1, msat_type orig_idx_type, msat_term eq_uf,
                               msat_term witness, ic3ia::TermSet &indices,
                               msat_term lambda);
 
