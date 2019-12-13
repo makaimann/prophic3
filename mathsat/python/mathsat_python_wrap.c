@@ -10643,6 +10643,263 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_msat_make_forall(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  msat_env arg1 ;
+  msat_term arg2 ;
+  msat_term arg3 ;
+  void *argp1 ;
+  int res1 = 0 ;
+  void *argp2 ;
+  int res2 = 0 ;
+  void *argp3 ;
+  int res3 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  PyObject * obj2 = 0 ;
+  msat_term result;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OOO:msat_make_forall",&obj0,&obj1,&obj2)) SWIG_fail;
+  {
+    res1 = SWIG_ConvertPtr(obj0, &argp1, SWIGTYPE_p_msat_env,  0 );
+    if (!SWIG_IsOK(res1)) {
+      SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "msat_make_forall" "', argument " "1"" of type '" "msat_env""'"); 
+    }  
+    if (!argp1) {
+      SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "msat_make_forall" "', argument " "1"" of type '" "msat_env""'");
+    } else {
+      arg1 = *((msat_env *)(argp1));
+    }
+  }
+  {
+    res2 = SWIG_ConvertPtr(obj1, &argp2, SWIGTYPE_p_msat_term,  0 );
+    if (!SWIG_IsOK(res2)) {
+      SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "msat_make_forall" "', argument " "2"" of type '" "msat_term""'"); 
+    }  
+    if (!argp2) {
+      SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "msat_make_forall" "', argument " "2"" of type '" "msat_term""'");
+    } else {
+      arg2 = *((msat_term *)(argp2));
+    }
+  }
+  {
+    res3 = SWIG_ConvertPtr(obj2, &argp3, SWIGTYPE_p_msat_term,  0 );
+    if (!SWIG_IsOK(res3)) {
+      SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "msat_make_forall" "', argument " "3"" of type '" "msat_term""'"); 
+    }  
+    if (!argp3) {
+      SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "msat_make_forall" "', argument " "3"" of type '" "msat_term""'");
+    } else {
+      arg3 = *((msat_term *)(argp3));
+    }
+  }
+  result = msat_make_forall(arg1,arg2,arg3);
+  resultobj = SWIG_NewPointerObj((msat_term *)memcpy((msat_term *)calloc(1,sizeof(msat_term)),&result,sizeof(msat_term)), SWIGTYPE_p_msat_term, SWIG_POINTER_OWN |  0 );
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_msat_make_exists(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  msat_env arg1 ;
+  msat_term arg2 ;
+  msat_term arg3 ;
+  void *argp1 ;
+  int res1 = 0 ;
+  void *argp2 ;
+  int res2 = 0 ;
+  void *argp3 ;
+  int res3 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  PyObject * obj2 = 0 ;
+  msat_term result;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OOO:msat_make_exists",&obj0,&obj1,&obj2)) SWIG_fail;
+  {
+    res1 = SWIG_ConvertPtr(obj0, &argp1, SWIGTYPE_p_msat_env,  0 );
+    if (!SWIG_IsOK(res1)) {
+      SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "msat_make_exists" "', argument " "1"" of type '" "msat_env""'"); 
+    }  
+    if (!argp1) {
+      SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "msat_make_exists" "', argument " "1"" of type '" "msat_env""'");
+    } else {
+      arg1 = *((msat_env *)(argp1));
+    }
+  }
+  {
+    res2 = SWIG_ConvertPtr(obj1, &argp2, SWIGTYPE_p_msat_term,  0 );
+    if (!SWIG_IsOK(res2)) {
+      SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "msat_make_exists" "', argument " "2"" of type '" "msat_term""'"); 
+    }  
+    if (!argp2) {
+      SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "msat_make_exists" "', argument " "2"" of type '" "msat_term""'");
+    } else {
+      arg2 = *((msat_term *)(argp2));
+    }
+  }
+  {
+    res3 = SWIG_ConvertPtr(obj2, &argp3, SWIGTYPE_p_msat_term,  0 );
+    if (!SWIG_IsOK(res3)) {
+      SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "msat_make_exists" "', argument " "3"" of type '" "msat_term""'"); 
+    }  
+    if (!argp3) {
+      SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "msat_make_exists" "', argument " "3"" of type '" "msat_term""'");
+    } else {
+      arg3 = *((msat_term *)(argp3));
+    }
+  }
+  result = msat_make_exists(arg1,arg2,arg3);
+  resultobj = SWIG_NewPointerObj((msat_term *)memcpy((msat_term *)calloc(1,sizeof(msat_term)),&result,sizeof(msat_term)), SWIGTYPE_p_msat_term, SWIG_POINTER_OWN |  0 );
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_msat_make_variable(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  msat_env arg1 ;
+  char *arg2 = (char *) 0 ;
+  msat_type arg3 ;
+  void *argp1 ;
+  int res1 = 0 ;
+  int res2 ;
+  char *buf2 = 0 ;
+  int alloc2 = 0 ;
+  void *argp3 ;
+  int res3 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  PyObject * obj2 = 0 ;
+  msat_term result;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OOO:msat_make_variable",&obj0,&obj1,&obj2)) SWIG_fail;
+  {
+    res1 = SWIG_ConvertPtr(obj0, &argp1, SWIGTYPE_p_msat_env,  0 );
+    if (!SWIG_IsOK(res1)) {
+      SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "msat_make_variable" "', argument " "1"" of type '" "msat_env""'"); 
+    }  
+    if (!argp1) {
+      SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "msat_make_variable" "', argument " "1"" of type '" "msat_env""'");
+    } else {
+      arg1 = *((msat_env *)(argp1));
+    }
+  }
+  res2 = SWIG_AsCharPtrAndSize(obj1, &buf2, NULL, &alloc2);
+  if (!SWIG_IsOK(res2)) {
+    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "msat_make_variable" "', argument " "2"" of type '" "char const *""'");
+  }
+  arg2 = (char *)(buf2);
+  {
+    res3 = SWIG_ConvertPtr(obj2, &argp3, SWIGTYPE_p_msat_type,  0 );
+    if (!SWIG_IsOK(res3)) {
+      SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "msat_make_variable" "', argument " "3"" of type '" "msat_type""'"); 
+    }  
+    if (!argp3) {
+      SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "msat_make_variable" "', argument " "3"" of type '" "msat_type""'");
+    } else {
+      arg3 = *((msat_type *)(argp3));
+    }
+  }
+  result = msat_make_variable(arg1,(char const *)arg2,arg3);
+  resultobj = SWIG_NewPointerObj((msat_term *)memcpy((msat_term *)calloc(1,sizeof(msat_term)),&result,sizeof(msat_term)), SWIGTYPE_p_msat_term, SWIG_POINTER_OWN |  0 );
+  if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
+  return resultobj;
+fail:
+  if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_msat_existentially_quantify(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  msat_env arg1 ;
+  msat_term arg2 ;
+  msat_term *arg3 ;
+  size_t arg4 ;
+  void *argp1 ;
+  int res1 = 0 ;
+  void *argp2 ;
+  int res2 = 0 ;
+  size_t val4 ;
+  int ecode4 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  PyObject * obj2 = 0 ;
+  PyObject * obj3 = 0 ;
+  msat_term result;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OOOO:msat_existentially_quantify",&obj0,&obj1,&obj2,&obj3)) SWIG_fail;
+  {
+    res1 = SWIG_ConvertPtr(obj0, &argp1, SWIGTYPE_p_msat_env,  0 );
+    if (!SWIG_IsOK(res1)) {
+      SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "msat_existentially_quantify" "', argument " "1"" of type '" "msat_env""'"); 
+    }  
+    if (!argp1) {
+      SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "msat_existentially_quantify" "', argument " "1"" of type '" "msat_env""'");
+    } else {
+      arg1 = *((msat_env *)(argp1));
+    }
+  }
+  {
+    res2 = SWIG_ConvertPtr(obj1, &argp2, SWIGTYPE_p_msat_term,  0 );
+    if (!SWIG_IsOK(res2)) {
+      SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "msat_existentially_quantify" "', argument " "2"" of type '" "msat_term""'"); 
+    }  
+    if (!argp2) {
+      SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "msat_existentially_quantify" "', argument " "2"" of type '" "msat_term""'");
+    } else {
+      arg2 = *((msat_term *)(argp2));
+    }
+  }
+  {
+    int i, sz;
+    msat_term *tmp;
+    void *ptr;
+    int r;
+    if (!PySequence_Check(obj2)) {
+      PyErr_SetString(PyExc_TypeError, "Sequence object required");
+      return NULL;
+    }
+    sz = PySequence_Size(obj2);
+    tmp = malloc(sizeof(msat_term) * sz);
+    for (i = 0; i < sz; ++i) {
+      PyObject *p = PySequence_ITEM(obj2, i);
+      r = SWIG_ConvertPtr(p, &ptr, SWIGTYPE_p_msat_term, 0);
+      Py_DECREF(p);
+      if (!SWIG_IsOK(r)) {
+        free(tmp);
+        PyErr_SetString(PyExc_TypeError, "Invalid type for argument, " \
+          "msat_term object expected");
+        return NULL;
+      } else {
+        tmp[i] = *((msat_term *)(ptr));
+      }
+    }
+    arg3 = tmp;
+  }
+  ecode4 = SWIG_AsVal_size_t(obj3, &val4);
+  if (!SWIG_IsOK(ecode4)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode4), "in method '" "msat_existentially_quantify" "', argument " "4"" of type '" "size_t""'");
+  } 
+  arg4 = (size_t)(val4);
+  result = msat_existentially_quantify(arg1,arg2,arg3,arg4);
+  resultobj = SWIG_NewPointerObj((msat_term *)memcpy((msat_term *)calloc(1,sizeof(msat_term)),&result,sizeof(msat_term)), SWIGTYPE_p_msat_term, SWIG_POINTER_OWN |  0 );
+  {
+    if (arg3) free(arg3);
+  }
+  return resultobj;
+fail:
+  {
+    if (arg3) free(arg3);
+  }
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *_wrap_msat_make_term(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   msat_env arg1 ;
@@ -14732,6 +14989,178 @@ SWIGINTERN PyObject *_wrap_msat_term_is_int_from_sbv(PyObject *SWIGUNUSEDPARM(se
     }
   }
   result = (int)msat_term_is_int_from_sbv(arg1,arg2);
+  resultobj = SWIG_From_int((int)(result));
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_msat_term_is_quantifier(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  msat_env arg1 ;
+  msat_term arg2 ;
+  void *argp1 ;
+  int res1 = 0 ;
+  void *argp2 ;
+  int res2 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  int result;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OO:msat_term_is_quantifier",&obj0,&obj1)) SWIG_fail;
+  {
+    res1 = SWIG_ConvertPtr(obj0, &argp1, SWIGTYPE_p_msat_env,  0 );
+    if (!SWIG_IsOK(res1)) {
+      SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "msat_term_is_quantifier" "', argument " "1"" of type '" "msat_env""'"); 
+    }  
+    if (!argp1) {
+      SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "msat_term_is_quantifier" "', argument " "1"" of type '" "msat_env""'");
+    } else {
+      arg1 = *((msat_env *)(argp1));
+    }
+  }
+  {
+    res2 = SWIG_ConvertPtr(obj1, &argp2, SWIGTYPE_p_msat_term,  0 );
+    if (!SWIG_IsOK(res2)) {
+      SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "msat_term_is_quantifier" "', argument " "2"" of type '" "msat_term""'"); 
+    }  
+    if (!argp2) {
+      SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "msat_term_is_quantifier" "', argument " "2"" of type '" "msat_term""'");
+    } else {
+      arg2 = *((msat_term *)(argp2));
+    }
+  }
+  result = (int)msat_term_is_quantifier(arg1,arg2);
+  resultobj = SWIG_From_int((int)(result));
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_msat_term_is_forall(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  msat_env arg1 ;
+  msat_term arg2 ;
+  void *argp1 ;
+  int res1 = 0 ;
+  void *argp2 ;
+  int res2 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  int result;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OO:msat_term_is_forall",&obj0,&obj1)) SWIG_fail;
+  {
+    res1 = SWIG_ConvertPtr(obj0, &argp1, SWIGTYPE_p_msat_env,  0 );
+    if (!SWIG_IsOK(res1)) {
+      SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "msat_term_is_forall" "', argument " "1"" of type '" "msat_env""'"); 
+    }  
+    if (!argp1) {
+      SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "msat_term_is_forall" "', argument " "1"" of type '" "msat_env""'");
+    } else {
+      arg1 = *((msat_env *)(argp1));
+    }
+  }
+  {
+    res2 = SWIG_ConvertPtr(obj1, &argp2, SWIGTYPE_p_msat_term,  0 );
+    if (!SWIG_IsOK(res2)) {
+      SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "msat_term_is_forall" "', argument " "2"" of type '" "msat_term""'"); 
+    }  
+    if (!argp2) {
+      SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "msat_term_is_forall" "', argument " "2"" of type '" "msat_term""'");
+    } else {
+      arg2 = *((msat_term *)(argp2));
+    }
+  }
+  result = (int)msat_term_is_forall(arg1,arg2);
+  resultobj = SWIG_From_int((int)(result));
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_msat_term_is_exists(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  msat_env arg1 ;
+  msat_term arg2 ;
+  void *argp1 ;
+  int res1 = 0 ;
+  void *argp2 ;
+  int res2 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  int result;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OO:msat_term_is_exists",&obj0,&obj1)) SWIG_fail;
+  {
+    res1 = SWIG_ConvertPtr(obj0, &argp1, SWIGTYPE_p_msat_env,  0 );
+    if (!SWIG_IsOK(res1)) {
+      SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "msat_term_is_exists" "', argument " "1"" of type '" "msat_env""'"); 
+    }  
+    if (!argp1) {
+      SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "msat_term_is_exists" "', argument " "1"" of type '" "msat_env""'");
+    } else {
+      arg1 = *((msat_env *)(argp1));
+    }
+  }
+  {
+    res2 = SWIG_ConvertPtr(obj1, &argp2, SWIGTYPE_p_msat_term,  0 );
+    if (!SWIG_IsOK(res2)) {
+      SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "msat_term_is_exists" "', argument " "2"" of type '" "msat_term""'"); 
+    }  
+    if (!argp2) {
+      SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "msat_term_is_exists" "', argument " "2"" of type '" "msat_term""'");
+    } else {
+      arg2 = *((msat_term *)(argp2));
+    }
+  }
+  result = (int)msat_term_is_exists(arg1,arg2);
+  resultobj = SWIG_From_int((int)(result));
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_msat_term_is_variable(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  msat_env arg1 ;
+  msat_term arg2 ;
+  void *argp1 ;
+  int res1 = 0 ;
+  void *argp2 ;
+  int res2 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  int result;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OO:msat_term_is_variable",&obj0,&obj1)) SWIG_fail;
+  {
+    res1 = SWIG_ConvertPtr(obj0, &argp1, SWIGTYPE_p_msat_env,  0 );
+    if (!SWIG_IsOK(res1)) {
+      SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "msat_term_is_variable" "', argument " "1"" of type '" "msat_env""'"); 
+    }  
+    if (!argp1) {
+      SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "msat_term_is_variable" "', argument " "1"" of type '" "msat_env""'");
+    } else {
+      arg1 = *((msat_env *)(argp1));
+    }
+  }
+  {
+    res2 = SWIG_ConvertPtr(obj1, &argp2, SWIGTYPE_p_msat_term,  0 );
+    if (!SWIG_IsOK(res2)) {
+      SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "msat_term_is_variable" "', argument " "2"" of type '" "msat_term""'"); 
+    }  
+    if (!argp2) {
+      SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "msat_term_is_variable" "', argument " "2"" of type '" "msat_term""'");
+    } else {
+      arg2 = *((msat_term *)(argp2));
+    }
+  }
+  result = (int)msat_term_is_variable(arg1,arg2);
   resultobj = SWIG_From_int((int)(result));
   return resultobj;
 fail:
@@ -19443,6 +19872,10 @@ static PyMethodDef SwigMethods[] = {
 	 { "msat_make_int_to_bv", _wrap_msat_make_int_to_bv, METH_VARARGS, NULL},
 	 { "msat_make_int_from_ubv", _wrap_msat_make_int_from_ubv, METH_VARARGS, NULL},
 	 { "msat_make_int_from_sbv", _wrap_msat_make_int_from_sbv, METH_VARARGS, NULL},
+	 { "msat_make_forall", _wrap_msat_make_forall, METH_VARARGS, NULL},
+	 { "msat_make_exists", _wrap_msat_make_exists, METH_VARARGS, NULL},
+	 { "msat_make_variable", _wrap_msat_make_variable, METH_VARARGS, NULL},
+	 { "msat_existentially_quantify", _wrap_msat_existentially_quantify, METH_VARARGS, NULL},
 	 { "msat_make_term", _wrap_msat_make_term, METH_VARARGS, NULL},
 	 { "msat_make_copy_from", _wrap_msat_make_copy_from, METH_VARARGS, NULL},
 	 { "msat_term_id", _wrap_msat_term_id, METH_VARARGS, NULL},
@@ -19535,6 +19968,10 @@ static PyMethodDef SwigMethods[] = {
 	 { "msat_term_is_int_to_bv", _wrap_msat_term_is_int_to_bv, METH_VARARGS, NULL},
 	 { "msat_term_is_int_from_ubv", _wrap_msat_term_is_int_from_ubv, METH_VARARGS, NULL},
 	 { "msat_term_is_int_from_sbv", _wrap_msat_term_is_int_from_sbv, METH_VARARGS, NULL},
+	 { "msat_term_is_quantifier", _wrap_msat_term_is_quantifier, METH_VARARGS, NULL},
+	 { "msat_term_is_forall", _wrap_msat_term_is_forall, METH_VARARGS, NULL},
+	 { "msat_term_is_exists", _wrap_msat_term_is_exists, METH_VARARGS, NULL},
+	 { "msat_term_is_variable", _wrap_msat_term_is_variable, METH_VARARGS, NULL},
 	 { "msat_visit_term", _wrap_msat_visit_term, METH_VARARGS, NULL},
 	 { "_msat_apply_substitution", _wrap__msat_apply_substitution, METH_VARARGS, NULL},
 	 { "msat_find_decl", _wrap_msat_find_decl, METH_VARARGS, NULL},
