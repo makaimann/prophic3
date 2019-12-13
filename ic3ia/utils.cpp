@@ -84,8 +84,7 @@ msat_config get_config(ModelGeneration model, bool interpolation)
         OPT_("theory.bv.eager", "false");
 	// This option is a hack to handle interpolation failure in the
 	// case of QF_UFLIA
-	//OPT_("theory.la.interpolation_laz_split_mixed_eq", "false");
-	// Note: this is not needed anymore
+	OPT_("theory.la.interpolation_laz_split_mixed_eq", "false");
     }
 
     OPT_("model_generation", "false");
