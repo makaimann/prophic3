@@ -121,30 +121,47 @@ void ArrayAbstractor::do_abstraction()
                                                    msat_get_bool_type(msat_env_));
         msat_decl eqfun = msat_declare_function(msat_env_, eqname.c_str(), funtype);
 
-        // use the same function for all curr / next combinations
+	if (stores_.find(e) != stores_.end()) {
+	  // handle stores separately
+	  
+	  //std::cout << "Store:  "
+	  //	  << msat_to_smtlib2_term(msat_env_, e) << std::endl;
+	  msat_term args[2] = {lhs, rhs};
+	  msat_term eq = msat_make_eq(msat_env_, args[0], args[1]);
+	  msat_term abs_eq = msat_make_uf(msat_env_, eqfun, &args[0]);
+	  eq_ufs[e] = abs_eq;
 
-        msat_term args[2] = {abs_ts_.cur(lhs), abs_ts_.cur(rhs)};
-        msat_term eq = msat_make_eq(msat_env_, args[0], args[1]);
-        msat_term abs_eq = msat_make_uf(msat_env_, eqfun, &args[0]);
-        eq_ufs[eq] = abs_eq;
+	  if (abs_ts_.only_cur(e)) {
+	    eq_ufs[abs_ts_.next(e)] = abs_ts_.next(abs_eq);
+	  }
+	  
+	} else {
 
-        args[0] = abs_ts_.cur(lhs);
-        args[1] = abs_ts_.next(rhs);
-        eq = msat_make_eq(msat_env_, args[0], args[1]);
-        abs_eq = msat_make_uf(msat_env_, eqfun, &args[0]);
-        eq_ufs[eq] = abs_eq;
+	  // use the same function for all curr / next combinations
 
-        args[0] = abs_ts_.next(lhs);
-        args[1] = abs_ts_.cur(rhs);
-        eq = msat_make_eq(msat_env_, args[0], args[1]);;
-        abs_eq = msat_make_uf(msat_env_, eqfun, &args[0]);
-        eq_ufs[eq] = abs_eq;
+	  msat_term args[2] = {abs_ts_.cur(lhs), abs_ts_.cur(rhs)};
+	  msat_term eq = msat_make_eq(msat_env_, args[0], args[1]);
+	  msat_term abs_eq = msat_make_uf(msat_env_, eqfun, &args[0]);
+	  eq_ufs[eq] = abs_eq;
 
-        args[0] = abs_ts_.next(lhs);
-        args[1] = abs_ts_.next(rhs);
-        eq = msat_make_eq(msat_env_, args[0], args[1]);
-        abs_eq = msat_make_uf(msat_env_, eqfun, &args[0]);
-        eq_ufs[eq] = abs_eq;
+	  args[0] = abs_ts_.cur(lhs);
+	  args[1] = abs_ts_.next(rhs);
+	  eq = msat_make_eq(msat_env_, args[0], args[1]);
+	  abs_eq = msat_make_uf(msat_env_, eqfun, &args[0]);
+	  eq_ufs[eq] = abs_eq;
+
+	  args[0] = abs_ts_.next(lhs);
+	  args[1] = abs_ts_.cur(rhs);
+	  eq = msat_make_eq(msat_env_, args[0], args[1]);;
+	  abs_eq = msat_make_uf(msat_env_, eqfun, &args[0]);
+	  eq_ufs[eq] = abs_eq;
+
+	  args[0] = abs_ts_.next(lhs);
+	  args[1] = abs_ts_.next(rhs);
+	  eq = msat_make_eq(msat_env_, args[0], args[1]);
+	  abs_eq = msat_make_uf(msat_env_, eqfun, &args[0]);
+	  eq_ufs[eq] = abs_eq;
+	}
       }
     }
 
@@ -154,6 +171,10 @@ void ArrayAbstractor::do_abstraction()
 
     for (auto s : stores_)
     {
+      if (eq_ufs.find(s) == eq_ufs.end()) {
+	std::cout << "Eq_ufs map does not contain "
+		  << msat_to_smtlib2_term(msat_env_, s) << std::endl;
+      }
       new_stores.insert(eq_ufs.at(s));
     }
     stores_ = new_stores;
