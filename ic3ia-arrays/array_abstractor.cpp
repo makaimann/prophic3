@@ -514,7 +514,8 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
         // save index
         msat_type orig_idx_sort = msat_term_get_type(idx);
         d->indices.insert(int_idx_cache);
-        d->orig_types[int_idx_cache] = orig_idx_sort;
+        // commented : see HACK below
+	//d->orig_types[int_idx_cache] = orig_idx_sort;
 
         assert(d->write_ufs.find(arr_cache) != d->write_ufs.end());
         msat_decl writefun = d->write_ufs.at(arr_cache);
@@ -522,6 +523,16 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
         msat_term args[3] = {arr_cache, int_idx_cache, val_cache};
         msat_term arr_write = msat_make_uf(e, writefun, &args[0]);
         d->cache[t] = arr_write;
+
+	// HACK: if the write index is a complex term (not a
+	// variable), it maybe rewritten while createing the abstract
+	// write term. For example, (+ x y) can be rewritten to (+ y
+	// x). This might cause a cache miss. To fix it, we write the
+	// cache with the write index from the new arr_write term.
+	{
+	  int_idx_cache = msat_term_get_arg(arr_write, 1);
+	  d->orig_types[int_idx_cache] = orig_idx_sort;
+	}
 
       } else {
         // rebuild the term
