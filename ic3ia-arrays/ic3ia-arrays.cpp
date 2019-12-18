@@ -60,6 +60,7 @@ int main(int argc, const char **argv)
     cout << "sat" << endl; // similar to spacer
   } else {
     cout << "Failed to prove or disprove the property..." << endl;
+    cout << "unknown" << endl; // similar to spacer
   }
 
   return 0;
