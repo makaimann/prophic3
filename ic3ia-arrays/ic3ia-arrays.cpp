@@ -54,8 +54,10 @@ int main(int argc, const char **argv)
   msat_truth_value res = ic3ia_array.prove();
   if (res == MSAT_FALSE) {
     cout << "The property is false" << endl;
+    cout << "unsat" << endl; // similar to spacer
   } else if (res == MSAT_TRUE) {
     cout << "The property is true" << endl;
+    cout << "sat" << endl; // similar to spacer
   } else {
     cout << "Failed to prove or disprove the property..." << endl;
   }
