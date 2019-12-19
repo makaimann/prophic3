@@ -218,10 +218,8 @@ void ArrayAbstractor::do_abstraction()
   }
 
   for (auto v : prop_free_vars_) {
-    if (abs_ts_.is_statevar(v)) {
-      abs_ts_.add_trans(msat_make_eq(msat_env_, v, abs_ts_.next(v)));
-      std::cout << msat_to_smtlib2_term(msat_env_, v) << std::endl;
-    }
+    abs_ts_.add_trans(msat_make_eq(msat_env_, v, abs_ts_.next(v)));
+    std::cout << msat_to_smtlib2_term(msat_env_, v) << std::endl;
   }
   
   // create the lambdas used to refer to indices which have never been
@@ -269,6 +267,11 @@ void ArrayAbstractor::abstract_array_vars()
     typestr = msat_type_repr(_type);
     bool ok = msat_is_array_type(msat_env_, _type, &arridxtype, &arrelemtype);
     assert(ok);
+
+    if (msat_is_array_type(msat_env_, arrelemtype, NULL, NULL)) {
+      std::cout << "multi-dimensional array not supported" << std::endl;
+      throw 12;
+    }
 
     // turn arrays to uninterpreted sorts (but use slightly nicer name for const arrays)
     std::string name = std::string("abs_") + msat_term_repr(v);
