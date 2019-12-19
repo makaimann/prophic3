@@ -204,7 +204,28 @@ void ArrayAbstractor::do_abstraction()
     abs_ts_.add_trans(msat_make_eq(msat_env_, abs_ts_.next(abs_ca), abs_ca));
   }
 
-  // create the lambdas used to refer to indices which have never been seen before
+  // collect free variables appearing in the property
+  // collect them before adding lambdas
+  TermSet init_trans_vars;
+  get_free_vars(msat_env_, abs_ts_.init(), init_trans_vars);
+  get_free_vars(msat_env_, abs_ts_.trans(), init_trans_vars);
+  TermSet prop_vars;
+  get_free_vars(msat_env_, abs_ts_.prop(), prop_vars);
+  for (auto v : prop_vars) {
+    if (init_trans_vars.find(v) == init_trans_vars.end()) {
+      prop_free_vars_.insert(v);
+    }
+  }
+
+  for (auto v : prop_free_vars_) {
+    if (abs_ts_.is_statevar(v)) {
+      abs_ts_.add_trans(msat_make_eq(msat_env_, v, abs_ts_.next(v)));
+      std::cout << msat_to_smtlib2_term(msat_env_, v) << std::endl;
+    }
+  }
+  
+  // create the lambdas used to refer to indices which have never been
+  // seen before
   create_lambdas();
 }
 

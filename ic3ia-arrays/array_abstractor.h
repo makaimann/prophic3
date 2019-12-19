@@ -42,6 +42,7 @@ public:
     ic3ia::TermMap &cache() { return cache_; };
     const ic3ia::TermSet &indices() { return indices_; };
     const ic3ia::TermMap &witnesses() { return witnesses_; };
+    const ic3ia::TermSet &prop_free_vars() { return prop_free_vars_; }
     TermDeclMap &read_ufs() { return read_ufs_; };
     TermTypeMap &orig_types() { return orig_types_; };
     ic3ia::TermSet &const_arrs() { return const_arrs_; };
@@ -106,6 +107,8 @@ public:
     TermDeclMap write_ufs_;
 
     ic3ia::TermSet finite_domain_lambdas_;
+
+    ic3ia::TermSet prop_free_vars_;
 };
 
 } // namespace ic3ia_array

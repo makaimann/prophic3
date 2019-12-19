@@ -91,18 +91,24 @@ msat_truth_value IC3Array::prove()
 {
   msat_truth_value res = MSAT_UNDEF;
 
+  // make free vars in the property as frozen -- prophecies
+  const TermSet &prop_free_vars = aa_.prop_free_vars();
+  std::cout << "Prop Free Vars " << prop_free_vars.size()
+	    << std::endl;
   // heuristic -- add prophecy variables for indices in property up front
   TermSet prop_indices = detect_indices(abs_ts_.prop());
   // frozen proph method takes a map (used later for retaining target info)
   TermMap prop_indices_map;
   for (auto i : prop_indices)
   {
-    // just a dummy map
-    prop_indices_map[i] = i;
+    if (prop_free_vars.find(i) == prop_free_vars.end()) {
+      // just a dummy map
+      prop_indices_map[i] = i;
+    }
   }
   add_frozen_proph_vars(prop_indices_map);
 
-  std::cout << "Created " << prop_indices.size();
+  std::cout << "Created " << prop_indices_map.size();
   std::cout << " prophecy variables for the property" << std::endl;
 
   int iter_cnt = 0;
