@@ -165,7 +165,9 @@ typedef enum {
     MSAT_TAG_PI,            /**< Pi constant */
     MSAT_TAG_EXP,           /**< Exponential function */
     MSAT_TAG_SIN,           /**< Sine function */
-    MSAT_TAG_LOG            /**< Natural logarithm function */
+    MSAT_TAG_LOG,           /**< Natural logarithm function */
+    MSAT_TAG_FORALL,        /**< Universal quantifier */
+    MSAT_TAG_EXISTS         /**< Existential quantifier */
 } msat_symbol_tag;
 
 
