@@ -21030,6 +21030,8 @@ SWIG_init(void) {
   SWIG_Python_SetConstant(d, "MSAT_TAG_EXP",SWIG_From_int((int)(MSAT_TAG_EXP)));
   SWIG_Python_SetConstant(d, "MSAT_TAG_SIN",SWIG_From_int((int)(MSAT_TAG_SIN)));
   SWIG_Python_SetConstant(d, "MSAT_TAG_LOG",SWIG_From_int((int)(MSAT_TAG_LOG)));
+  SWIG_Python_SetConstant(d, "MSAT_TAG_FORALL",SWIG_From_int((int)(MSAT_TAG_FORALL)));
+  SWIG_Python_SetConstant(d, "MSAT_TAG_EXISTS",SWIG_From_int((int)(MSAT_TAG_EXISTS)));
   SWIG_Python_SetConstant(d, "MSAT_VISIT_PROCESS",SWIG_From_int((int)(MSAT_VISIT_PROCESS)));
   SWIG_Python_SetConstant(d, "MSAT_VISIT_SKIP",SWIG_From_int((int)(MSAT_VISIT_SKIP)));
   SWIG_Python_SetConstant(d, "MSAT_VISIT_ABORT",SWIG_From_int((int)(MSAT_VISIT_ABORT)));
