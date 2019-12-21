@@ -204,7 +204,26 @@ void ArrayAbstractor::do_abstraction()
     abs_ts_.add_trans(msat_make_eq(msat_env_, abs_ts_.next(abs_ca), abs_ca));
   }
 
-  // create the lambdas used to refer to indices which have never been seen before
+  // collect free variables appearing in the property
+  // collect them before adding lambdas
+  TermSet init_trans_vars;
+  get_free_vars(msat_env_, abs_ts_.init(), init_trans_vars);
+  get_free_vars(msat_env_, abs_ts_.trans(), init_trans_vars);
+  TermSet prop_vars;
+  get_free_vars(msat_env_, abs_ts_.prop(), prop_vars);
+  for (auto v : prop_vars) {
+    if (init_trans_vars.find(v) == init_trans_vars.end()) {
+      prop_free_vars_.insert(v);
+    }
+  }
+
+  for (auto v : prop_free_vars_) {
+    abs_ts_.add_trans(msat_make_eq(msat_env_, v, abs_ts_.next(v)));
+    std::cout << msat_to_smtlib2_term(msat_env_, v) << std::endl;
+  }
+  
+  // create the lambdas used to refer to indices which have never been
+  // seen before
   create_lambdas();
 }
 
@@ -248,6 +267,11 @@ void ArrayAbstractor::abstract_array_vars()
     typestr = msat_type_repr(_type);
     bool ok = msat_is_array_type(msat_env_, _type, &arridxtype, &arrelemtype);
     assert(ok);
+
+    if (msat_is_array_type(msat_env_, arrelemtype, NULL, NULL)) {
+      std::cout << "multi-dimensional array not supported" << std::endl;
+      throw 12;
+    }
 
     // turn arrays to uninterpreted sorts (but use slightly nicer name for const arrays)
     std::string name = std::string("abs_") + msat_term_repr(v);
