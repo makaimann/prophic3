@@ -78,7 +78,7 @@ ic3ia::TermSet ArrayAxiomEnumerator::init_eq_axioms()
     bool is_array = msat_is_array_type(msat_env_, orig_types.at(msat_term_get_arg(e, 0)), &idx_type, nullptr);
     assert(is_array);
     enumerate_eq_uf_axioms(axioms, read0, read1, idx_type, e, witnesses.at(e),
-                           state_indices_.at(msat_type_repr(idx_type)),
+                           all_indices_.at(msat_type_repr(idx_type)),
                            get_finite_domain_lambda(msat_term_get_arg(e, 0)));
   }
   return axioms;
@@ -154,7 +154,7 @@ ic3ia::TermSet ArrayAxiomEnumerator::const_array_axioms()
         abs_ca,             // need to convert to abstracted array
         idx_type,
         msat_term_get_arg(ca, 0), // the value
-        curr_indices_.at(msat_type_repr(idx_type)));
+        all_indices_.at(msat_type_repr(idx_type)));
   }
   return axioms;
 }
@@ -459,9 +459,11 @@ void ArrayAxiomEnumerator::add_index(msat_type orig_idx_type, msat_term i) {
   {
     state_indices_[typestr].insert(i);
   }
-  curr_indices_[typestr].insert(ts_.cur(i));
-  all_indices_[typestr].insert(ts_.cur(i));
-  all_indices_[typestr].insert(ts_.next(i));
+  if (!ts_.contains_next(i)) {
+    curr_indices_[typestr].insert(i);
+  }
+  all_indices_[typestr].insert(i);
+  //all_indices_[typestr].insert(ts_.next(i));
 }
 
 msat_term ArrayAxiomEnumerator::get_index(msat_term ax) const
@@ -614,14 +616,14 @@ void ArrayAxiomEnumerator::enumerate_eq_uf_axioms(
     args1[1] = i;
     eq_reads = msat_make_equal(msat_env_, msat_make_uf(msat_env_, read0, &args0[0]),
                                msat_make_uf(msat_env_, read1, &args1[0]));
-    // eq(arr0, arr1) -> arr0[i] = arr1[i]
-    ax = implies(eq_uf, eq_reads);
-    axioms.insert(ax);
-    axioms_to_index_[ax] = i;
+    // this is redundant
+    //// eq(arr0, arr1) -> arr0[i] = arr1[i]
+    //ax = implies(eq_uf, eq_reads);
+    //axioms.insert(ax);
+    //axioms_to_index_[ax] = i;
 
     // arr0[i] != arr1[i] -> !eq(arr0, arr1)
-    ax = implies(msat_make_not(msat_env_,
-                               eq_reads),
+    ax = implies(msat_make_not(msat_env_, eq_reads),
                  msat_make_not(msat_env_, eq_uf));
     axioms.insert(ax);
     axioms_to_index_[ax] = i;

@@ -23,6 +23,9 @@ public:
     const TermTypeMap & orig_types = abstractor_.orig_types();
     msat_term base_idx; // gets assigned the actual var if it's wrapped in ubv_to_int
     for (auto idx : abstractor_.indices()) {
+      std::cout << "Abstractor.indices(): "
+		<< msat_to_smtlib2_term(msat_env_, idx)
+		<< std::endl;
       typestr = msat_type_repr(orig_types.at(idx));
 
       // save state variable indices
@@ -31,11 +34,13 @@ public:
         state_indices_[typestr].insert(idx);
       }
 
-      curr_indices_[typestr].insert(ts.cur(idx));
-      orig_indices_[typestr].insert(ts.cur(idx));
-      orig_indices_set_.insert(ts.cur(idx));
-      all_indices_[typestr].insert(ts.cur(idx));
-      all_indices_[typestr].insert(ts.next(idx));
+      if (!ts.contains_next(idx)) {
+	curr_indices_[typestr].insert(idx);
+      }
+      orig_indices_[typestr].insert(idx);
+      orig_indices_set_.insert(idx);
+      all_indices_[typestr].insert(idx);
+      //all_indices_[typestr].insert(ts.next(idx));
     }
 
     // provide empty sets for types with no state indices
@@ -54,7 +59,7 @@ public:
       typestr = msat_type_repr(orig_types.at(w));
       if (orig_indices_[typestr].find(w) != orig_indices_[typestr].end())
       {
-        orig_indices_[typestr].erase(w);
+        //orig_indices_[typestr].erase(w);
       }
     }
 
