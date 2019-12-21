@@ -39,15 +39,15 @@ public:
     }
 
     // getters
-    ic3ia::TermMap &cache() { return cache_; };
-    const ic3ia::TermSet &indices() { return indices_; };
-    const ic3ia::TermMap &witnesses() { return witnesses_; };
-    const ic3ia::TermSet &prop_free_vars() { return prop_free_vars_; }
-    TermDeclMap &read_ufs() { return read_ufs_; };
+    const ic3ia::TermMap &cache() const { return cache_; };
+    const ic3ia::TermSet &indices() const { return indices_; };
+    const ic3ia::TermMap &witnesses() const { return witnesses_; };
+    const ic3ia::TermSet &prop_free_vars() const { return prop_free_vars_; }
+    const TermDeclMap &read_ufs() const { return read_ufs_; };
     TermTypeMap &orig_types() { return orig_types_; };
-    ic3ia::TermSet &const_arrs() { return const_arrs_; };
-    ic3ia::TermSet &stores() { return stores_; };
-    ic3ia::TermSet &finite_domain_lambdas() { return finite_domain_lambdas_; };
+    const ic3ia::TermSet &const_arrs() const { return const_arrs_; };
+    const ic3ia::TermSet &stores() const { return stores_; };
+    const ic3ia::TermSet &finite_domain_lambdas() const { return finite_domain_lambdas_; };
 
   private:
 
