@@ -10,6 +10,7 @@ ArrayFlattener::ArrayFlattener(const TransitionSystem &ts) :
     flatten_ts_(ts.get_env())
 {
     do_flattening();
+    do_rewriting();
 }
 
 ArrayFlattener::~ArrayFlattener()
@@ -67,6 +68,27 @@ void ArrayFlattener::do_flattening()
     flatten_ts_.initialize(new_state_vars, new_init, new_trans, new_prop,
                            orig_ts_.live_prop());
 
+}
+
+void ArrayFlattener::do_rewriting()
+{
+  // must be called after do_flattening
+  assert(!MSAT_ERROR_TERM(flatten_ts_.prop()));
+
+  msat_term new_init = rewrite_array_ite(flatten_ts_.init());
+  msat_term new_trans = rewrite_array_ite(flatten_ts_.trans());
+  msat_term new_prop = rewrite_array_ite(flatten_ts_.prop());
+
+  TermMap statemap;
+  for (auto v : flatten_ts_.statevars())
+  {
+      statemap[v] = flatten_ts_.next(v);
+  }
+  flatten_ts_.initialize(statemap,
+                         new_init,
+                         new_trans,
+                         new_prop,
+                         orig_ts_.live_prop());
 }
 
 msat_term ArrayFlattener::flatten(const msat_term t) {
@@ -130,6 +152,138 @@ msat_term ArrayFlattener::flatten(const msat_term t) {
   };
 
   Data data(cache_, new_vars_);
+  msat_visit_term(msat_env_, t, visit, &data);
+
+  return cache_[t];
+}
+
+msat_term ArrayFlattener::rewrite_array_ite(const msat_term t) {
+    if (cache_.find(t) != cache_.end()) {
+    return cache_[t];
+  }
+
+  struct Data {
+    TermMap &cache;
+    TermList args;
+    Data(TermMap &c) : cache(c) {}
+  };
+
+  // flattener visit function
+  auto visit = [](msat_env e, msat_term t, int preorder,
+                  void *data) -> msat_visit_status {
+    Data *d = static_cast<Data *>(data);
+
+    if (d->cache.find(t) != d->cache.end()) {
+      // cache hit
+      return MSAT_VISIT_SKIP;
+    }
+
+    if (!preorder) {
+      msat_term res = t;
+      msat_type _type = msat_term_get_type(t);
+      msat_decl s = msat_term_get_decl(t);
+      size_t arity = msat_term_arity(t);
+
+      if (msat_is_array_type(e, _type, nullptr, nullptr) &&
+          msat_term_is_equal(e, t) &&
+          (msat_term_is_term_ite(e, msat_term_get_arg(t, 0)) ||
+           msat_term_is_term_ite(e, msat_term_get_arg(t, 1))))
+      {
+        msat_term lhs = msat_term_get_arg(t, 0);
+        msat_term rhs = msat_term_get_arg(t, 0);
+
+        if (!(msat_term_is_term_ite(e, lhs) &&
+              msat_term_is_term_ite(e, rhs)))
+        {
+          msat_term arr = lhs;
+          msat_term ite = rhs;
+          if (msat_term_is_term_ite(e, lhs))
+          {
+            arr = rhs;
+            ite = lhs;
+          }
+
+          msat_term cond = msat_term_get_arg(ite, 0);
+          msat_term arr_arg_true = msat_term_get_arg(ite, 1);
+          msat_term arr_arg_false = msat_term_get_arg(ite, 2);
+
+          // rewrite to c->a=b & !c->a=d
+          res = msat_make_and(e,
+                              msat_make_or(e,
+                                           msat_make_not(e, cond),
+                                           msat_make_eq(e, arr, arr_arg_true)),
+                              msat_make_or(e,
+                                           cond,
+                                           msat_make_eq(e, arr, arr_arg_false))
+                              );
+        }
+        else
+        {
+          // comparison between two array ITEs
+          // need to enumerate all 4 cases
+
+          msat_term lhs_cond = msat_term_get_arg(lhs, 0);
+          msat_term lhs_arr_arg_true = msat_term_get_arg(lhs, 1);
+          msat_term lhs_arr_arg_false = msat_term_get_arg(lhs, 2);
+
+          msat_term rhs_cond = msat_term_get_arg(rhs, 0);
+          msat_term rhs_arr_arg_true = msat_term_get_arg(rhs, 1);
+          msat_term rhs_arr_arg_false = msat_term_get_arg(rhs, 2);
+
+          // !c0 & !c1 -> a1 = b1
+          // !c0 & c1  -> a1 = b0
+          // c0 & !c1  -> a0 = b1
+          // c0 & c1   -> a0 = b0
+          msat_term conj0 = msat_make_and(e,
+                                          msat_make_or(e,
+                                                       msat_make_or(e, lhs_cond, rhs_cond),
+                                                       msat_make_eq(e,
+                                                                    lhs_arr_arg_false,
+                                                                    rhs_arr_arg_false)),
+                                          msat_make_or(e,
+                                                       msat_make_or(e,
+                                                                    lhs_cond,
+                                                                    msat_make_not(e, rhs_cond)),
+                                                       msat_make_eq(e,
+                                                                    lhs_arr_arg_false,
+                                                                    rhs_arr_arg_true)));
+          msat_term conj1 = msat_make_and(e,
+                                          msat_make_or(e,
+                                                       msat_make_or(e,
+                                                                    msat_make_not(e, lhs_cond),
+                                                                    rhs_cond),
+                                                       msat_make_eq(e,
+                                                                    lhs_arr_arg_true,
+                                                                    rhs_arr_arg_false)),
+                                          msat_make_or(e,
+                                                       msat_make_not(e,
+                                                                     msat_make_and(e,
+                                                                                   lhs_cond,
+                                                                                   rhs_cond)),
+                                                       msat_make_eq(e,
+                                                                    lhs_arr_arg_true,
+                                                                    rhs_arr_arg_true)));
+          res = msat_make_and(e, conj0, conj1);
+        }
+      }
+      else if (arity > 0) {
+        // rebuild the term
+        TermList &args = d->args;
+        args.clear();
+        args.reserve(arity);
+        for (size_t i = 0; i < msat_term_arity(t); ++i) {
+          args.push_back(d->cache[msat_term_get_arg(t, i)]);
+        }
+        res = msat_make_term(e, s, &args[0]);
+      }
+
+      d->cache[t] = res;
+    }
+
+    return MSAT_VISIT_PROCESS;
+  };
+
+  Data data(cache_);
   msat_visit_term(msat_env_, t, visit, &data);
 
   return cache_[t];
