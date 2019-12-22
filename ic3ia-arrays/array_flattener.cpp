@@ -158,9 +158,6 @@ msat_term ArrayFlattener::flatten(const msat_term t) {
 }
 
 msat_term ArrayFlattener::rewrite_array_ite(const msat_term t) {
-    if (cache_.find(t) != cache_.end()) {
-    return cache_[t];
-  }
 
   struct Data {
     TermMap &cache;
@@ -172,11 +169,6 @@ msat_term ArrayFlattener::rewrite_array_ite(const msat_term t) {
   auto visit = [](msat_env e, msat_term t, int preorder,
                   void *data) -> msat_visit_status {
     Data *d = static_cast<Data *>(data);
-
-    if (d->cache.find(t) != d->cache.end()) {
-      // cache hit
-      return MSAT_VISIT_SKIP;
-    }
 
     if (!preorder) {
       msat_term res = t;
