@@ -172,12 +172,11 @@ msat_term ArrayFlattener::rewrite_array_ite(const msat_term t) {
 
     if (!preorder) {
       msat_term res = t;
-      msat_type _type = msat_term_get_type(t);
       msat_decl s = msat_term_get_decl(t);
       size_t arity = msat_term_arity(t);
 
-      if (msat_is_array_type(e, _type, nullptr, nullptr) &&
-          msat_term_is_equal(e, t) &&
+      if (msat_term_is_equal(e, t) &&
+          msat_is_array_type(e, msat_term_get_type(msat_term_get_arg(t, 0)), nullptr, nullptr) &&
           (msat_term_is_term_ite(e, msat_term_get_arg(t, 0)) ||
            msat_term_is_term_ite(e, msat_term_get_arg(t, 1))))
       {
