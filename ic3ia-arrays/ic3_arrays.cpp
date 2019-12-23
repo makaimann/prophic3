@@ -46,8 +46,8 @@ IC3Array::IC3Array(const ic3ia::TransitionSystem &ts, const ic3ia::Options &opts
 		   ic3ia::LiveEncoder &l2s, unsigned int verbosity)
   : msat_env_(ts.get_env()),
     conc_ts_(ts),
-    af_(conc_ts_),
-    aa_(af_.flatten_transition_system(), opts.use_uf_for_arr_eq, opts.use_single_uf),
+    rw_(conc_ts_),
+    aa_(rw_.rewrite_transition_system(), opts.use_uf_for_arr_eq, opts.use_single_uf),
     abs_ts_(aa_.abstract_transition_system()),
     aae_(abs_ts_, aa_),
     hr_(abs_ts_),
