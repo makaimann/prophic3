@@ -181,7 +181,7 @@ msat_term ArrayFlattener::rewrite_array_ite(const msat_term t) {
            msat_term_is_term_ite(e, msat_term_get_arg(t, 1))))
       {
         msat_term lhs = msat_term_get_arg(t, 0);
-        msat_term rhs = msat_term_get_arg(t, 0);
+        msat_term rhs = msat_term_get_arg(t, 1);
 
         if (!(msat_term_is_term_ite(e, lhs) &&
               msat_term_is_term_ite(e, rhs)))
