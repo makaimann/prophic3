@@ -496,21 +496,20 @@ void ArrayAxiomEnumerator::enumerate_store_equalities(TermSet &axioms, msat_decl
   msat_term args0[2] = {arr_res, idx};
   msat_term args1[2] = {arr_arg, idx};
 
+  // i = j case
+  msat_term antecedent = store_eq;
+  msat_term consequent = msat_make_eq(msat_env_,
+				      msat_make_uf(msat_env_, read_res, &args0[0]), val);
+  ax = implies(antecedent, consequent);
+  axioms.insert(ax);
+  axioms_to_index_[ax] = idx;
+
   for (auto i : indices)
   {
     // TODO: Add next version of indices to orig_types in abstracter (not doing yet to avoid conflicts)
 
     args0[1] = i;
     args1[1] = i;
-
-    // i = j case
-    msat_term antecedent = msat_make_and(msat_env_, store_eq,
-                                         msat_make_eq(msat_env_, i, idx));
-    msat_term consequent = msat_make_eq(msat_env_,
-                                        msat_make_uf(msat_env_, read_res, &args0[0]), val);
-    ax = implies(antecedent, consequent);
-    axioms.insert(ax);
-    axioms_to_index_[ax] = i;
 
     // TODO: optimization: don't put in the trivial (i != i) case
     // i != j case
