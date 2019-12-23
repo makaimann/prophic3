@@ -23,9 +23,6 @@ public:
     const TermTypeMap & orig_types = abstractor_.orig_types();
     msat_term base_idx; // gets assigned the actual var if it's wrapped in ubv_to_int
     for (auto idx : abstractor_.indices()) {
-      std::cout << "Abstractor.indices(): "
-		<< msat_to_smtlib2_term(msat_env_, idx)
-		<< std::endl;
       typestr = msat_type_repr(orig_types.at(idx));
 
       // save state variable indices
