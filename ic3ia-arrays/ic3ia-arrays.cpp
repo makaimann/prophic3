@@ -8,7 +8,7 @@
 #include "ltl.h"
 
 #include "array_abstractor.h"
-#include "array_flattener.h"
+#include "rewriter.h"
 #include "array_axiom_enumerator.h"
 
 #include "ic3_arrays.h"
