@@ -25,7 +25,7 @@ public:
     // convenient to store them grouped by current and all for 1-step and 2-step
     // lemmas
     std::string typestr;
-    TermTypeMap & orig_types = abstractor_.orig_types();
+    const TermTypeMap & orig_types = abstractor_.orig_types();
     msat_term base_idx; // gets assigned the actual var if it's wrapped in ubv_to_int
     for (auto idx : abstractor_.indices()) {
       typestr = msat_type_repr(orig_types.at(idx));

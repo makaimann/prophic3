@@ -165,7 +165,9 @@ typedef enum {
     MSAT_TAG_PI,            /**< Pi constant */
     MSAT_TAG_EXP,           /**< Exponential function */
     MSAT_TAG_SIN,           /**< Sine function */
-    MSAT_TAG_LOG            /**< Natural logarithm function */
+    MSAT_TAG_LOG,           /**< Natural logarithm function */
+    MSAT_TAG_FORALL,        /**< Universal quantifier */
+    MSAT_TAG_EXISTS         /**< Existential quantifier */
 } msat_symbol_tag;
 
 
@@ -1726,6 +1728,52 @@ msat_term msat_make_int_from_ubv(msat_env e, msat_term t);
 msat_term msat_make_int_from_sbv(msat_env e, msat_term t);
 
 /**
+ * \brief Returns a term resulting from universally quantifying
+ *        the variable var in the term body.
+ * \param e The environment of the definition
+ * \param var The term representing the quantified variable.
+ * \param body The body of the quantifier. Must have type ::MSAT_BOOL.
+ * \return The term forall var body, or a t s.t. ::MSAT_ERROR_TERM(t) is true
+ *         in case of errors.
+ */
+msat_term msat_make_forall(msat_env e, msat_term var, msat_term body);
+
+/**
+ * \brief Returns a term resulting from existentially quantifying
+ *        the variable var in the term body.
+ * \param e The environment of the definition
+ * \param var The term representing the quantified variable.
+ * \param body The body of the quantifier. Must have type ::MSAT_BOOL.
+ * \return The term exists var body, or a t s.t. ::MSAT_ERROR_TERM(t) is true
+ *         in case of errors.
+ */
+msat_term msat_make_exists(msat_env e, msat_term var, msat_term body);
+
+/**
+ * \brief Returns a term representing a variable, which can be used
+ *        for existential or universal quantification.
+ * \param e The environment of the definition
+ * \param name The name of the variable.
+ * \param type The type of the variable.
+ * \return The term for the variable, or a t s.t. ::MSAT_ERROR_TERM(t) is true
+ *         in case of errors.
+ */
+msat_term msat_make_variable(msat_env e, const char *name, msat_type type);
+
+/**
+ * \brief Returns a term resulting from existentially quantifying
+ *        the given constants in the given term.
+ * \param e The environment of the definition
+ * \param t The term whose constants should be existentially quantified.
+ * \param args The list of constants to quantify.
+ * \param n The size of the list of constants.
+ * \return The term exists constants body, or a t s.t. ::MSAT_ERROR_TERM(t) is
+ *         true in case of errors.
+ */
+msat_term msat_existentially_quantify(msat_env e, msat_term t, msat_term args[],
+                                      size_t n);
+
+/**
  * \brief Creates a term from a declaration and a list of arguments
  *
  * \param e The environment in which to create the term
@@ -2455,6 +2503,34 @@ int msat_term_is_int_from_ubv(msat_env e, msat_term t);
  * \return nonzero if \a t is a signed BV to int conversion
  */
 int msat_term_is_int_from_sbv(msat_env e, msat_term t);
+
+/**
+ * \brief Checks whether \a t is a quantifier
+ * \param t A term.
+ * \return nonzero if \a t is a quantifier
+ */
+int msat_term_is_quantifier(msat_env e, msat_term t);
+
+/**
+ * \brief Checks whether \a t is a universal quantifier
+ * \param t A term.
+ * \return nonzero if \a t is a universal quantifier
+ */
+int msat_term_is_forall(msat_env e, msat_term t);
+
+/**
+ * \brief Checks whether \a t is an existential quantifier
+ * \param t A term.
+ * \return nonzero if \a t is an existential quantifier
+ */
+int msat_term_is_exists(msat_env e, msat_term t);
+
+/**
+ * \brief Checks whether \a t is a (free or bound) variable
+ * \param t A term.
+ * \return nonzero if \a t is a variable
+ */
+int msat_term_is_variable(msat_env e, msat_term t);
 
 /**
  * \brief visits the DAG of the given term \a t, calling the callback \a func

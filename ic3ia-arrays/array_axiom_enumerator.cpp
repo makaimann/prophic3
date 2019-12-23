@@ -71,7 +71,7 @@ msat_term ArrayAxiomEnumerator::get_lambda_from_type(msat_type _type)
   // have to do this because types aren't hashable
   msat_term lambda;
   MSAT_MAKE_ERROR_TERM(lambda);
-  TermTypeMap &orig_types = abstractor_.orig_types();
+  const TermTypeMap &orig_types = abstractor_.orig_types();
   for (auto l : abstractor_.finite_domain_lambdas()) {
     if (msat_type_equals(orig_types.at(l), _type)) {
       lambda = l;
@@ -98,8 +98,8 @@ msat_term ArrayAxiomEnumerator::bound_lambda(msat_term lambda, size_t width)
 
 ic3ia::TermSet ArrayAxiomEnumerator::init_eq_axioms()
 {
-  TermDeclMap &read_ufs = abstractor_.read_ufs();
-  TermTypeMap &orig_types = abstractor_.orig_types();
+  const TermDeclMap &read_ufs = abstractor_.read_ufs();
+  const TermTypeMap &orig_types = abstractor_.orig_types();
 
   const ic3ia::TermMap & witnesses = abstractor_.witnesses();
   ic3ia::TermSet axioms;
@@ -122,8 +122,8 @@ ic3ia::TermSet ArrayAxiomEnumerator::init_eq_axioms()
 
 ic3ia::TermSet ArrayAxiomEnumerator::trans_eq_axioms()
 {
-  TermDeclMap &read_ufs = abstractor_.read_ufs();
-  TermTypeMap &orig_types = abstractor_.orig_types();
+  const TermDeclMap &read_ufs = abstractor_.read_ufs();
+  const TermTypeMap &orig_types = abstractor_.orig_types();
 
   const ic3ia::TermMap & witnesses = abstractor_.witnesses();
   ic3ia::TermSet axioms;
@@ -145,8 +145,8 @@ ic3ia::TermSet ArrayAxiomEnumerator::trans_eq_axioms()
 
 ic3ia::TermSet ArrayAxiomEnumerator::prop_eq_axioms()
 {
-  TermDeclMap &read_ufs = abstractor_.read_ufs();
-  TermTypeMap &orig_types = abstractor_.orig_types();
+  const TermDeclMap &read_ufs = abstractor_.read_ufs();
+  const TermTypeMap &orig_types = abstractor_.orig_types();
 
   const ic3ia::TermMap & witnesses = abstractor_.witnesses();
   ic3ia::TermSet axioms;
@@ -169,10 +169,10 @@ ic3ia::TermSet ArrayAxiomEnumerator::prop_eq_axioms()
 ic3ia::TermSet ArrayAxiomEnumerator::const_array_axioms()
 {
   ic3ia::TermSet axioms;
-  ic3ia::TermMap & cache = abstractor_.cache();
-  TermDeclMap &read_ufs = abstractor_.read_ufs();
-  ic3ia::TermSet & const_arrs = abstractor_.const_arrs();
-  TermTypeMap & orig_types = abstractor_.orig_types();
+  const ic3ia::TermMap & cache = abstractor_.cache();
+  const TermDeclMap &read_ufs = abstractor_.read_ufs();
+  const ic3ia::TermSet & const_arrs = abstractor_.const_arrs();
+  const TermTypeMap & orig_types = abstractor_.orig_types();
 
   msat_type idx_type;
   msat_term abs_ca;
@@ -198,10 +198,10 @@ ic3ia::TermSet ArrayAxiomEnumerator::const_array_axioms()
 ic3ia::TermSet ArrayAxiomEnumerator::store_axioms()
 {
   ic3ia::TermSet axioms;
-  ic3ia::TermMap & cache = abstractor_.cache();
-  ic3ia::TermSet & stores = abstractor_.stores();
-  TermDeclMap &read_ufs = abstractor_.read_ufs();
-  TermTypeMap & orig_types = abstractor_.orig_types();
+  const ic3ia::TermMap & cache = abstractor_.cache();
+  const ic3ia::TermSet & stores = abstractor_.stores();
+  const TermDeclMap &read_ufs = abstractor_.read_ufs();
+  const TermTypeMap & orig_types = abstractor_.orig_types();
   msat_term arr0;
   msat_term store;
   msat_term arr1;
@@ -240,8 +240,8 @@ vector<TermSet> ArrayAxiomEnumerator::equality_axioms_all_idx_times(Unroller &un
   const ic3ia::TermMap &witnesses = abstractor_.witnesses();
   vector<TermSet> axioms;
 
-  TermDeclMap &read_ufs = abstractor_.read_ufs();
-  TermTypeMap &orig_types = abstractor_.orig_types();
+  const TermDeclMap &read_ufs = abstractor_.read_ufs();
+  const TermTypeMap &orig_types = abstractor_.orig_types();
 
   std::unordered_set<std::string> s_typestrs;
   for (auto elem : orig_indices_)
@@ -313,7 +313,7 @@ vector<TermSet> ArrayAxiomEnumerator::equality_axioms_all_idx_times(Unroller &un
 vector<TermSet> ArrayAxiomEnumerator::store_axioms_all_idx_times(Unroller &un,
                                                                size_t k) {
   vector<TermSet> axioms;
-  TermTypeMap &orig_types = abstractor_.orig_types();
+  const TermTypeMap &orig_types = abstractor_.orig_types();
 
   std::unordered_set<std::string> s_typestrs;
   for (auto elem : orig_indices_)
@@ -349,9 +349,9 @@ vector<TermSet> ArrayAxiomEnumerator::store_axioms_all_idx_times(Unroller &un,
     }
   }
 
-  ic3ia::TermMap &cache = abstractor_.cache();
-  ic3ia::TermSet &stores = abstractor_.stores();
-  TermDeclMap &read_ufs = abstractor_.read_ufs();
+  const ic3ia::TermMap &cache = abstractor_.cache();
+  const ic3ia::TermSet &stores = abstractor_.stores();
+  const TermDeclMap &read_ufs = abstractor_.read_ufs();
 
   msat_term arr0;
   msat_term store;
@@ -410,7 +410,7 @@ vector<TermSet> ArrayAxiomEnumerator::const_array_axioms_all_idx_times(Unroller 
                                                                      size_t k)
 {
   vector<TermSet> axioms;
-  TermTypeMap &orig_types = abstractor_.orig_types();
+  const TermTypeMap &orig_types = abstractor_.orig_types();
 
   std::unordered_set<std::string> s_typestrs;
   for (auto elem : orig_indices_)
@@ -446,9 +446,9 @@ vector<TermSet> ArrayAxiomEnumerator::const_array_axioms_all_idx_times(Unroller 
     }
   }
 
-  ic3ia::TermMap &cache = abstractor_.cache();
-  ic3ia::TermSet &const_arrs = abstractor_.const_arrs();
-  TermDeclMap &read_ufs = abstractor_.read_ufs();
+  const ic3ia::TermMap &cache = abstractor_.cache();
+  const ic3ia::TermSet &const_arrs = abstractor_.const_arrs();
+  const TermDeclMap &read_ufs = abstractor_.read_ufs();
 
   msat_type idx_type;
   string typestr;

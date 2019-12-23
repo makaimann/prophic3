@@ -289,6 +289,8 @@ MSAT_TAG_PI = _mathsat.MSAT_TAG_PI
 MSAT_TAG_EXP = _mathsat.MSAT_TAG_EXP
 MSAT_TAG_SIN = _mathsat.MSAT_TAG_SIN
 MSAT_TAG_LOG = _mathsat.MSAT_TAG_LOG
+MSAT_TAG_FORALL = _mathsat.MSAT_TAG_FORALL
+MSAT_TAG_EXISTS = _mathsat.MSAT_TAG_EXISTS
 class msat_model(_object):
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, msat_model, name, value)
@@ -865,6 +867,22 @@ def msat_make_int_from_sbv(e, t):
     return _mathsat.msat_make_int_from_sbv(e, t)
 msat_make_int_from_sbv = _mathsat.msat_make_int_from_sbv
 
+def msat_make_forall(e, var, body):
+    return _mathsat.msat_make_forall(e, var, body)
+msat_make_forall = _mathsat.msat_make_forall
+
+def msat_make_exists(e, var, body):
+    return _mathsat.msat_make_exists(e, var, body)
+msat_make_exists = _mathsat.msat_make_exists
+
+def msat_make_variable(e, name, type):
+    return _mathsat.msat_make_variable(e, name, type)
+msat_make_variable = _mathsat.msat_make_variable
+
+def msat_existentially_quantify(e, t, args, n):
+    return _mathsat.msat_existentially_quantify(e, t, args, n)
+msat_existentially_quantify = _mathsat.msat_existentially_quantify
+
 def msat_make_term(e, d, args):
     return _mathsat.msat_make_term(e, d, args)
 msat_make_term = _mathsat.msat_make_term
@@ -1232,6 +1250,22 @@ msat_term_is_int_from_ubv = _mathsat.msat_term_is_int_from_ubv
 def msat_term_is_int_from_sbv(e, t):
     return _mathsat.msat_term_is_int_from_sbv(e, t)
 msat_term_is_int_from_sbv = _mathsat.msat_term_is_int_from_sbv
+
+def msat_term_is_quantifier(e, t):
+    return _mathsat.msat_term_is_quantifier(e, t)
+msat_term_is_quantifier = _mathsat.msat_term_is_quantifier
+
+def msat_term_is_forall(e, t):
+    return _mathsat.msat_term_is_forall(e, t)
+msat_term_is_forall = _mathsat.msat_term_is_forall
+
+def msat_term_is_exists(e, t):
+    return _mathsat.msat_term_is_exists(e, t)
+msat_term_is_exists = _mathsat.msat_term_is_exists
+
+def msat_term_is_variable(e, t):
+    return _mathsat.msat_term_is_variable(e, t)
+msat_term_is_variable = _mathsat.msat_term_is_variable
 
 def msat_visit_term(e, t, func):
     return _mathsat.msat_visit_term(e, t, func)
