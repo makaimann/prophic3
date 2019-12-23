@@ -6,7 +6,7 @@
 
 #include "array_abstractor.h"
 #include "array_axiom_enumerator.h"
-#include "array_flattener.h"
+#include "rewriter.h"
 #include "history_refiner.h"
 
 #include "ic3.h"
@@ -31,7 +31,7 @@ namespace ic3ia_array
 
     msat_env msat_env_;
     const ic3ia::TransitionSystem & conc_ts_;
-    ArrayFlattener af_;
+    Rewriter rw_;
     ArrayAbstractor aa_;
     ic3ia::TransitionSystem abs_ts_;
     ArrayAxiomEnumerator aae_;

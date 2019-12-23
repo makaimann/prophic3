@@ -1,23 +1,23 @@
-#include "array_flattener.h"
+#include "rewriter.h"
 
 using namespace ic3ia;
 
 namespace ic3ia_array {
 
-ArrayFlattener::ArrayFlattener(const TransitionSystem &ts) :
+Rewriter::Rewriter(const TransitionSystem &ts) :
     msat_env_(ts.get_env()),
     orig_ts_(ts),
-    flatten_ts_(ts.get_env())
+    rewritten_ts_(ts.get_env())
 {
     do_flattening();
     do_rewriting();
 }
 
-ArrayFlattener::~ArrayFlattener()
+Rewriter::~Rewriter()
 {
 }
 
-void ArrayFlattener::do_flattening()
+void Rewriter::do_flattening()
 {
     TermMap new_state_vars;
     for (auto sv : orig_ts_.statevars()) {
@@ -47,7 +47,7 @@ void ArrayFlattener::do_flattening()
 
     msat_term new_trans = flatten(orig_ts_.trans());
 
-    flatten_ts_.initialize(new_state_vars, new_init, new_trans, new_prop,
+    rewritten_ts_.initialize(new_state_vars, new_init, new_trans, new_prop,
                            orig_ts_.live_prop());
 
     for (auto elem : new_vars_) {
@@ -58,40 +58,40 @@ void ArrayFlattener::do_flattening()
       // these come from init / prop (because needed to make them states)
       if (init_prop_new_vars.find(elem.first) != init_prop_new_vars.end())
       {
-        msat_term arr_eq_n = flatten_ts_.next(arr_eq);
+        msat_term arr_eq_n = rewritten_ts_.next(arr_eq);
         new_trans = msat_make_and(msat_env_, new_trans, arr_eq_n);
       }
     }
 
     // re-initialize with the updated trans
     // will also re-collect the inputs (some might not have been added yet)
-    flatten_ts_.initialize(new_state_vars, new_init, new_trans, new_prop,
+    rewritten_ts_.initialize(new_state_vars, new_init, new_trans, new_prop,
                            orig_ts_.live_prop());
 
 }
 
-void ArrayFlattener::do_rewriting()
+void Rewriter::do_rewriting()
 {
   // must be called after do_flattening
-  assert(!MSAT_ERROR_TERM(flatten_ts_.prop()));
+  assert(!MSAT_ERROR_TERM(rewritten_ts_.prop()));
 
-  msat_term new_init = rewrite_array_ite(flatten_ts_.init());
-  msat_term new_trans = rewrite_array_ite(flatten_ts_.trans());
-  msat_term new_prop = rewrite_array_ite(flatten_ts_.prop());
+  msat_term new_init = rewrite_array_ite(rewritten_ts_.init());
+  msat_term new_trans = rewrite_array_ite(rewritten_ts_.trans());
+  msat_term new_prop = rewrite_array_ite(rewritten_ts_.prop());
 
   TermMap statemap;
-  for (auto v : flatten_ts_.statevars())
+  for (auto v : rewritten_ts_.statevars())
   {
-      statemap[v] = flatten_ts_.next(v);
+      statemap[v] = rewritten_ts_.next(v);
   }
-  flatten_ts_.initialize(statemap,
+  rewritten_ts_.initialize(statemap,
                          new_init,
                          new_trans,
                          new_prop,
                          orig_ts_.live_prop());
 }
 
-msat_term ArrayFlattener::flatten(const msat_term t) {
+msat_term Rewriter::flatten(const msat_term t) {
   if (cache_.find(t) != cache_.end()) {
     return cache_[t];
   }
@@ -157,7 +157,7 @@ msat_term ArrayFlattener::flatten(const msat_term t) {
   return cache_[t];
 }
 
-msat_term ArrayFlattener::rewrite_array_ite(const msat_term t) {
+msat_term Rewriter::rewrite_array_ite(const msat_term t) {
 
   struct Data {
     TermMap &cache;

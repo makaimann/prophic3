@@ -21,7 +21,7 @@ add_executable(ic3ia-arrays
   "${IC3IA_HOME}/ltl.cpp"
   "${IC3IA_HOME}/live.cpp"
   "${PROJECT_SOURCE_DIR}/utils.cpp"
-  "${PROJECT_SOURCE_DIR}/array_flattener.cpp"
+  "${PROJECT_SOURCE_DIR}/rewriter.cpp"
   "${PROJECT_SOURCE_DIR}/array_abstractor.cpp"
   "${PROJECT_SOURCE_DIR}/array_axiom_enumerator.cpp"
   "${PROJECT_SOURCE_DIR}/ic3_arrays.cpp"
