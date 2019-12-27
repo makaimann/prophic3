@@ -1,0 +1,26 @@
+MODULE main
+
+FROZENVAR
+  c : integer;
+  size : integer;
+  
+VAR
+  a : array integer of integer;
+  i : integer;
+  j : integer;
+  err : boolean;
+
+INIT i = 0 & j = 0 & !err
+
+TRANS i < size -> (next(i) = i + 1 & next(a) = WRITE(a, i, c) & next(j) = j & next(err) = err)
+
+TRANS (i >= size & j < size) -> (next(i) = i & next(a) = a & next(j) = j + 1 )
+
+TRANS (i >= size & j < size & READ(a, j) = c & !err) -> !next(err)
+
+TRANS (i >= size & j >= size) -> FALSE
+
+INVARSPEC !err
+
+-- we can prove this property if we don't put the original property in
+-- the trans
