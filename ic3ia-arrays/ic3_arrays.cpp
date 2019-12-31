@@ -46,8 +46,8 @@ IC3Array::IC3Array(const ic3ia::TransitionSystem &ts, const ic3ia::Options &opts
 		   ic3ia::LiveEncoder &l2s, unsigned int verbosity)
   : msat_env_(ts.get_env()),
     conc_ts_(ts),
-    af_(conc_ts_),
-    aa_(af_.flatten_transition_system(), opts.use_uf_for_arr_eq, opts.use_single_uf),
+    rw_(conc_ts_),
+    aa_(rw_.rewrite_transition_system(), opts.use_uf_for_arr_eq, opts.use_single_uf),
     abs_ts_(aa_.abstract_transition_system()),
     aae_(abs_ts_, aa_),
     hr_(abs_ts_),
@@ -91,18 +91,30 @@ msat_truth_value IC3Array::prove()
 {
   msat_truth_value res = MSAT_UNDEF;
 
+  // add property in the trans, in order to retain the property
+  // strength
+  // history refinement and prophecy weakens the property
+  abs_ts_.add_trans(abs_ts_.prop());
+
+  // make free vars in the property as frozen -- prophecies
+  const TermSet &prop_free_vars = aa_.prop_free_vars();
+  std::cout << "Prop Free Vars " << prop_free_vars.size()
+	    << std::endl;
+  
   // heuristic -- add prophecy variables for indices in property up front
   TermSet prop_indices = detect_indices(abs_ts_.prop());
   // frozen proph method takes a map (used later for retaining target info)
   TermMap prop_indices_map;
   for (auto i : prop_indices)
   {
-    // just a dummy map
-    prop_indices_map[i] = i;
+    if (prop_free_vars.find(i) == prop_free_vars.end()) {
+      // just a dummy map
+      prop_indices_map[i] = i;
+    }
   }
   add_frozen_proph_vars(prop_indices_map);
 
-  std::cout << "Created " << prop_indices.size();
+  std::cout << "Created " << prop_indices_map.size();
   std::cout << " prophecy variables for the property" << std::endl;
 
   int iter_cnt = 0;

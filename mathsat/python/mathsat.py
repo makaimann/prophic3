@@ -289,6 +289,8 @@ MSAT_TAG_PI = _mathsat.MSAT_TAG_PI
 MSAT_TAG_EXP = _mathsat.MSAT_TAG_EXP
 MSAT_TAG_SIN = _mathsat.MSAT_TAG_SIN
 MSAT_TAG_LOG = _mathsat.MSAT_TAG_LOG
+MSAT_TAG_FORALL = _mathsat.MSAT_TAG_FORALL
+MSAT_TAG_EXISTS = _mathsat.MSAT_TAG_EXISTS
 class msat_model(_object):
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, msat_model, name, value)
