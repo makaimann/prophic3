@@ -29,6 +29,6 @@ add_executable(ic3ia-arrays
   "${PROJECT_SOURCE_DIR}/ic3ia-arrays.cpp"
   )
 
-target_link_libraries(ic3ia-arrays PUBLIC "${MSAT_HOME}/lib/libmathsat.a")
-target_link_libraries(ic3ia-arrays PUBLIC gmpxx)
-target_link_libraries(ic3ia-arrays PUBLIC gmp)
+target_link_libraries(ic3ia-arrays PUBLIC "${MSAT_HOME}/lib/libmathsat.a" -static)
+target_link_libraries(ic3ia-arrays PUBLIC gmpxx -static)
+target_link_libraries(ic3ia-arrays PUBLIC gmp -static)
