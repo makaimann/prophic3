@@ -1,0 +1,29 @@
+MODULE main
+
+FROZENVAR
+  c : integer;
+  size : integer;
+  
+VAR
+  a : array integer of integer;
+  i : integer;
+  k : integer;
+  f : boolean;
+  
+INIT i = 0 & k =0 & !f
+
+TRANS i < size -> (next(i) = i + 1 & next(a) = WRITE(a, i, c) & next(f) = f & next(k) = k)
+
+TRANS (i >= size & k < size) -> (next(i) = i & next(a) = a & next(k) = k +1 & next(f) = (f | READ(a, k) != c ))
+
+TRANS (i >= size & k >= size) -> FALSE
+
+TRANS (i = size & k = size) -> !f
+
+INVARSPEC !f
+
+-- we cannot prove this property
+INVARSPEC (i = size & k = size) -> !f
+
+INVARSPEC ((i = size & k < size) -> READ(a, k) = c)
+
