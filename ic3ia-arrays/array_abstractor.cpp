@@ -86,23 +86,64 @@ void ArrayAbstractor::do_abstraction()
                      conc_ts_.live_prop());
 
   // replace array equalities with uninterpreted functions
+  // use the same uf for all curr/next combinations
   if (use_eq_uf_)
   {
+
+    // first, gather all the equalities and the current versions
+    // using current versions as a normal form
+    TermSet cur_equalities;
     TermSet equalities;
+    msat_term cur_eq;
     for (auto elem : witnesses_)
     {
       equalities.insert(elem.first);
+
+      cur_eq = abs_ts_.cur(elem.first);
+      // special-case for x=x ~~> true
+      if (msat_term_is_true(msat_env_, cur_eq))
+      {
+        cur_eq = elem.first;
+      }
+      cur_equalities.insert(cur_eq);
     }
     for(auto e : stores_)
     {
       equalities.insert(e);
+
+      cur_eq = abs_ts_.cur(e);
+      // special-case for x=x ~~> true
+      if (msat_term_is_true(msat_env_, cur_eq))
+      {
+        cur_eq = e;
+      }
+      cur_equalities.insert(cur_eq);
     }
 
-    // abstract each of these equalities
-    TermMap eq_ufs;
+    // create uninterpreted functions
+    TermDeclMap eq_ufs;
+    for (auto e : cur_equalities)
+    {
+      msat_term lhs = msat_term_get_arg(e, 0);
+      msat_term rhs = msat_term_get_arg(e, 1);
+      msat_type lhs_type = msat_term_get_type(lhs);
+      msat_type rhs_type = msat_term_get_type(rhs);
+      assert(msat_type_equals(lhs_type, rhs_type));
+
+      std::string eqname = "arreq" + std::to_string(eq_id_++);
+
+      msat_type param_types[2] = {lhs_type, rhs_type};
+      msat_type funtype = msat_get_function_type(msat_env_, &param_types[0], 2,
+                                                 msat_get_bool_type(msat_env_));
+      msat_decl eqfun = msat_declare_function(msat_env_, eqname.c_str(), funtype);
+      eq_ufs[e] = eqfun;
+    }
+
+    // abstract all equalities
+    TermMap eq_substitution_map;
     for (auto e : equalities)
     {
-      if (eq_ufs.find(e) != eq_ufs.end())
+      if (eq_substitution_map.find(e) != eq_substitution_map.end())
       {
         continue;
       }
@@ -110,47 +151,20 @@ void ArrayAbstractor::do_abstraction()
       {
         msat_term lhs = msat_term_get_arg(e, 0);
         msat_term rhs = msat_term_get_arg(e, 1);
-        msat_type lhs_type = msat_term_get_type(lhs);
-        msat_type rhs_type = msat_term_get_type(rhs);
-        assert(msat_type_equals(lhs_type, rhs_type));
 
-        std::string eqname = "arreq" + std::to_string(eq_id_++);
+        cur_eq = abs_ts_.cur(e);
+        // special-case for x=x ~~> true
+        if (msat_term_is_true(msat_env_, cur_eq))
+        {
+          cur_eq = e;
+        }
+        assert(eq_ufs.find(cur_eq) != eq_ufs.end());
+        msat_decl eqfun = eq_ufs.at(cur_eq);
 
-        msat_type param_types[2] = {lhs_type, rhs_type};
-        msat_type funtype = msat_get_function_type(msat_env_, &param_types[0], 2,
-                                                   msat_get_bool_type(msat_env_));
-        msat_decl eqfun = msat_declare_function(msat_env_, eqname.c_str(), funtype);
-
-        // replace it with an abstraction
+        // replace equality with an abstraction
         msat_term args[2] = {lhs, rhs};
         msat_term abs_eq = msat_make_uf(msat_env_, eqfun, &args[0]);
-        eq_ufs[e] = abs_eq;
-
-        // use the same function for all curr / next combinations
-
-        args[0] = abs_ts_.cur(lhs);
-        args[1] = abs_ts_.cur(rhs);
-        msat_term eq = msat_make_eq(msat_env_, args[0], args[1]);
-        abs_eq = msat_make_uf(msat_env_, eqfun, &args[0]);
-        eq_ufs[eq] = abs_eq;
-
-        args[0] = abs_ts_.cur(lhs);
-        args[1] = abs_ts_.next(rhs);
-        eq = msat_make_eq(msat_env_, args[0], args[1]);
-        abs_eq = msat_make_uf(msat_env_, eqfun, &args[0]);
-        eq_ufs[eq] = abs_eq;
-
-        args[0] = abs_ts_.next(lhs);
-        args[1] = abs_ts_.cur(rhs);
-        eq = msat_make_eq(msat_env_, args[0], args[1]);
-        abs_eq = msat_make_uf(msat_env_, eqfun, &args[0]);
-        eq_ufs[eq] = abs_eq;
-
-        args[0] = abs_ts_.next(lhs);
-        args[1] = abs_ts_.next(rhs);
-        eq = msat_make_eq(msat_env_, args[0], args[1]);
-        abs_eq = msat_make_uf(msat_env_, eqfun, &args[0]);
-        eq_ufs[eq] = abs_eq;
+        eq_substitution_map[e] = abs_eq;
       }
     }
 
@@ -160,24 +174,24 @@ void ArrayAbstractor::do_abstraction()
 
     for (auto s : stores_)
     {
-      if (eq_ufs.find(s) == eq_ufs.end())
+      if (eq_substitution_map.find(s) == eq_substitution_map.end())
       {
         std::cout << "Missing " << msat_to_smtlib2_term(msat_env_, s) << ":" << msat_term_id(s) << std::endl;
         throw std::exception();
       }
-      new_stores.insert(eq_ufs.at(s));
+      new_stores.insert(eq_substitution_map.at(s));
     }
     stores_ = new_stores;
 
     for (auto elem : witnesses_)
     {
-      new_witnesses[eq_ufs.at(elem.first)] = elem.second;
+      new_witnesses[eq_substitution_map.at(elem.first)] = elem.second;
     }
     witnesses_ = new_witnesses;
 
     TermList to_subst;
     TermList vals;
-    for (auto elem : eq_ufs)
+    for (auto elem : eq_substitution_map)
     {
       to_subst.push_back(elem.first);
       vals.push_back(elem.second);
