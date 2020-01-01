@@ -90,40 +90,23 @@ void ArrayAbstractor::do_abstraction()
   if (use_eq_uf_)
   {
 
-    // first, gather all the equalities and the current versions
-    // using current versions as a normal form
-    TermSet cur_equalities;
+    // first, gather all the equalities
     TermSet equalities;
-    msat_term cur_eq;
     for (auto elem : witnesses_)
     {
       equalities.insert(elem.first);
-
-      cur_eq = abs_ts_.cur(elem.first);
-      // special-case for x=x ~~> true
-      if (msat_term_is_true(msat_env_, cur_eq))
-      {
-        cur_eq = elem.first;
-      }
-      cur_equalities.insert(cur_eq);
     }
     for(auto e : stores_)
     {
       equalities.insert(e);
-
-      cur_eq = abs_ts_.cur(e);
-      // special-case for x=x ~~> true
-      if (msat_term_is_true(msat_env_, cur_eq))
-      {
-        cur_eq = e;
-      }
-      cur_equalities.insert(cur_eq);
     }
 
-    // create uninterpreted functions
-    TermDeclMap eq_ufs;
-    for (auto e : cur_equalities)
+    // abstract all equalities
+    TermMap eq_substitution_map;
+    for (auto e : equalities)
     {
+      assert(msat_term_arity(e) == 2);
+
       msat_term lhs = msat_term_get_arg(e, 0);
       msat_term rhs = msat_term_get_arg(e, 1);
       msat_type lhs_type = msat_term_get_type(lhs);
@@ -136,36 +119,11 @@ void ArrayAbstractor::do_abstraction()
       msat_type funtype = msat_get_function_type(msat_env_, &param_types[0], 2,
                                                  msat_get_bool_type(msat_env_));
       msat_decl eqfun = msat_declare_function(msat_env_, eqname.c_str(), funtype);
-      eq_ufs[e] = eqfun;
-    }
 
-    // abstract all equalities
-    TermMap eq_substitution_map;
-    for (auto e : equalities)
-    {
-      if (eq_substitution_map.find(e) != eq_substitution_map.end())
-      {
-        continue;
-      }
-      else
-      {
-        msat_term lhs = msat_term_get_arg(e, 0);
-        msat_term rhs = msat_term_get_arg(e, 1);
-
-        cur_eq = abs_ts_.cur(e);
-        // special-case for x=x ~~> true
-        if (msat_term_is_true(msat_env_, cur_eq))
-        {
-          cur_eq = e;
-        }
-        assert(eq_ufs.find(cur_eq) != eq_ufs.end());
-        msat_decl eqfun = eq_ufs.at(cur_eq);
-
-        // replace equality with an abstraction
-        msat_term args[2] = {lhs, rhs};
-        msat_term abs_eq = msat_make_uf(msat_env_, eqfun, &args[0]);
-        eq_substitution_map[e] = abs_eq;
-      }
+      // replace equality with an abstraction
+      msat_term args[2] = {lhs, rhs};
+      msat_term abs_eq = msat_make_uf(msat_env_, eqfun, &args[0]);
+      eq_substitution_map[e] = abs_eq;
     }
 
     // now substitute those abstract equalities
