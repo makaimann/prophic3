@@ -129,7 +129,9 @@ void ArrayAbstractor::do_abstraction()
     // now substitute those abstract equalities
     TermSet new_stores;
     TermMap new_witnesses;
-
+    TermList to_subst;
+    TermList vals;
+    msat_term val;
     for (auto s : stores_)
     {
       if (eq_substitution_map.find(s) == eq_substitution_map.end())
@@ -137,23 +139,21 @@ void ArrayAbstractor::do_abstraction()
         std::cout << "Missing " << msat_to_smtlib2_term(msat_env_, s) << ":" << msat_term_id(s) << std::endl;
         throw std::exception();
       }
-      new_stores.insert(eq_substitution_map.at(s));
+      val = eq_substitution_map.at(s);
+      new_stores.insert(val);
+      to_subst.push_back(s);
+      vals.push_back(val);
     }
     stores_ = new_stores;
 
     for (auto elem : witnesses_)
     {
-      new_witnesses[eq_substitution_map.at(elem.first)] = elem.second;
+      val = eq_substitution_map.at(elem.first);
+      new_witnesses[val] = elem.second;
+      to_subst.push_back(elem.first);
+      vals.push_back(val);
     }
     witnesses_ = new_witnesses;
-
-    TermList to_subst;
-    TermList vals;
-    for (auto elem : eq_substitution_map)
-    {
-      to_subst.push_back(elem.first);
-      vals.push_back(elem.second);
-    }
 
     new_init = msat_apply_substitution(msat_env_, new_init, to_subst.size(),
                                        &to_subst[0], &vals[0]);
