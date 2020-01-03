@@ -198,7 +198,7 @@ bool IC3Array::fix_bmc()
     refinement_formula_ = msat_make_and(refiner_, refinement_formula_,
 					un_.at_time(bad, current_k_));
 
-    msat_push_backtrack_point(refiner_);
+    msat_reset_env(refiner_);
     msat_assert_formula(refiner_, refinement_formula_);
     broken = msat_solve(refiner_) == MSAT_SAT;
 
@@ -429,8 +429,6 @@ bool IC3Array::fix_bmc()
     found_untimed_axioms = false;
     found_timed_axioms = false;
 
-    msat_pop_backtrack_point(refiner_);
-    
   } while(cont);
 
   // TODO: Just add timed refinements and re-find untimed axioms
