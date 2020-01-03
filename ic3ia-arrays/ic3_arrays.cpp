@@ -202,21 +202,24 @@ bool IC3Array::fix_bmc()
     msat_assert_formula(refiner_, refinement_formula_);
     broken = msat_solve(refiner_) == MSAT_SAT;
 
+    msat_term timed_axiom;
+    msat_term val;
+    // note: init_eq_axioms should come first (see comment about max_k below)
+    std::vector<TermSet> axiom_sets = { aae_.init_eq_axioms(),
+					aae_.const_array_axioms(),
+					aae_.prop_eq_axioms(),
+					aae_.store_axioms() };
+    if (current_k_ > 0) {
+      axiom_sets.push_back(aae_.trans_eq_axioms());
+    }
+
+    vector<vector<TermSet>> timed_axioms;
+    timed_axioms.push_back(aae_.equality_axioms_all_idx_times(un_, current_k_));
+    timed_axioms.push_back(aae_.store_axioms_all_idx_times(un_, current_k_));
+    timed_axioms.push_back(aae_.const_array_axioms_all_idx_times(un_, current_k_));
+
     while(broken)
     {
-      msat_term timed_axiom;
-      msat_term val;
-      // note: init_eq_axioms should come first (see comment about max_k below)
-      std::vector<TermSet> axiom_sets = { aae_.init_eq_axioms(),
-                                          aae_.const_array_axioms(),
-                                          aae_.prop_eq_axioms(),
-                                          aae_.store_axioms() };
-
-      if (current_k_ > 0)
-      {
-        axiom_sets.push_back(aae_.trans_eq_axioms());
-      }
-
       for (size_t i = 0; i < axiom_sets.size(); ++i) {
         int max_k;
         if (i == 0) {
@@ -279,11 +282,6 @@ bool IC3Array::fix_bmc()
 
       if (!found_untimed_axioms)
       {
-        vector<vector<TermSet>> timed_axioms;
-        timed_axioms.push_back(aae_.equality_axioms_all_idx_times(un_, current_k_));
-        timed_axioms.push_back(aae_.store_axioms_all_idx_times(un_, current_k_));
-        timed_axioms.push_back(aae_.const_array_axioms_all_idx_times(un_, current_k_));
-
         for(auto axiom_vec : timed_axioms)
         {
           for (size_t i = 0; i < axiom_vec.size(); ++i)
