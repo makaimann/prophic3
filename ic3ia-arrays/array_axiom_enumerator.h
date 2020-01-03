@@ -54,10 +54,6 @@ public:
     {
       msat_term w = elem.second;
       typestr = msat_type_repr(orig_types.at(w));
-      if (orig_indices_[typestr].find(w) != orig_indices_[typestr].end())
-      {
-        //orig_indices_[typestr].erase(w);
-      }
     }
 
     // Find all the array equalities
