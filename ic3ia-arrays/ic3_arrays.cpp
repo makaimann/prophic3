@@ -211,31 +211,37 @@ bool IC3Array::fix_bmc()
 					  un_.at_time(abs_ts_.trans(), i));
     }
     refinement_formula_ = msat_make_and(refiner_, refinement_formula_,
-					un_.at_time(bad, current_k_));
+                                        un_.at_time(bad, current_k_));
 
     msat_push_backtrack_point(refiner_);
     msat_assert_formula(refiner_, refinement_formula_);
+
     if (opts_.unsatcore_array_refiner) {
       broken = msat_solve_with_assumptions(refiner_, &labels[0], labels.size());
     } else {
       broken = msat_solve(refiner_) == MSAT_SAT;
     }
-    
+
+
+    msat_term timed_axiom;
+    msat_term val;
+    // note: init_eq_axioms should come first (see comment about max_k below)
+    std::vector<TermSet> axiom_sets = { aae_.init_eq_axioms(),
+                                        aae_.const_array_axioms(),
+                                        aae_.prop_eq_axioms(),
+                                        aae_.store_axioms() };
+    if (current_k_ > 0) {
+      axiom_sets.push_back(aae_.trans_eq_axioms());
+    }
+
+    vector<vector<TermSet>> timed_axioms;
+    timed_axioms.push_back(aae_.equality_axioms_all_idx_times(un_, current_k_));
+    timed_axioms.push_back(aae_.store_axioms_all_idx_times(un_, current_k_));
+    timed_axioms.push_back(aae_.const_array_axioms_all_idx_times(un_, current_k_));
+
     while(broken)
     {
       int lemma_cnt = 0;
-      msat_term timed_axiom;
-      msat_term val;
-      // note: init_eq_axioms should come first (see comment about max_k below)
-      std::vector<TermSet> axiom_sets = { aae_.init_eq_axioms(),
-                                          aae_.const_array_axioms(),
-                                          aae_.prop_eq_axioms(),
-                                          aae_.store_axioms() };
-
-      if (current_k_ > 0)
-      {
-        axiom_sets.push_back(aae_.trans_eq_axioms());
-      }
 
       for (size_t i = 0; i < axiom_sets.size(); ++i) {
         int max_k;
@@ -249,16 +255,16 @@ bool IC3Array::fix_bmc()
         // Need to check up to (and include) max_k for single-time
         // e.g. if it has no next, then need to include last time step
         for (size_t k = 0; k <= max_k; ++k) {
-	  if (opts_.max_array_axioms > 0 &&
-	      lemma_cnt >= opts_.max_array_axioms) {
-	    break;
-	  }
+          if (opts_.max_array_axioms > 0 &&
+              lemma_cnt >= opts_.max_array_axioms) {
+            break;
+          }
 
           for (auto ax : axiom_sets[i]) {
-	    if (opts_.max_array_axioms > 0 &&
-		lemma_cnt >= opts_.max_array_axioms) {
-	      break;
-	    }
+            if (opts_.max_array_axioms > 0 &&
+                lemma_cnt >= opts_.max_array_axioms) {
+              break;
+            }
 
             // don't check axioms with times beyond the current time-step
             // (because of next)
@@ -292,7 +298,7 @@ bool IC3Array::fix_bmc()
               // std::endl;
               violated_axioms.insert(timed_axiom);
               untimed_axioms_to_add.insert(ax);
-	      ++lemma_cnt;
+              ++lemma_cnt;
             }
           }
 
@@ -306,17 +312,12 @@ bool IC3Array::fix_bmc()
 
       if (!found_untimed_axioms)
       {
-        vector<vector<TermSet>> timed_axioms;
-        timed_axioms.push_back(aae_.equality_axioms_all_idx_times(un_, current_k_));
-        timed_axioms.push_back(aae_.store_axioms_all_idx_times(un_, current_k_));
-        timed_axioms.push_back(aae_.const_array_axioms_all_idx_times(un_, current_k_));
-
         for(auto axiom_vec : timed_axioms)
         {
-	  if (opts_.max_array_axioms > 0 &&
-	      lemma_cnt >= opts_.max_array_axioms) {
-	    break;
-	  }
+          if (opts_.max_array_axioms > 0 &&
+              lemma_cnt >= opts_.max_array_axioms) {
+            break;
+          }
 
           for (size_t i = 0; i < axiom_vec.size(); ++i)
           {
