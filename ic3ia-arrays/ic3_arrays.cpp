@@ -370,7 +370,6 @@ bool IC3Array::fix_bmc()
       }
 
       if (opts_.unsatcore_array_refiner) {
-	std::cout << "Assumption Labels Size " << labels.size() << std::endl;
 	broken = msat_solve_with_assumptions(refiner_, &labels[0], labels.size());
       } else {
 	broken = msat_solve(refiner_) == MSAT_SAT;
