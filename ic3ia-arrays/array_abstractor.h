@@ -48,6 +48,8 @@ public:
     const ic3ia::TermSet &const_arrs() const { return const_arrs_; };
     const ic3ia::TermSet &stores() const { return stores_; };
     const ic3ia::TermSet &finite_domain_lambdas() const { return finite_domain_lambdas_; };
+    // creates an equality: if we're using abstract array equality, it will generate that
+    msat_term make_eq(msat_env env, msat_term lhs, msat_term rhs) const;
 
   private:
 
@@ -88,6 +90,9 @@ public:
     ic3ia::TermMap witnesses_;
     // map from abstract arrays to their read UF
     TermDeclMap read_ufs_;
+    // map from abstract array sorts to their equal UF
+    // (unless using option -no-eq-uf)
+    std::unordered_map<std::string, msat_decl> eq_ufs_;
     // TODO: Figure out if we still even need this
     // the original sort for terms
     TermTypeMap orig_types_;

@@ -17,6 +17,37 @@ ArrayAbstractor::~ArrayAbstractor()
 {
 }
 
+msat_term ArrayAbstractor::make_eq(msat_env env, msat_term lhs, msat_term rhs) const
+{
+  msat_term eq;
+  // just a regular equality if not abstracting arrays or
+  // we don't have an original type stored
+  if (!use_eq_uf_ || orig_types_.find(lhs) == orig_types_.end())
+  {
+    eq = msat_make_eq(env, lhs, rhs);
+  }
+  else
+  {
+    msat_type _type = orig_types_.at(lhs);
+    if (msat_is_array_type(env, _type, nullptr, nullptr))
+    {
+      std::string typestr = msat_type_repr(msat_term_get_type(lhs));
+      assert(eq_ufs_.find(typestr) != eq_ufs_.end());
+      msat_decl eqfun = eq_ufs_.at(typestr);
+      msat_term args[2] = {lhs, rhs};
+      eq = msat_make_uf(env, eqfun, &args[0]);
+    }
+    else
+    {
+      // not an array
+      // could be an index that was in orig_types_
+      eq = msat_make_eq(env, lhs, rhs);
+    }
+  }
+  assert(!MSAT_ERROR_TERM(eq));
+  return eq;
+}
+
 void ArrayAbstractor::do_abstraction()
 {
   abstract_array_vars();
@@ -109,21 +140,7 @@ void ArrayAbstractor::do_abstraction()
 
       msat_term lhs = msat_term_get_arg(e, 0);
       msat_term rhs = msat_term_get_arg(e, 1);
-      msat_type lhs_type = msat_term_get_type(lhs);
-      msat_type rhs_type = msat_term_get_type(rhs);
-      assert(msat_type_equals(lhs_type, rhs_type));
-
-      std::string eqname = "arreq" + std::to_string(eq_id_++);
-
-      msat_type param_types[2] = {lhs_type, rhs_type};
-      msat_type funtype = msat_get_function_type(msat_env_, &param_types[0], 2,
-                                                 msat_get_bool_type(msat_env_));
-      msat_decl eqfun = msat_declare_function(msat_env_, eqname.c_str(), funtype);
-
-      // replace equality with an abstraction
-      msat_term args[2] = {lhs, rhs};
-      msat_term abs_eq = msat_make_uf(msat_env_, eqfun, &args[0]);
-      eq_substitution_map[e] = abs_eq;
+      eq_substitution_map[e] = make_eq(msat_env_, lhs, rhs);
     }
 
     // now substitute those abstract equalities
@@ -259,6 +276,14 @@ void ArrayAbstractor::abstract_array_vars()
       abs_type = msat_get_simple_type(msat_env_, ("abs_" + typestr).c_str());
       // update type map
       type_map_[typestr] = abs_type;
+
+      // create a read function for these arrays
+      msat_type eq_param_types[2] = {abs_type,
+                                     abs_type};
+      msat_type eq_funtype =
+        msat_get_function_type(msat_env_, &eq_param_types[0], 2, msat_get_bool_type(msat_env_));
+      std::string eqname = "eq_" + std::to_string(eq_id_++);
+      eq_ufs_[msat_type_repr(abs_type)] = msat_declare_function(msat_env_, eqname.c_str(), eq_funtype);
     }
     else
     {
