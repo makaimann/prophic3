@@ -234,8 +234,8 @@ Options get_options(int argc, const char **argv)
             ret.use_uf_for_arr_eq = false;
         } else if (a == "-no-hist-eq-preds") {
           ret.use_hist_eq_initial_preds = false;
-        } else if (a == "-lazy-array-axioms") {
-          ret.lazy_array_axioms = true;
+        } else if (a == "-max-array-axioms") {
+          ok = getint(++i, ret.max_array_axioms);
         } else if (a == "-use-single-uf") {
           ret.use_single_uf = true;
         } else if (a == "-h" || a == "-help" || a == "--help") {
@@ -272,7 +272,7 @@ Options get_options(int argc, const char **argv)
                       << "\n   -bmc-k N : max k value for BMC"
                       << "\n   -no-eq-uf : use actual equalities between abstracted arrays"
                       << "\n   -no-hist-eq-preds : don't use history equalities as initial predicates"
-                      << "\n   -lazy-array-axioms : add refining axioms lazily (one per BMC model)"
+                      << "\n   -max-array-axioms : maximum number of array axioms per iteration (per BMC model)"
                       << "\n   -use-single-uf : use a single UF per array type (without this option "
                       << "it's per array variable)"
                       << std::endl;
