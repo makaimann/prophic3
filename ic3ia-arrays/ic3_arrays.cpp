@@ -100,7 +100,7 @@ msat_truth_value IC3Array::prove()
   const TermSet &prop_free_vars = aa_.prop_free_vars();
   std::cout << "Prop Free Vars " << prop_free_vars.size()
 	    << std::endl;
-  
+
   // heuristic -- add prophecy variables for indices in property up front
   TermSet prop_indices = detect_indices(abs_ts_.prop());
   // frozen proph method takes a map (used later for retaining target info)
@@ -116,6 +116,28 @@ msat_truth_value IC3Array::prove()
 
   std::cout << "Created " << prop_indices_map.size();
   std::cout << " prophecy variables for the property" << std::endl;
+
+  std::cout << "prop: " << msat_to_smtlib2_term(msat_env_, abs_ts_.prop())
+            << std::endl;
+
+  std::cout << std::endl;
+  std::cout << "++++++++++++++++++++++ Abstract TS +++++++++++++++++++++ "
+            << std::endl;
+  std::cout << "INIT:" << std::endl;
+  std::cout << msat_to_smtlib2_term(msat_env_, abs_ts_.init()) << std::endl;
+  std::cout << "TRANS:" << std::endl;
+  std::cout << msat_to_smtlib2_term(msat_env_, abs_ts_.trans()) << std::endl;
+  std::cout << "STATES:" << std::endl;
+  for (auto v : abs_ts_.statevars())
+  {
+    std::cout << "\t" << msat_to_smtlib2_term(msat_env_, v) << " : " << msat_to_smtlib2_term(msat_env_, abs_ts_.next(v)) << std::endl;
+  }
+  std::cout << std::endl;
+  std::cout << "INPUTS:" << std::endl;
+  for (auto v : abs_ts_.inputvars())
+  {
+    std::cout << "\t" << msat_to_smtlib2_term(msat_env_, v) << std::endl;
+  }
 
   int iter_cnt = 0;
   while (res != MSAT_TRUE)
@@ -254,6 +276,25 @@ bool IC3Array::fix_bmc()
             {
               std::cerr << "Got error term when evaluating model on "
                         << msat_to_smtlib2_term(refiner_, timed_axiom) << std::endl;
+
+              auto visit = [](msat_env e, msat_term t, int preorder,
+                              void *data) -> msat_visit_status {
+                             if (!preorder)
+                             {
+                               msat_term val = msat_get_model_value(e, t);
+                               std::cout << "\t" << msat_to_smtlib2_term(e, t);
+                               if (MSAT_ERROR_TERM(val))
+                               {
+                                 std::cout << " : MODEL EVALUATION FAILED" << std::endl;
+                               }
+                               else
+                               {
+                                 std::cout << " = " << msat_to_smtlib2_term(e, val) << std::endl;
+                               }
+                             }
+                             return MSAT_VISIT_PROCESS;
+                           };
+              msat_visit_term(refiner_, timed_axiom, visit, nullptr);
               throw std::exception();
             }
             else if (msat_term_is_false(refiner_, val)) {
