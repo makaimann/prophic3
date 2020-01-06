@@ -223,6 +223,7 @@ bool IC3Array::fix_bmc()
     
     while(broken)
     {
+      int lemma_cnt = 0;
       msat_term timed_axiom;
       msat_term val;
       // note: init_eq_axioms should come first (see comment about max_k below)
@@ -248,7 +249,17 @@ bool IC3Array::fix_bmc()
         // Need to check up to (and include) max_k for single-time
         // e.g. if it has no next, then need to include last time step
         for (size_t k = 0; k <= max_k; ++k) {
+	  if (opts_.max_array_axioms > 0 &&
+	      lemma_cnt >= opts_.max_array_axioms) {
+	    break;
+	  }
+
           for (auto ax : axiom_sets[i]) {
+	    if (opts_.max_array_axioms > 0 &&
+		lemma_cnt >= opts_.max_array_axioms) {
+	      break;
+	    }
+
             // don't check axioms with times beyond the current time-step
             // (because of next)
             if (k == max_k && abs_ts_.contains_next(ax))
@@ -281,10 +292,7 @@ bool IC3Array::fix_bmc()
               // std::endl;
               violated_axioms.insert(timed_axiom);
               untimed_axioms_to_add.insert(ax);
-
-              if (opts_.lazy_array_axioms) {
-                break;
-              }
+	      ++lemma_cnt;
             }
           }
 
@@ -305,10 +313,25 @@ bool IC3Array::fix_bmc()
 
         for(auto axiom_vec : timed_axioms)
         {
+	  if (opts_.max_array_axioms > 0 &&
+	      lemma_cnt >= opts_.max_array_axioms) {
+	    break;
+	  }
+
           for (size_t i = 0; i < axiom_vec.size(); ++i)
           {
+	    if (opts_.max_array_axioms > 0 &&
+		lemma_cnt >= opts_.max_array_axioms) {
+	      break;
+	    }
+
             for (auto timed_axiom : axiom_vec[i])
             {
+	      if (opts_.max_array_axioms > 0 &&
+		  lemma_cnt >= opts_.max_array_axioms) {
+		break;
+	      }
+
               //std::cout << "Checking timed axiom: " << msat_to_smtlib2_term(msat_env_, timed_axiom) << std::endl;
 
               // had issues trying to evaluate the model on a constant true
@@ -332,10 +355,7 @@ bool IC3Array::fix_bmc()
                 //   std::endl;
                 violated_axioms.insert(timed_axiom);
                 timed_axioms_to_refine.insert(timed_axiom);
-
-                if (opts_.lazy_array_axioms) {
-                  break;
-                }
+		++lemma_cnt;
               }
             }
           }
