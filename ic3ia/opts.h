@@ -59,6 +59,7 @@ struct Options {
     bool use_hist_eq_initial_preds;
     int max_array_axioms;
     bool use_single_uf;
+    bool unsatcore_array_refiner;
 
     Options()
     {
@@ -93,6 +94,7 @@ struct Options {
         use_hist_eq_initial_preds = true;
         max_array_axioms = 0;
         use_single_uf = false;
+	unsatcore_array_refiner = false;
     }
 };
 

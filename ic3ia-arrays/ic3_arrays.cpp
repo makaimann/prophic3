@@ -182,9 +182,24 @@ bool IC3Array::fix_bmc()
   bool broken;
   bool found_untimed_axioms;
   bool found_timed_axioms;
+
+  auto lbl = [=](msat_term p) -> msat_term
+             {
+               std::ostringstream buf;
+               buf << ".ref_axiom_lbl{" << msat_term_id(p) << "}";
+               std::string name = buf.str();
+               msat_decl d = msat_declare_function(refiner_, name.c_str(),
+                                                   msat_get_bool_type(abs_ts_.get_env()));
+               return msat_make_constant(refiner_, d);
+             };
+
+  TermList labels;
+  TermList label2axiom;
   do
   {
     axioms_added = false;
+    labels.clear();
+    label2axiom.clear();
 
     std::cout << "--- Trying BMC " << current_k_ << " ---" << std::endl;
     // set up BMC
@@ -200,8 +215,12 @@ bool IC3Array::fix_bmc()
 
     msat_push_backtrack_point(refiner_);
     msat_assert_formula(refiner_, refinement_formula_);
-    broken = msat_solve(refiner_) == MSAT_SAT;
-
+    if (opts_.unsatcore_array_refiner) {
+      broken = msat_solve_with_assumptions(refiner_, &labels[0], labels.size());
+    } else {
+      broken = msat_solve(refiner_) == MSAT_SAT;
+    }
+    
     while(broken)
     {
       int lemma_cnt = 0;
@@ -360,11 +379,22 @@ bool IC3Array::fix_bmc()
       }
 
       for (auto ax : violated_axioms) {
-        msat_assert_formula(refiner_, ax);
+	if (opts_.unsatcore_array_refiner) {
+	  msat_term l = lbl(ax);
+	  labels.push_back(l);
+	  label2axiom.push_back(ax);
+	  msat_assert_formula(refiner_, msat_make_or(refiner_, msat_make_not(refiner_, l), ax));
+	} else {
+	  msat_assert_formula(refiner_, ax);
+	}
       }
 
-      broken = msat_solve(refiner_) == MSAT_SAT;
-
+      if (opts_.unsatcore_array_refiner) {
+	broken = msat_solve_with_assumptions(refiner_, &labels[0], labels.size());
+      } else {
+	broken = msat_solve(refiner_) == MSAT_SAT;
+      }
+      
       violated_axioms.clear();
     }
 
@@ -394,6 +424,25 @@ bool IC3Array::fix_bmc()
       }
     }
 
+    if (opts_.unsatcore_array_refiner) {
+      size_t ucsz = 0;
+      msat_term *uc = msat_get_unsat_assumptions(refiner_, &ucsz);
+      assert(uc);
+      TermSet core(uc, uc+ucsz);
+      msat_free(uc);
+
+      std::cout << "REFINER-UNSATCORE SIZE " << core.size() << std::endl;
+      
+      for (size_t i = 0; i < label2axiom.size(); ++i) {
+	msat_term a = label2axiom[i];
+	msat_term l = labels[i];
+ 	if (core.find(l) == core.end()) {
+	  untimed_axioms_to_add.erase(a);
+	  timed_axioms_to_refine.erase(a);
+	}
+      }
+    }
+    
     /************************************* Fix the transition system ************************************/
 
     TermSet out_timed_axioms;
