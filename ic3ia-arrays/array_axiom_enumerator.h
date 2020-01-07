@@ -29,13 +29,16 @@ public:
       if (ts.only_cur(idx))
       {
         state_indices_[typestr].insert(idx);
+        all_indices_[typestr].insert(ts.next(idx));
       }
 
-      curr_indices_[typestr].insert(ts.cur(idx));
-      orig_indices_[typestr].insert(ts.cur(idx));
-      orig_indices_set_.insert(ts.cur(idx));
-      all_indices_[typestr].insert(ts.cur(idx));
-      all_indices_[typestr].insert(ts.next(idx));
+      if (!ts.contains_next(idx))
+      {
+        curr_indices_[typestr].insert(idx);
+      }
+      orig_indices_[typestr].insert(idx);
+      orig_indices_set_.insert(idx);
+      all_indices_[typestr].insert(idx);
     }
 
     // provide empty sets for types with no state indices

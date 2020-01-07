@@ -458,10 +458,13 @@ void ArrayAxiomEnumerator::add_index(msat_type orig_idx_type, msat_term i) {
   if (ts_.only_cur(i))
   {
     state_indices_[typestr].insert(i);
+    all_indices_[typestr].insert(ts_.next(i));
   }
-  curr_indices_[typestr].insert(ts_.cur(i));
-  all_indices_[typestr].insert(ts_.cur(i));
-  all_indices_[typestr].insert(ts_.next(i));
+  if (!ts_.contains_next(i))
+  {
+    curr_indices_[typestr].insert(i);
+  }
+  all_indices_[typestr].insert(i);
 }
 
 msat_term ArrayAxiomEnumerator::get_index(msat_term ax) const
