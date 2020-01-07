@@ -548,7 +548,7 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
         msat_type orig_idx_sort = msat_term_get_type(idx);
         d->indices.insert(int_idx_cache);
         // also see HACK below
-	d->orig_types[int_idx_cache] = orig_idx_sort;
+        d->orig_types[int_idx_cache] = orig_idx_sort;
 
         assert(d->write_ufs.find(arr_cache) != d->write_ufs.end());
         msat_decl writefun = d->write_ufs.at(arr_cache);
