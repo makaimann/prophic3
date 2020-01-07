@@ -272,24 +272,7 @@ void ArrayAbstractor::abstract_array_vars()
       name += msat_to_smtlib2_term(msat_env_, msat_term_get_arg(v, 0));
     }
 
-    if (type_map_.find(typestr) == type_map_.end())
-    {
-      abs_type = msat_get_simple_type(msat_env_, ("abs_" + typestr).c_str());
-      // update type map
-      type_map_[typestr] = abs_type;
-
-      // create a read function for these arrays
-      msat_type eq_param_types[2] = {abs_type,
-                                     abs_type};
-      msat_type eq_funtype =
-        msat_get_function_type(msat_env_, &eq_param_types[0], 2, msat_get_bool_type(msat_env_));
-      std::string eqname = "eq_" + std::to_string(eq_id_++);
-      eq_ufs_[msat_type_repr(abs_type)] = msat_declare_function(msat_env_, eqname.c_str(), eq_funtype);
-    }
-    else
-    {
-      abs_type = type_map_.at(typestr);
-    }
+    abs_type = abstract_array_type(_type);
 
     msat_decl decl_arrabs =
       msat_declare_function(msat_env_, name.c_str(), abs_type);
@@ -309,7 +292,7 @@ void ArrayAbstractor::abstract_array_vars()
     {
       // create a read function for these arrays
       msat_type read_param_types[2] = {abs_type,
-                                       msat_get_integer_type(msat_env_)};
+                                       abstract_array_type(arrelemtype)};
       msat_type read_funtype =
         msat_get_function_type(msat_env_, &read_param_types[0], 2, arrelemtype);
       std::string readname = "read_" + std::to_string(num_arr_vars_);
@@ -335,7 +318,7 @@ void ArrayAbstractor::abstract_array_vars()
       // create a write function for these arrays
       msat_type write_param_types[3] = {abs_type,
                                         msat_get_integer_type(msat_env_),
-                                        arrelemtype};
+                                        abstract_array_type(arrelemtype)};
       msat_type write_funtype = msat_get_function_type(msat_env_, &write_param_types[0], 3, abs_type);
       std::string writename = "write_" + std::to_string(num_arr_vars_);
       writefun = msat_declare_function(msat_env_, writename.c_str(), write_funtype);
@@ -366,6 +349,34 @@ void ArrayAbstractor::abstract_array_vars()
       cache_[conc_ts_.next(v)] = arr_absN;
     }
   }
+}
+
+msat_type ArrayAbstractor::abstract_array_type(msat_type t)
+{
+  std::string t_typestr = msat_type_repr(t);
+  if (type_map_.find(t_typestr) != type_map_.end())
+  {
+    return type_map_.at(t_typestr);
+  }
+
+  if (msat_is_array_type(msat_env_, t, nullptr, nullptr))
+  {
+    msat_type abs_type = msat_get_simple_type(msat_env_, ("abs_" + t_typestr).c_str());
+    type_map_[t_typestr] = abs_type;
+
+    // create an equality function for this type of array
+    msat_type eq_param_types[2] = {abs_type,
+                                   abs_type};
+    msat_type eq_funtype =
+      msat_get_function_type(msat_env_, &eq_param_types[0], 2, msat_get_bool_type(msat_env_));
+    std::string eqname = "eq_" + std::to_string(eq_id_++);
+    eq_ufs_[msat_type_repr(abs_type)] = msat_declare_function(msat_env_,
+                                                              eqname.c_str(),
+                                                              eq_funtype);
+    return abs_type;
+  }
+
+  return t;
 }
 
 inline bool is_array_equality(msat_env env, msat_term t) {

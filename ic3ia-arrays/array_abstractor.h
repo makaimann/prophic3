@@ -60,6 +60,9 @@ public:
      */
     void abstract_array_vars();
 
+    /* get an abstract array type if it's an array type */
+    msat_type abstract_array_type(msat_type t);
+
     /* abstracts a term */
     msat_term abstract(msat_term term);
 
