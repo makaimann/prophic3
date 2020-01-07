@@ -20,6 +20,11 @@ Then trigger the bug by running
 ./ic3ia-arrays -no-eq-uf -use-single-uf ../../exps/quic3/vmt/array_nd_two_times_cell_true.smt2.vmt
 ```
 
+Another configuration/benchmark pair where it occurs is:
+```
+./ic3ia-arrays -use-single-uf ../../exps/quic3/vmt/array_mul_init_true-unreach-call_1.smt2.vmt
+```
+
 # mc-arrays-exp
 Experiments with prophecy variables for symbolic model checking.
 
