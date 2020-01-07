@@ -614,10 +614,6 @@ void ArrayAxiomEnumerator::enumerate_eq_uf_axioms(
     args1[1] = i;
     eq_reads = msat_make_equal(msat_env_, msat_make_uf(msat_env_, read0, &args0[0]),
                                msat_make_uf(msat_env_, read1, &args1[0]));
-    // eq(arr0, arr1) -> arr0[i] = arr1[i]
-    ax = implies(eq_uf, eq_reads);
-    axioms.insert(ax);
-    axioms_to_index_[ax] = i;
 
     // arr0[i] != arr1[i] -> !eq(arr0, arr1)
     ax = implies(msat_make_not(msat_env_,
@@ -625,6 +621,12 @@ void ArrayAxiomEnumerator::enumerate_eq_uf_axioms(
                  msat_make_not(msat_env_, eq_uf));
     axioms.insert(ax);
     axioms_to_index_[ax] = i;
+
+    // alternate version of axioms -- redundant
+    // // eq(arr0, arr1) -> arr0[i] = arr1[i]
+    // ax = implies(eq_uf, eq_reads);
+    // axioms.insert(ax);
+    // axioms_to_index_[ax] = i;
   }
 
   if (!MSAT_ERROR_TERM(lambda)) {
