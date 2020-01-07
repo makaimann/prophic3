@@ -257,8 +257,9 @@ void ArrayAbstractor::abstract_array_vars()
     bool ok = msat_is_array_type(msat_env_, _type, &arridxtype, &arrelemtype);
     assert(ok);
 
-    if (msat_is_array_type(msat_env_, arrelemtype, NULL, NULL)) {
-      std::cout << "multi-dimensional array not supported" << std::endl;
+    if (msat_is_array_type(msat_env_, arrelemtype, NULL, NULL) &&
+        (use_eq_uf_ || !use_single_uf_)) {
+      std::cout << "multi-dimensional array not supported except with options -no-eq-uf -use-single-uf" << std::endl;
       throw 12;
     }
 
