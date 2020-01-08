@@ -351,9 +351,6 @@ bool IC3Array::fix_bmc()
               violated_axioms.insert(timed_axiom);
               untimed_axioms_to_add.insert(ax);
 
-              if (opts_.lazy_array_axioms) {
-                break;
-              }
             }
           }
         }
