@@ -111,22 +111,6 @@ void ArrayAbstractor::do_abstraction()
 
   msat_term new_trans = abstract(conc_ts_.trans());
 
-  // HACK make sure all arrays are logged in orig_types_
-  // this is for multi-dimensional arrays when a read can also be an array
-  TermSet arrays;
-  detect_arrays(msat_env_, conc_ts_.init(), arrays);
-  detect_arrays(msat_env_, conc_ts_.trans(), arrays);
-  detect_arrays(msat_env_, conc_ts_.prop(), arrays);
-  for (auto arr : arrays)
-  {
-    assert(cache_.find(arr) != cache_.end());
-    msat_term abs_arr = cache_.at(arr);
-    if (orig_types_.find(abs_arr) == orig_types_.end())
-    {
-      orig_types_[abs_arr] = msat_term_get_type(arr);
-    }
-  }
-
   // initialize for using curr / next
   // will reinitialize later if needed
   abs_ts_.initialize(new_state_vars_, new_init, new_trans, new_prop,
@@ -632,6 +616,14 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
         }
         assert(!MSAT_ERROR_TERM(res));
         super->cache_[t] = res;
+      }
+
+      // HACK set original type if it's an array
+      msat_term abs_t = super->cache_[t];
+      if (msat_is_array_type(e, _type, nullptr, nullptr) &&
+          (super->orig_types_.find(abs_t) == super->orig_types_.end()))
+      {
+        super->orig_types_[abs_t] = _type;
       }
     }
 
