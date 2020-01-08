@@ -230,10 +230,6 @@ void ArrayAbstractor::abstract_array_terms()
     arrays.erase(sv);
   }
 
-  // these are used if use_single_uf is true
-  std::unordered_map<std::string, msat_decl> type2read;
-  std::unordered_map<std::string, msat_decl> type2write;
-
   msat_type arr_type;
   msat_type abs_type;
   msat_type arridxtype;
@@ -278,9 +274,9 @@ void ArrayAbstractor::abstract_array_terms()
 
     std::string abs_typestr = msat_type_repr(abs_type);
     msat_decl readfun;
-    if (use_single_uf_ && type2read.find(abs_typestr) != type2read.end())
+    if (use_single_uf_ && type2read_.find(abs_typestr) != type2read_.end())
     {
-      readfun = type2read.at(abs_typestr);
+      readfun = type2read_.at(abs_typestr);
     }
     else
     {
@@ -301,7 +297,7 @@ void ArrayAbstractor::abstract_array_terms()
       if (use_single_uf_)
       {
         // save this readfun for the type
-        type2read[abs_typestr] = readfun;
+        type2read_[abs_typestr] = readfun;
       }
     }
 
@@ -309,9 +305,9 @@ void ArrayAbstractor::abstract_array_terms()
     read_ufs_[arr_abs] = readfun;
 
     msat_decl writefun;
-    if (use_single_uf_ && type2write.find(abs_typestr) != type2write.end())
+    if (use_single_uf_ && type2write_.find(abs_typestr) != type2write_.end())
     {
-      writefun = type2write.at(abs_typestr);
+      writefun = type2write_.at(abs_typestr);
     }
     else
     {
@@ -326,7 +322,7 @@ void ArrayAbstractor::abstract_array_terms()
       if (use_single_uf_)
       {
         // save this writefun for the type
-        type2write[abs_typestr] = writefun;
+        type2write_[abs_typestr] = writefun;
       }
     }
 
