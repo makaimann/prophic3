@@ -63,22 +63,6 @@ void ArrayAbstractor::do_abstraction()
   msat_term new_init = abstract(conc_ts_.init());
   msat_term new_prop = abstract(conc_ts_.prop());
 
-  // HACK make sure all arrays are logged in orig_types_
-  // this is for multi-dimensional arrays when a read can also be an array
-  TermSet arrays;
-  detect_arrays(msat_env_, conc_ts_.init(), arrays);
-  detect_arrays(msat_env_, conc_ts_.trans(), arrays);
-  detect_arrays(msat_env_, conc_ts_.prop(), arrays);
-  for (auto arr : arrays)
-  {
-    assert(cache_.find(arr) != cache_.end());
-    msat_term abs_arr = cache_.at(arr);
-    if (orig_types_.find(abs_arr) == orig_types_.end())
-    {
-      orig_types_[abs_arr] = msat_term_get_type(arr);
-    }
-  }
-
   // need to promote inputs that occur in new_init / new_prop to states
   // this includes the created witnesses which don't explicitly appear
   //   in init/prop but might be needed for refinements
@@ -126,6 +110,22 @@ void ArrayAbstractor::do_abstraction()
   }
 
   msat_term new_trans = abstract(conc_ts_.trans());
+
+  // HACK make sure all arrays are logged in orig_types_
+  // this is for multi-dimensional arrays when a read can also be an array
+  TermSet arrays;
+  detect_arrays(msat_env_, conc_ts_.init(), arrays);
+  detect_arrays(msat_env_, conc_ts_.trans(), arrays);
+  detect_arrays(msat_env_, conc_ts_.prop(), arrays);
+  for (auto arr : arrays)
+  {
+    assert(cache_.find(arr) != cache_.end());
+    msat_term abs_arr = cache_.at(arr);
+    if (orig_types_.find(abs_arr) == orig_types_.end())
+    {
+      orig_types_[abs_arr] = msat_term_get_type(arr);
+    }
+  }
 
   // initialize for using curr / next
   // will reinitialize later if needed
