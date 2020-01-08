@@ -57,9 +57,10 @@ struct Options {
     // Added by Makai
     bool use_uf_for_arr_eq;
     bool use_hist_eq_initial_preds;
-    bool lazy_array_axioms;
+    int max_array_axioms;
     bool use_single_uf;
     bool use_univ_prop_instantiations;
+    bool unsatcore_array_refiner;
 
     Options()
     {
@@ -92,9 +93,10 @@ struct Options {
         ltl_single_fairness_sorted = true;
         use_uf_for_arr_eq = true;
         use_hist_eq_initial_preds = true;
-        lazy_array_axioms = false;
+        max_array_axioms = 0;
         use_single_uf = false;
         use_univ_prop_instantiations = false;
+        unsatcore_array_refiner = false;
     }
 };
 
