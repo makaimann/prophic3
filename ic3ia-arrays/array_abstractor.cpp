@@ -531,8 +531,7 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
         // populate arridxtype and arrelemtype
         assert(msat_is_array_type(e, arrtype, &arridxtype, &arrelemtype));
 
-        assert(super->read_ufs_.find(arr_cache) != super->read_ufs_.end());
-        msat_decl readfun = super->read_ufs_.at(arr_cache);
+        msat_decl readfun = super->get_read(arr_cache);
         msat_term cached_args[2] = {arr_cache, int_idx};
         msat_term read_uf = msat_make_uf(e, readfun, &cached_args[0]);
         super->cache_[t] = read_uf;
@@ -553,8 +552,7 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
         // also see HACK below
         super->orig_types_[int_idx_cache] = orig_idx_sort;
 
-        assert(super->write_ufs_.find(arr_cache) != super->write_ufs_.end());
-        msat_decl writefun = super->write_ufs_.at(arr_cache);
+        msat_decl writefun = super->get_write(arr_cache);
 
         msat_term args[3] = {arr_cache, int_idx_cache, val_cache};
         msat_term arr_write = msat_make_uf(e, writefun, &args[0]);

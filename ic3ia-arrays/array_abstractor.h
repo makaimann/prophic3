@@ -63,6 +63,40 @@ public:
       }
     }
 
+    /* returns the read function for array arr */
+    msat_decl get_read(msat_term arr) const
+    {
+      if (use_single_uf_)
+      {
+        assert(orig_types_.find(arr) != orig_types_.end());
+        std::string typestr = msat_type_repr(orig_types_.at(arr));
+        assert(type2read_.find(typestr) != type2read_.end());
+        return type2read_.at(typestr);
+      }
+      else
+      {
+        assert(read_ufs_.find(arr) != read_ufs_.end());
+        return read_ufs_.at(arr);
+      }
+    }
+
+    /* returns the write function for array arr */
+    msat_decl get_write(msat_term arr) const
+    {
+      if (use_single_uf_)
+      {
+        assert(orig_types_.find(arr) != orig_types_.end());
+        std::string typestr = msat_type_repr(orig_types_.at(arr));
+        assert(type2write_.find(typestr) != type2write_.end());
+        return type2write_.at(typestr);
+      }
+      else
+      {
+        assert(write_ufs_.find(arr) != write_ufs_.end());
+        return write_ufs_.at(arr);
+      }
+    }
+
     // creates an equality: if we're using abstract array equality, it will generate that
     msat_term make_eq(msat_env env, msat_term lhs, msat_term rhs) const;
 
