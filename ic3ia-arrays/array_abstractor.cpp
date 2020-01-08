@@ -50,7 +50,7 @@ msat_term ArrayAbstractor::make_eq(msat_env env, msat_term lhs, msat_term rhs) c
 
 void ArrayAbstractor::do_abstraction()
 {
-  abstract_array_vars();
+  abstract_array_terms();
 
   // add all old state elements unless they've been removed
   // new_state_vars_ already contains state mapping for new state vars
@@ -216,45 +216,39 @@ void ArrayAbstractor::do_abstraction()
   create_lambdas();
 }
 
-void ArrayAbstractor::abstract_array_vars()
+void ArrayAbstractor::abstract_array_terms()
 {
   TermSet arrays;
 
-  detect_const_arrs(msat_env_, conc_ts_.init(), arrays);
-  detect_const_arrs(msat_env_, conc_ts_.trans(), arrays);
-  detect_const_arrs(msat_env_, conc_ts_.prop(), arrays);
+  detect_arrays(msat_env_, conc_ts_.init(), arrays);
+  detect_arrays(msat_env_, conc_ts_.trans(), arrays);
+  detect_arrays(msat_env_, conc_ts_.prop(), arrays);
 
-  msat_type _type;
-  for (auto sv : conc_ts_.statevars())
+  // remove next state variables -- want to handle at same time as current variable
+  for (auto sv : conc_ts_.nextstatevars())
   {
-    _type = msat_term_get_type(sv);
-    if (msat_is_array_type(msat_env_, _type, nullptr, nullptr))
-    {
-      arrays.insert(sv);
-    }
-  }
-  for (auto i : conc_ts_.inputvars())
-  {
-    _type = msat_term_get_type(i);
-    if (msat_is_array_type(msat_env_, _type, nullptr, nullptr))
-    {
-      arrays.insert(i);
-    }
+    arrays.erase(sv);
   }
 
   // these are used if use_single_uf is true
   std::unordered_map<std::string, msat_decl> type2read;
   std::unordered_map<std::string, msat_decl> type2write;
 
+  msat_type arr_type;
   msat_type abs_type;
   msat_type arridxtype;
   msat_type arrelemtype;
   std::string typestr;
-  for (auto v : arrays)
+  for (auto arr : arrays)
   {
-    _type = msat_term_get_type(v);
-    typestr = msat_type_repr(_type);
-    bool ok = msat_is_array_type(msat_env_, _type, &arridxtype, &arrelemtype);
+
+    // only works for multi-dimensional arrays with this configuration
+    assert(!msat_term_is_array_read(msat_env_, arr) ||
+           (!use_eq_uf_ && use_single_uf_));
+
+    arr_type = msat_term_get_type(arr);
+    typestr = msat_type_repr(arr_type);
+    bool ok = msat_is_array_type(msat_env_, arr_type, &arridxtype, &arrelemtype);
     assert(ok);
 
     if (msat_is_array_type(msat_env_, arrelemtype, NULL, NULL) &&
@@ -264,23 +258,23 @@ void ArrayAbstractor::abstract_array_vars()
     }
 
     // turn arrays to uninterpreted sorts (but use slightly nicer name for const arrays)
-    std::string name = std::string("abs_") + msat_term_repr(v);
+    std::string name = std::string("abs_") + msat_term_repr(arr);
 
-    if (msat_term_is_array_const(msat_env_, v)) {
-      const_arrs_.insert(v);
+    if (msat_term_is_array_const(msat_env_, arr)) {
+      const_arrs_.insert(arr);
       name = "constarr";
-      name += msat_to_smtlib2_term(msat_env_, msat_term_get_arg(v, 0));
+      name += msat_to_smtlib2_term(msat_env_, msat_term_get_arg(arr, 0));
     }
 
-    abs_type = abstract_array_type(_type);
+    abs_type = abstract_array_type(arr_type);
 
     msat_decl decl_arrabs =
       msat_declare_function(msat_env_, name.c_str(), abs_type);
     msat_term arr_abs = msat_make_constant(msat_env_, decl_arrabs);
-    cache_[v] = arr_abs;
-    removed_vars_.insert(v);
+    cache_[arr] = arr_abs;
+    removed_vars_.insert(arr);
     // keep track of the original type
-    orig_types_[arr_abs] = _type;
+    orig_types_[arr_abs] = arr_type;
 
     std::string abs_typestr = msat_type_repr(abs_type);
     msat_decl readfun;
@@ -291,10 +285,16 @@ void ArrayAbstractor::abstract_array_vars()
     else
     {
       // create a read function for these arrays
+      msat_type idxtype = msat_get_integer_type(msat_env_);
+      if (msat_is_array_type(msat_env_, arridxtype, nullptr, nullptr))
+      {
+        std::cout << "Got array as index -- this is untested" << std::endl;
+        idxtype = abstract_array_type(arridxtype);
+      }
       msat_type read_param_types[2] = {abs_type,
-                                       abstract_array_type(arrelemtype)};
+                                       idxtype};
       msat_type read_funtype =
-        msat_get_function_type(msat_env_, &read_param_types[0], 2, arrelemtype);
+        msat_get_function_type(msat_env_, &read_param_types[0], 2, abstract_array_type(arrelemtype));
       std::string readname = "read_" + std::to_string(num_arr_vars_);
       readfun = msat_declare_function(msat_env_, readname.c_str(), read_funtype);
 
@@ -333,7 +333,7 @@ void ArrayAbstractor::abstract_array_vars()
     write_ufs_[arr_abs] = writefun;
 
     num_arr_vars_++;
-    if (conc_ts_.is_statevar(v))
+    if (conc_ts_.is_statevar(arr))
     {
       msat_decl decl_arrabsN = msat_declare_function(msat_env_,
                                                      (name + ".next").c_str(),
@@ -345,8 +345,8 @@ void ArrayAbstractor::abstract_array_vars()
       read_ufs_[arr_absN]  = readfun;
       write_ufs_[arr_absN] = writefun;
       // map next to type also
-      orig_types_[arr_absN] = _type;
-      cache_[conc_ts_.next(v)] = arr_absN;
+      orig_types_[arr_absN] = arr_type;
+      cache_[conc_ts_.next(arr)] = arr_absN;
     }
   }
 }
@@ -408,11 +408,11 @@ msat_term idx_to_int(msat_env env, msat_term t) {
   return res;
 }
 
-void detect_const_arrs(msat_env env, msat_term term, TermSet & out_const_arrs)
+void detect_arrays(msat_env env, msat_term term, TermSet & out_arrays)
 {
   struct Data {
-    TermSet & const_arrs;
-    Data(TermSet & ca) : const_arrs(ca) {}
+    TermSet & arrays;
+    Data(TermSet & ca) : arrays(ca) {}
   };
 
   auto visit = [](msat_env e, msat_term t, int preorder,
@@ -420,14 +420,20 @@ void detect_const_arrs(msat_env env, msat_term term, TermSet & out_const_arrs)
 
                  Data *d = static_cast<Data *>(data);
                  msat_type t_type = msat_term_get_type(t);
-                 if (preorder && msat_term_is_array_const(e, t))
+                 if (preorder &&
+                     msat_is_array_type(e, t_type, NULL, NULL) &&
+                     !msat_term_is_array_write(e, t))
                  {
-                   d->const_arrs.insert(t);
+                   d->arrays.insert(t);
+                 }
+                 else
+                 {
+                   assert(!(preorder && msat_term_is_array_const(e, t)));
                  }
                  return MSAT_VISIT_PROCESS;
                };
 
-  Data data(out_const_arrs);
+  Data data(out_arrays);
   msat_visit_term(env, term, visit, &data);
 }
 

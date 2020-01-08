@@ -26,7 +26,9 @@ inline bool is_variable(msat_env env, msat_term term) {
               MSAT_TAG_UNKNOWN &&
           !msat_term_is_number(env, term));
 }
-void detect_const_arrs(msat_env env, msat_term term, ic3ia::TermSet & out_const_arrs);
+
+/* detects all arrays except for writes */
+void detect_arrays(msat_env env, msat_term term, ic3ia::TermSet & out_const_arrs);
 
 class ArrayAbstractor {
 public:
@@ -58,7 +60,7 @@ public:
     /* abstracts array vars in conc_ts_
      * to be called before abstracting individual terms
      */
-    void abstract_array_vars();
+    void abstract_array_terms();
 
     /* get an abstract array type if it's an array type */
     msat_type abstract_array_type(msat_type t);
