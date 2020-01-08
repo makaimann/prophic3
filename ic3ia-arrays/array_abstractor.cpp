@@ -267,40 +267,8 @@ void ArrayAbstractor::abstract_array_terms()
     typestr  = msat_type_repr(arr_type);
     bool ok = msat_is_array_type(msat_env_, arr_type, &arridxtype, &arrelemtype);
     assert(ok);
-    bool new_type = (type_map_.find(typestr) == type_map_.end());
     abs_type = abstract_array_type(arr_type);
-
-    // create read and write functions
-    if (use_single_uf_ && new_type)
-    {
-      // create a read function for these arrays
-      msat_type idxtype = msat_get_integer_type(msat_env_);
-      if (msat_is_array_type(msat_env_, arridxtype, nullptr, nullptr))
-      {
-        std::cout << "Got array as index -- this is untested" << std::endl;
-        idxtype = abstract_array_type(arridxtype);
-      }
-      msat_type read_param_types[2] = {abs_type,
-                                       idxtype};
-      msat_type read_funtype =
-        msat_get_function_type(msat_env_, &read_param_types[0], 2, abstract_array_type(arrelemtype));
-      std::string readname = "read_" + std::to_string(num_arr_vars_);
-      msat_decl readfun = msat_declare_function(msat_env_, readname.c_str(), read_funtype);
-      type2read_[typestr] = readfun;
-
-      // create a write function for these arrays
-      msat_type write_param_types[3] = {abs_type,
-                                        msat_get_integer_type(msat_env_),
-                                        abstract_array_type(arrelemtype)};
-      msat_type write_funtype = msat_get_function_type(msat_env_, &write_param_types[0], 3, abs_type);
-      std::string writename = "write_" + std::to_string(num_arr_vars_);
-      msat_decl writefun = msat_declare_function(msat_env_, writename.c_str(), write_funtype);
-      type2write_[typestr] = writefun;
-
-      num_arr_vars_++;
-    }
   }
-
 
   for (auto arr : arrays)
   {
@@ -392,7 +360,9 @@ msat_type ArrayAbstractor::abstract_array_type(msat_type t)
     return type_map_.at(t_typestr);
   }
 
-  if (msat_is_array_type(msat_env_, t, nullptr, nullptr))
+  msat_type arridxtype;
+  msat_type arrelemtype;
+  if (msat_is_array_type(msat_env_, t, &arridxtype, &arrelemtype))
   {
     msat_type abs_type = msat_get_simple_type(msat_env_, ("abs_" + t_typestr).c_str());
     type_map_[t_typestr] = abs_type;
@@ -406,6 +376,37 @@ msat_type ArrayAbstractor::abstract_array_type(msat_type t)
     eq_ufs_[msat_type_repr(abs_type)] = msat_declare_function(msat_env_,
                                                               eqname.c_str(),
                                                               eq_funtype);
+
+    // create read and write functions
+    if (use_single_uf_)
+    {
+      // create a read function for these arrays
+      msat_type idxtype = msat_get_integer_type(msat_env_);
+      if (msat_is_array_type(msat_env_, arridxtype, nullptr, nullptr))
+      {
+        std::cout << "Got array as index -- this is untested" << std::endl;
+        idxtype = abstract_array_type(arridxtype);
+      }
+      msat_type read_param_types[2] = {abs_type,
+                                       idxtype};
+      msat_type read_funtype =
+        msat_get_function_type(msat_env_, &read_param_types[0], 2, abstract_array_type(arrelemtype));
+      std::string readname = "read_" + std::to_string(num_arr_vars_);
+      msat_decl readfun = msat_declare_function(msat_env_, readname.c_str(), read_funtype);
+      type2read_[t_typestr] = readfun;
+
+      // create a write function for these arrays
+      msat_type write_param_types[3] = {abs_type,
+                                        msat_get_integer_type(msat_env_),
+                                        abstract_array_type(arrelemtype)};
+      msat_type write_funtype = msat_get_function_type(msat_env_, &write_param_types[0], 3, abs_type);
+      std::string writename = "write_" + std::to_string(num_arr_vars_);
+      msat_decl writefun = msat_declare_function(msat_env_, writename.c_str(), write_funtype);
+      type2write_[t_typestr] = writefun;
+
+      num_arr_vars_++;
+    }
+
     return abs_type;
   }
 
