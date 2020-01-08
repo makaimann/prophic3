@@ -240,9 +240,6 @@ void ArrayAbstractor::abstract_array_terms()
   for (auto arr : arrays)
   {
     // only works for multi-dimensional arrays with this configuration
-    assert(!msat_term_is_array_read(msat_env_, arr) ||
-           (!use_eq_uf_ && use_single_uf_));
-
     if (msat_term_is_array_read(msat_env_, arr) &&
         (use_eq_uf_ || !use_single_uf_))
     {
