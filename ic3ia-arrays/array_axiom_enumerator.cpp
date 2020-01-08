@@ -141,6 +141,7 @@ ic3ia::TermSet ArrayAxiomEnumerator::const_array_axioms()
   msat_type idx_type;
   msat_term abs_ca;
   msat_decl read;
+  msat_term val;
   for (msat_term ca : const_arrs) {
     if (!msat_is_array_type(msat_env_, msat_term_get_type(ca), &idx_type, nullptr))
     {
@@ -148,12 +149,18 @@ ic3ia::TermSet ArrayAxiomEnumerator::const_array_axioms()
     }
     abs_ca = cache.at(ca);
     read = read_ufs.at(abs_ca);
+    val = msat_term_get_arg(ca, 0);
+    // the value could be an array itself -- look up abstraction
+    if (cache.find(val) != cache.end())
+    {
+      val = cache.at(val);
+    }
     enumerate_const_array_axioms(
         axioms,
         read,
         abs_ca,             // need to convert to abstracted array
         idx_type,
-        msat_term_get_arg(ca, 0), // the value
+        val,
         curr_indices_.at(msat_type_repr(idx_type)));
   }
   return axioms;
@@ -428,14 +435,18 @@ vector<TermSet> ArrayAxiomEnumerator::const_array_axioms_all_idx_times(Unroller 
     }
     typestr = msat_type_repr(idx_type);
     abs_ca = cache.at(ca);
-    // value doesn't need to be timed -- should be a constant
     val = msat_term_get_arg(ca, 0);
+    // the value could be an array itself -- look up abstraction
+    if (cache.find(val) != cache.end())
+    {
+      val = cache.at(val);
+    }
     read = read_ufs.at(abs_ca);
 
     for (size_t i = 0; i < k; i++)
     {
       msat_term abs_ca_i = un.at_time(abs_ca, i);
-
+      msat_term val_i = un.at_time(val, i);
       for (size_t j = 0; j <= k; j++)
       {
         // TODO: If this is too expensive, cache by e beforehand
@@ -445,7 +456,7 @@ vector<TermSet> ArrayAxiomEnumerator::const_array_axioms_all_idx_times(Unroller 
         }
 
         enumerate_const_array_axioms(axioms[j], read, abs_ca_i,
-                                     idx_type, val, timed_indices[j].at(typestr));
+                                     idx_type, val_i, timed_indices[j].at(typestr));
       }
     }
   }
