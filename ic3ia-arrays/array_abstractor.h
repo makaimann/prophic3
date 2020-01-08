@@ -50,6 +50,19 @@ public:
     const ic3ia::TermSet &const_arrs() const { return const_arrs_; };
     const ic3ia::TermSet &stores() const { return stores_; };
     const ic3ia::TermSet &finite_domain_lambdas() const { return finite_domain_lambdas_; };
+
+    msat_type get_orig_type(msat_term t) const
+    {
+      if (orig_types_.find(t) != orig_types_.end())
+      {
+        return orig_types_.at(t);
+      }
+      else
+      {
+        return msat_term_get_type(t);
+      }
+    }
+
     // creates an equality: if we're using abstract array equality, it will generate that
     msat_term make_eq(msat_env env, msat_term lhs, msat_term rhs) const;
 
