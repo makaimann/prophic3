@@ -280,6 +280,8 @@ void ArrayAbstractor::abstract_array_terms()
       std::string writename = "write_" + std::to_string(num_arr_vars_);
       msat_decl writefun = msat_declare_function(msat_env_, writename.c_str(), write_funtype);
       type2write_[typestr] = writefun;
+
+      num_arr_vars_++;
     }
   }
 

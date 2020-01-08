@@ -71,7 +71,13 @@ public:
         assert(orig_types_.find(arr) != orig_types_.end());
         std::string typestr = msat_type_repr(orig_types_.at(arr));
         assert(type2read_.find(typestr) != type2read_.end());
-        return type2read_.at(typestr);
+        msat_decl read = type2read_.at(typestr);
+        if (MSAT_ERROR_DECL(read))
+        {
+          std::cout << "Got error decl" << std::endl;
+          throw std::exception();
+        }
+        return read;
       }
       else
       {
