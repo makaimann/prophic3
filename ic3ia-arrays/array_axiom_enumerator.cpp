@@ -497,7 +497,7 @@ void ArrayAxiomEnumerator::enumerate_store_equalities(TermSet &axioms, msat_decl
   msat_term args0[2] = {arr_res, idx};
   msat_term args1[2] = {arr_arg, idx};
 
-  // i = j case
+  // value at write index
   msat_term antecedent = store_eq;
   msat_term consequent = msat_make_eq(msat_env_,
 				      msat_make_uf(msat_env_, read_res, &args0[0]), val);
