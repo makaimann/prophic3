@@ -504,7 +504,7 @@ void ArrayAxiomEnumerator::enumerate_store_equalities(TermSet &axioms, msat_decl
     // i != j case
     antecedent = msat_make_and(msat_env_, store_eq,
                                msat_make_not(msat_env_, msat_make_eq(msat_env_, i, idx)));
-    consequent = abstractor_.make_eq(msat_env_,
+    consequent = msat_make_eq(msat_env_,
                               msat_make_uf(msat_env_, read_res, &args0[0]),
                               msat_make_uf(msat_env_, read_arg, &args1[0]));
     ax = implies(antecedent, consequent);
@@ -529,7 +529,7 @@ void ArrayAxiomEnumerator::enumerate_store_equalities(TermSet &axioms, msat_decl
         msat_make_and(msat_env_, store_eq,
                       msat_make_not(msat_env_, msat_make_eq(msat_env_, lambda, idx))));
     msat_term consequent =
-        abstractor_.make_eq(msat_env_, msat_make_uf(msat_env_, read_res, &args0[0]),
+        msat_make_eq(msat_env_, msat_make_uf(msat_env_, read_res, &args0[0]),
                      msat_make_uf(msat_env_, read_arg, &args1[0]));
     ax = implies(antecedent, consequent);
     axioms.insert(ax);

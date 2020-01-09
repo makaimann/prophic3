@@ -240,10 +240,9 @@ void ArrayAbstractor::abstract_array_terms()
   for (auto arr : arrays)
   {
     // only works for multi-dimensional arrays with this configuration
-    if (msat_term_is_array_read(msat_env_, arr) &&
-        (use_eq_uf_ || !use_single_uf_))
+    if (msat_term_is_array_read(msat_env_, arr) && !use_single_uf_)
     {
-      std::cout << "multi-dimensional array not supported except with options -no-eq-uf -use-single-uf" << std::endl;
+      std::cout << "multi-dimensional array not supported except with option -use-single-uf" << std::endl;
       throw 12;
     }
 
