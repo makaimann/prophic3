@@ -458,10 +458,13 @@ void ArrayAxiomEnumerator::add_index(msat_type orig_idx_type, msat_term i) {
   if (ts_.only_cur(i))
   {
     state_indices_[typestr].insert(i);
+    all_indices_[typestr].insert(ts_.next(i));
   }
-  curr_indices_[typestr].insert(ts_.cur(i));
-  all_indices_[typestr].insert(ts_.cur(i));
-  all_indices_[typestr].insert(ts_.next(i));
+  if (!ts_.contains_next(i))
+  {
+    curr_indices_[typestr].insert(i);
+  }
+  all_indices_[typestr].insert(i);
 }
 
 msat_term ArrayAxiomEnumerator::get_index(msat_term ax) const
@@ -494,21 +497,20 @@ void ArrayAxiomEnumerator::enumerate_store_equalities(TermSet &axioms, msat_decl
   msat_term args0[2] = {arr_res, idx};
   msat_term args1[2] = {arr_arg, idx};
 
+  // value at write index
+  msat_term antecedent = store_eq;
+  msat_term consequent = msat_make_eq(msat_env_,
+				      msat_make_uf(msat_env_, read_res, &args0[0]), val);
+  ax = implies(antecedent, consequent);
+  axioms.insert(ax);
+  axioms_to_index_[ax] = idx;
+
   for (auto i : indices)
   {
     // TODO: Add next version of indices to orig_types in abstracter (not doing yet to avoid conflicts)
 
     args0[1] = i;
     args1[1] = i;
-
-    // i = j case
-    msat_term antecedent = msat_make_and(msat_env_, store_eq,
-                                         msat_make_eq(msat_env_, i, idx));
-    msat_term consequent = msat_make_eq(msat_env_,
-                                        msat_make_uf(msat_env_, read_res, &args0[0]), val);
-    ax = implies(antecedent, consequent);
-    axioms.insert(ax);
-    axioms_to_index_[ax] = i;
 
     // TODO: optimization: don't put in the trivial (i != i) case
     // i != j case
@@ -614,10 +616,6 @@ void ArrayAxiomEnumerator::enumerate_eq_uf_axioms(
     args1[1] = i;
     eq_reads = msat_make_equal(msat_env_, msat_make_uf(msat_env_, read0, &args0[0]),
                                msat_make_uf(msat_env_, read1, &args1[0]));
-    // eq(arr0, arr1) -> arr0[i] = arr1[i]
-    ax = implies(eq_uf, eq_reads);
-    axioms.insert(ax);
-    axioms_to_index_[ax] = i;
 
     // arr0[i] != arr1[i] -> !eq(arr0, arr1)
     ax = implies(msat_make_not(msat_env_,
@@ -625,6 +623,12 @@ void ArrayAxiomEnumerator::enumerate_eq_uf_axioms(
                  msat_make_not(msat_env_, eq_uf));
     axioms.insert(ax);
     axioms_to_index_[ax] = i;
+
+    // alternate version of axioms -- redundant
+    // // eq(arr0, arr1) -> arr0[i] = arr1[i]
+    // ax = implies(eq_uf, eq_reads);
+    // axioms.insert(ax);
+    // axioms_to_index_[ax] = i;
   }
 
   if (!MSAT_ERROR_TERM(lambda)) {
