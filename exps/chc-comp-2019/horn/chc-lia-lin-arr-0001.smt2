@@ -1,0 +1,17 @@
+;; Original file: bu_16.smt2
+(set-logic HORN)
+(declare-fun inv ((Array Int Int) Int Int) Bool)
+
+(assert (forall ((a (Array Int Int)) (j Int)) (=> true (inv a j j))))
+(assert (forall ((a (Array Int Int)) (i Int) (j Int) (a1 (Array Int Int)) (i1 Int))
+  (let ((a!1 (ite (< (select a i) (select a j))
+                  (store (store a i (select a j)) j (select a i))
+                  a)))
+    (=> (and (inv a i j) (= a1 a!1) (= i1 (+ i 1))) (inv a1 i1 j)))))
+(assert (forall ((a (Array Int Int)) (i Int) (j Int) (i1 Int) (fail Bool))
+  (let ((a!1 (and (inv a i j)
+                  (< j i1)
+                  (< i1 i)
+                  (not (< (select a j) (select a i1))))))
+    (=> a!1 false))))
+(check-sat)
