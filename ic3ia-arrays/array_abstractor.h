@@ -26,7 +26,9 @@ inline bool is_variable(msat_env env, msat_term term) {
               MSAT_TAG_UNKNOWN &&
           !msat_term_is_number(env, term));
 }
-void detect_const_arrs(msat_env env, msat_term term, ic3ia::TermSet & out_const_arrs);
+
+/* detects all arrays except for writes */
+void detect_arrays(msat_env env, msat_term term, ic3ia::TermSet & out_const_arrs);
 
 class ArrayAbstractor {
 public:
@@ -48,6 +50,59 @@ public:
     const ic3ia::TermSet &const_arrs() const { return const_arrs_; };
     const ic3ia::TermSet &stores() const { return stores_; };
     const ic3ia::TermSet &finite_domain_lambdas() const { return finite_domain_lambdas_; };
+
+    msat_type get_orig_type(msat_term t) const
+    {
+      if (orig_types_.find(t) != orig_types_.end())
+      {
+        return orig_types_.at(t);
+      }
+      else
+      {
+        return msat_term_get_type(t);
+      }
+    }
+
+    /* returns the read function for array arr */
+    msat_decl get_read(msat_term arr) const
+    {
+      if (use_single_uf_)
+      {
+        assert(orig_types_.find(arr) != orig_types_.end());
+        std::string typestr = msat_type_repr(orig_types_.at(arr));
+        assert(type2read_.find(typestr) != type2read_.end());
+        msat_decl read = type2read_.at(typestr);
+        if (MSAT_ERROR_DECL(read))
+        {
+          std::cout << "Got error decl" << std::endl;
+          throw std::exception();
+        }
+        return read;
+      }
+      else
+      {
+        assert(read_ufs_.find(arr) != read_ufs_.end());
+        return read_ufs_.at(arr);
+      }
+    }
+
+    /* returns the write function for array arr */
+    msat_decl get_write(msat_term arr) const
+    {
+      if (use_single_uf_)
+      {
+        assert(orig_types_.find(arr) != orig_types_.end());
+        std::string typestr = msat_type_repr(orig_types_.at(arr));
+        assert(type2write_.find(typestr) != type2write_.end());
+        return type2write_.at(typestr);
+      }
+      else
+      {
+        assert(write_ufs_.find(arr) != write_ufs_.end());
+        return write_ufs_.at(arr);
+      }
+    }
+
     // creates an equality: if we're using abstract array equality, it will generate that
     msat_term make_eq(msat_env env, msat_term lhs, msat_term rhs) const;
 
@@ -58,7 +113,10 @@ public:
     /* abstracts array vars in conc_ts_
      * to be called before abstracting individual terms
      */
-    void abstract_array_vars();
+    void abstract_array_terms();
+
+    /* get an abstract array type if it's an array type */
+    msat_type abstract_array_type(msat_type t);
 
     /* abstracts a term */
     msat_term abstract(msat_term term);
@@ -100,6 +158,10 @@ public:
     ic3ia::TermSet const_arrs_;
     // set of store equalities -- note: these have been flattened
     ic3ia::TermSet stores_;
+
+    // these are used if use_single_uf is true
+    std::unordered_map<std::string, msat_decl> type2read_;
+    std::unordered_map<std::string, msat_decl> type2write_;
 
     // new variables for abstract transition system -- internal use only
     ic3ia::TermMap new_state_vars_;
