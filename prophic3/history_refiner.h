@@ -4,7 +4,7 @@
 
 #include <unordered_map>
 
-namespace ic3ia_array {
+namespace prophic3 {
 
 class HistoryRefiner {
 public:
@@ -48,4 +48,4 @@ protected:
   ic3ia::TermMap next_hist_vars_;
 };
 
-} // namespace ic3ia_array
+} // namespace prophic3

@@ -1,7 +1,7 @@
 #include "assert.h"
 #include <fstream>
 
-#include "ic3_arrays.h"
+#include "prophic3.h"
 
 #include <map>
 #include <vector>
@@ -9,7 +9,7 @@
 using namespace ic3ia;
 using namespace std;
 
-namespace ic3ia_array
+namespace prophic3
 {
 
 // For debugging
@@ -42,7 +42,7 @@ TermList conjunctive_partition(msat_env e, msat_term top)
   return partition;
 }
 
-IC3Array::IC3Array(const ic3ia::TransitionSystem &ts, const ic3ia::Options &opts,
+ProphIC3::ProphIC3(const ic3ia::TransitionSystem &ts, const ic3ia::Options &opts,
 		   ic3ia::LiveEncoder &l2s, unsigned int verbosity)
   : msat_env_(ts.get_env()),
     conc_ts_(ts),
@@ -81,13 +81,13 @@ IC3Array::IC3Array(const ic3ia::TransitionSystem &ts, const ic3ia::Options &opts
 
 }
 
-IC3Array::~IC3Array()
+ProphIC3::~ProphIC3()
 {
   msat_destroy_env(refiner_);
   msat_destroy_env(reducer_);
 }
 
-msat_truth_value IC3Array::prove()
+msat_truth_value ProphIC3::prove()
 {
   msat_truth_value res = MSAT_UNDEF;
 
@@ -162,12 +162,12 @@ msat_truth_value IC3Array::prove()
   return res;
 }
 
-int IC3Array::witness(std::vector<TermList> & out)
+int ProphIC3::witness(std::vector<TermList> & out)
 {
   throw "Not implemented";
 }
 
-bool IC3Array::fix_bmc()
+bool ProphIC3::fix_bmc()
 {
   // untimed axioms to add to transition system
   TermSet untimed_axioms_to_add;
@@ -513,7 +513,7 @@ bool IC3Array::fix_bmc()
   return true;
 }
 
-void IC3Array::refine_abs_ts(TermSet & untimed_axioms)
+void ProphIC3::refine_abs_ts(TermSet & untimed_axioms)
 {
   int init_cnt = 0;
   for (auto ax : untimed_axioms) {
@@ -539,7 +539,7 @@ void IC3Array::refine_abs_ts(TermSet & untimed_axioms)
   assert(abs_ts_.only_cur(abs_ts_.prop()));
 }
 
-void IC3Array::prophesize_abs_ts(TermSet & timed_axioms, bool add_axioms)
+void ProphIC3::prophesize_abs_ts(TermSet & timed_axioms, bool add_axioms)
 {
   if (timed_axioms.size() == 0)
   {
@@ -581,7 +581,7 @@ void IC3Array::prophesize_abs_ts(TermSet & timed_axioms, bool add_axioms)
   assert(abs_ts_.only_cur(abs_ts_.prop()));
 }
 
-TermSet IC3Array::detect_indices(msat_term term)
+TermSet ProphIC3::detect_indices(msat_term term)
 {
   struct Data {
     const TermSet &indices;
@@ -608,7 +608,7 @@ TermSet IC3Array::detect_indices(msat_term term)
   return out_indices;
 }
 
-TermMap IC3Array::add_frozen_proph_vars(const ic3ia::TermMap & proph_targets)
+TermMap ProphIC3::add_frozen_proph_vars(const ic3ia::TermMap & proph_targets)
 {
   TermMap idx_to_proph;
   TermTypeMap & orig_types = aa_.orig_types();
@@ -666,7 +666,7 @@ TermMap IC3Array::add_frozen_proph_vars(const ic3ia::TermMap & proph_targets)
   return idx_to_proph;
 }
 
-TermMap IC3Array::add_history_vars(const std::unordered_map<msat_term, size_t> targets)
+TermMap ProphIC3::add_history_vars(const std::unordered_map<msat_term, size_t> targets)
 {
   std::cout << "Found " << targets.size() << " indices which need to be refined." << std::endl;
   for (auto elem : targets)
@@ -717,7 +717,7 @@ TermMap IC3Array::add_history_vars(const std::unordered_map<msat_term, size_t> t
   return hist_vars_to_refine;
 }
 
-void IC3Array::print_witness(msat_model model,
+void ProphIC3::print_witness(msat_model model,
                              size_t reached_k,
                              ArrayAxiomEnumerator &aae_) {
 
@@ -825,7 +825,7 @@ void IC3Array::print_witness(msat_model model,
   }
 }
 
-bool IC3Array::contains_vars(msat_term term, const TermSet &vars) const {
+bool ProphIC3::contains_vars(msat_term term, const TermSet &vars) const {
   struct Data {
     bool contains_var;
     const TermSet &vars;
@@ -855,7 +855,7 @@ bool IC3Array::contains_vars(msat_term term, const TermSet &vars) const {
   return data.contains_var;
 }
 
-msat_term IC3Array::untime_axiom(msat_term axiom, msat_term target, msat_term proph)
+msat_term ProphIC3::untime_axiom(msat_term axiom, msat_term target, msat_term proph)
 {
   TermSet free_vars;
   get_free_vars(msat_env_, axiom, free_vars);
@@ -911,7 +911,7 @@ msat_term IC3Array::untime_axiom(msat_term axiom, msat_term target, msat_term pr
   return res;
 }
 
-bool IC3Array::reduce_timed_axioms(const ic3ia::TermSet & untimed_axioms,
+bool ProphIC3::reduce_timed_axioms(const ic3ia::TermSet & untimed_axioms,
                                    const std::vector<ic3ia::TermSet> & sorted_timed_axioms,
                                    ic3ia::TermSet & out_timed_axioms)
 {
@@ -1016,7 +1016,7 @@ bool IC3Array::reduce_timed_axioms(const ic3ia::TermSet & untimed_axioms,
   return true;
 }
 
-bool IC3Array::reduce_axioms(const TermSet & untimed_axioms,
+bool ProphIC3::reduce_axioms(const TermSet & untimed_axioms,
                              TermSet & out_untimed)
 {
 
@@ -1075,7 +1075,7 @@ bool IC3Array::reduce_axioms(const TermSet & untimed_axioms,
   }
 }
 
-void IC3Array::print_system(ic3ia::TransitionSystem & ts, std::string name) const
+void ProphIC3::print_system(ic3ia::TransitionSystem & ts, std::string name) const
 {
   msat_env env = ts.get_env();
   std::cout << "Printing Transition System: " << name << std::endl;

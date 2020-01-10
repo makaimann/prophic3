@@ -9,7 +9,7 @@
 
 using namespace std;
 using namespace ic3ia;
-using namespace ic3ia_array;
+using namespace prophic3;
 
 void print_terms(msat_env env, TermList l, const char * msg)
 {

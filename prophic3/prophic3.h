@@ -1,5 +1,5 @@
-#ifndef IC3IA_ARRAYS_H
-#define IC3IA_ARRAYS_H
+#ifndef PROPHIC3_H
+#define PROPHIC3_H
 
 #include "mathsat.h"
 #include "utils.h"
@@ -13,14 +13,14 @@
 #include "ltl.h"
 #include "utils.h"
 
-namespace ic3ia_array
+namespace prophic3
 {
-  class IC3Array : public ic3ia::Prover
+  class ProphIC3 : public ic3ia::Prover
   {
   public:
-    IC3Array(const ic3ia::TransitionSystem &ts, const ic3ia::Options &opts,
+    ProphIC3(const ic3ia::TransitionSystem &ts, const ic3ia::Options &opts,
              ic3ia::LiveEncoder &l2s, unsigned int verbosity);
-    ~IC3Array();
+    ~ProphIC3();
 
     // TODO: Implement these
     msat_truth_value prove();
@@ -109,7 +109,5 @@ namespace ic3ia_array
     void print_system(ic3ia::TransitionSystem & ts, std::string name) const;
   };
 }
-
-    
 
 #endif

@@ -7,7 +7,7 @@
 using namespace std;
 using namespace ic3ia;
 
-namespace ic3ia_array {
+namespace prophic3 {
 
 msat_term ArrayAxiomEnumerator::implies(msat_term antecedent, msat_term consequent)
 {
@@ -695,4 +695,4 @@ void ArrayAxiomEnumerator::collect_equalities(msat_term term, ic3ia::TermSet & s
   msat_visit_term(msat_env_, term, visit, &data);
 }
 
-} // namespace ic3ia_array
+} // namespace prophic3

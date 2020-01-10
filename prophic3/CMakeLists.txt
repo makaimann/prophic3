@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.1)
 
-project(ic3ia-arrays)
+project(prophic3)
 
 set(MSAT_HOME "${PROJECT_SOURCE_DIR}/../mathsat")
 set(IC3IA_HOME "${PROJECT_SOURCE_DIR}/../ic3ia")
@@ -10,7 +10,7 @@ include_directories(
   "${IC3IA_HOME}"
 )
 
-add_executable(ic3ia-arrays
+add_executable(prophic3
   "${IC3IA_HOME}/ts.cpp"
   "${IC3IA_HOME}/bmc.cpp"
   "${IC3IA_HOME}/utils.cpp"
@@ -24,11 +24,11 @@ add_executable(ic3ia-arrays
   "${PROJECT_SOURCE_DIR}/rewriter.cpp"
   "${PROJECT_SOURCE_DIR}/array_abstractor.cpp"
   "${PROJECT_SOURCE_DIR}/array_axiom_enumerator.cpp"
-  "${PROJECT_SOURCE_DIR}/ic3_arrays.cpp"
+  "${PROJECT_SOURCE_DIR}/prophic3.cpp"
   "${PROJECT_SOURCE_DIR}/history_refiner.cpp"
-  "${PROJECT_SOURCE_DIR}/ic3ia-arrays.cpp"
+  "${PROJECT_SOURCE_DIR}/main.cpp"
   )
 
-target_link_libraries(ic3ia-arrays PUBLIC "${MSAT_HOME}/lib/libmathsat.a" -static)
-target_link_libraries(ic3ia-arrays PUBLIC gmpxx -static)
-target_link_libraries(ic3ia-arrays PUBLIC gmp -static)
+target_link_libraries(prophic3 PUBLIC "${MSAT_HOME}/lib/libmathsat.a" -static)
+target_link_libraries(prophic3 PUBLIC gmpxx -static)
+target_link_libraries(prophic3 PUBLIC gmp -static)

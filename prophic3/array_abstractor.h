@@ -9,7 +9,7 @@ inline bool operator==(msat_type t0, const msat_type t1) {
   return msat_type_equals(t0, t1);
 }
 
-namespace ic3ia_array {
+namespace prophic3 {
 
 using TermTypeMap = std::unordered_map<msat_term, msat_type>;
 using TermDeclMap = std::unordered_map<msat_term, msat_decl>;
@@ -178,4 +178,4 @@ public:
     ic3ia::TermSet prop_free_vars_;
 };
 
-} // namespace ic3ia_array
+} // namespace prophic3
