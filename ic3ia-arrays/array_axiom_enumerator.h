@@ -25,22 +25,24 @@ public:
     // convenient to store them grouped by current and all for 1-step and 2-step
     // lemmas
     std::string typestr;
-    const TermTypeMap & orig_types = abstractor_.orig_types();
     msat_term base_idx; // gets assigned the actual var if it's wrapped in ubv_to_int
     for (auto idx : abstractor_.indices()) {
-      typestr = msat_type_repr(orig_types.at(idx));
+      typestr = msat_type_repr(abstractor_.get_orig_type(idx));
 
       // save state variable indices
       if (ts.only_cur(idx))
       {
         state_indices_[typestr].insert(idx);
+        all_indices_[typestr].insert(ts.next(idx));
       }
 
-      curr_indices_[typestr].insert(ts.cur(idx));
-      orig_indices_[typestr].insert(ts.cur(idx));
-      orig_indices_set_.insert(ts.cur(idx));
-      all_indices_[typestr].insert(ts.cur(idx));
-      all_indices_[typestr].insert(ts.next(idx));
+      if (!ts.contains_next(idx))
+      {
+        curr_indices_[typestr].insert(idx);
+      }
+      orig_indices_[typestr].insert(idx);
+      orig_indices_set_.insert(idx);
+      all_indices_[typestr].insert(idx);
     }
 
     // provide empty sets for types with no state indices
@@ -56,7 +58,7 @@ public:
     for (auto elem : abstractor_.witnesses())
     {
       msat_term w = elem.second;
-      typestr = msat_type_repr(orig_types.at(w));
+      typestr = msat_type_repr(abstractor_.get_orig_type(w));
       if (orig_indices_[typestr].find(w) != orig_indices_[typestr].end())
       {
         orig_indices_[typestr].erase(w);
