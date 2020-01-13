@@ -3,7 +3,7 @@
 using namespace std;
 using namespace ic3ia;
 
-namespace ic3ia_array {
+namespace prophic3 {
 
 msat_term HistoryRefiner::hist_var(msat_term t, size_t d, TermSet & created_vars) {
   t = abs_ts_.cur(t);
@@ -59,4 +59,4 @@ msat_term HistoryRefiner::hist_var(msat_term t, size_t d, TermSet & created_vars
   return hist_var;
 }
 
-} // namespace ic3ia_array
+} // namespace prophic3

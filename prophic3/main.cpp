@@ -11,11 +11,11 @@
 #include "rewriter.h"
 #include "array_axiom_enumerator.h"
 
-#include "ic3_arrays.h"
+#include "prophic3.h"
 
 using namespace std;
 using namespace ic3ia;
-using namespace ic3ia_array;
+using namespace prophic3;
 
 int main(int argc, const char **argv)
 {
@@ -48,10 +48,10 @@ int main(int argc, const char **argv)
   // TransitionSystem abs_ts = af.flatten_transition_system();
   // ArrayAbstractor aa(abs_ts);
   // abs_ts = aa.abstract_transition_system();
-  IC3Array ic3ia_array(product, opts, liveenc, opts.verbosity);
+  ProphIC3 prophic3(product, opts, liveenc, opts.verbosity);
 
   // TODO: finish implementing prove and uncomment this
-  msat_truth_value res = ic3ia_array.prove();
+  msat_truth_value res = prophic3.prove();
   if (res == MSAT_FALSE) {
     cout << "The property is false" << endl;
     cout << "unsat" << endl; // similar to spacer

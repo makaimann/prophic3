@@ -4,7 +4,7 @@
 
 #include "array_abstractor.h"
 
-namespace ic3ia_array {
+namespace prophic3 {
 class ProphecyRefiner {
 public:
   ProphecyRefiner(msat_env e, const ic3ia::TermSet i)
@@ -54,4 +54,4 @@ protected:
 
 };
 
-} // namespace ic3ia_array
+} // namespace prophic3

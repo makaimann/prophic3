@@ -2,7 +2,7 @@
 
 using namespace ic3ia;
 
-namespace ic3ia_array {
+namespace prophic3 {
 
 Rewriter::Rewriter(const TransitionSystem &ts) :
     msat_env_(ts.get_env()),
@@ -280,4 +280,4 @@ msat_term Rewriter::rewrite_array_ite(const msat_term t) {
   return cache_[t];
 }
 
-} // namespace ic3ia_array
+} // namespace prophic3

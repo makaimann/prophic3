@@ -3,7 +3,7 @@
 
 #include "ts.h"
 
-namespace ic3ia_array {
+namespace prophic3 {
 
   /** Rewrites the transition system in an equisatisfiable way
    *  simplifies the abstraction refinement loop by
@@ -36,4 +36,4 @@ private:
     ic3ia::TermMap new_vars_;
 };
 
-} // namespace ic3ia_array
+} // namespace prophic3

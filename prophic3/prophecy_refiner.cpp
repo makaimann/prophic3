@@ -3,7 +3,7 @@
 using namespace std;
 using namespace ic3ia;
 
-namespace ic3ia_array {
+namespace prophic3 {
 
 TermSet ProphecyRefiner::prophesize_prop(msat_term prop)
 {
@@ -122,4 +122,4 @@ TermSet ProphecyRefiner::prophesize_prop(msat_term prop, ic3ia::TermSet & target
   return proph_vars;
 }
 
-} // namespace ic3ia_array
+} // namespace prophic3

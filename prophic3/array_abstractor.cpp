@@ -6,7 +6,7 @@
 
 using namespace ic3ia;
 
-namespace ic3ia_array {
+namespace prophic3 {
 
 ArrayAbstractor::ArrayAbstractor(const TransitionSystem &ts, bool use_eq_uf, bool use_single_uf)
   : msat_env_(ts.get_env()), conc_ts_(ts), use_eq_uf_(use_eq_uf), use_single_uf_(use_single_uf), abs_ts_(msat_env_) {
@@ -714,4 +714,4 @@ void ArrayAbstractor::create_lambdas() {
   }
 }
 
-} // namespace ic3ia_array
+} // namespace prophic3

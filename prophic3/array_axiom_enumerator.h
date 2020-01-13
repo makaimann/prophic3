@@ -8,7 +8,7 @@
 
 #include "array_abstractor.h"
 
-namespace ic3ia_array {
+namespace prophic3 {
 class ArrayAxiomEnumerator {
 public:
   ArrayAxiomEnumerator(const ic3ia::TransitionSystem &ts,
@@ -188,6 +188,6 @@ private:
   void collect_equalities(msat_term term, ic3ia::TermSet & s);
 
 };
-  } // namespace ic3ia_array
+  } // namespace prophic3
 
 #endif
