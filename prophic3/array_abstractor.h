@@ -49,6 +49,7 @@ public:
     TermTypeMap &orig_types() { return orig_types_; };
     const ic3ia::TermSet &const_arrs() const { return const_arrs_; };
     const ic3ia::TermSet &stores() const { return stores_; };
+    ic3ia::TermSet &lambdas() { return lambdas_; };
     const ic3ia::TermSet &finite_domain_lambdas() const { return finite_domain_lambdas_; };
 
     msat_type get_orig_type(msat_term t) const
@@ -173,6 +174,7 @@ public:
     // maps abstract arrays to their write UF
     TermDeclMap write_ufs_;
 
+    ic3ia::TermSet lambdas_;
     ic3ia::TermSet finite_domain_lambdas_;
 
     ic3ia::TermSet prop_free_vars_;

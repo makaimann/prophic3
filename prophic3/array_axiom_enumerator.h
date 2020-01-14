@@ -81,6 +81,11 @@ public:
   ic3ia::TermSet const_array_axioms();
   ic3ia::TermSet store_axioms();
 
+  /** Enumerates untimeable axioms about
+   *  lambda index being different from all others of the same type
+   */
+  ic3ia::TermSet lambda_alldiff_axioms();
+
   /** Enumerate equality axioms over indices at all times
    *  un - the unroller to use for timing
    *  k - the maximum time-step (inclusive)

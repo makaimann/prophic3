@@ -43,7 +43,7 @@ TermList conjunctive_partition(msat_env e, msat_term top)
 }
 
 ProphIC3::ProphIC3(const ic3ia::TransitionSystem &ts, const ic3ia::Options &opts,
-		   ic3ia::LiveEncoder &l2s, unsigned int verbosity)
+                   ic3ia::LiveEncoder &l2s, unsigned int verbosity)
   : msat_env_(ts.get_env()),
     conc_ts_(ts),
     rw_(conc_ts_),
@@ -99,8 +99,8 @@ msat_truth_value ProphIC3::prove()
   // make free vars in the property as frozen -- prophecies
   const TermSet &prop_free_vars = aa_.prop_free_vars();
   std::cout << "Prop Free Vars " << prop_free_vars.size()
-	    << std::endl;
-  
+            << std::endl;
+
   // heuristic -- add prophecy variables for indices in property up front
   TermSet prop_indices = detect_indices(abs_ts_.prop());
   // frozen proph method takes a map (used later for retaining target info)
@@ -216,7 +216,7 @@ bool ProphIC3::fix_bmc()
     for(int i = 0; i < current_k_; ++i)
     {
       refinement_formula_ = msat_make_and(refiner_, refinement_formula_,
-					  un_.at_time(abs_ts_.trans(), i));
+                                          un_.at_time(abs_ts_.trans(), i));
     }
     refinement_formula_ = msat_make_and(refiner_, refinement_formula_,
                                         un_.at_time(bad, current_k_));
@@ -318,6 +318,44 @@ bool ProphIC3::fix_bmc()
       std::cout << "Found " << violated_axioms.size() << " violated untime-able axioms!"
                 << std::endl;
 
+      // if there weren't any regular timed axioms or
+      // history refinements possible,
+      // try the lambda refinement (this is untime-able)
+      if (!found_untimed_axioms)
+      {
+        std::cout << "Trying lazy lambda all different refinement!" << std::endl;
+        for (auto ax : aae_.lambda_alldiff_axioms())
+        {
+          for(size_t k = 0; k <= current_k_; k++)
+          {
+            timed_axiom = un_.at_time(ax, k);
+            untime_cache[timed_axiom] = ax;
+
+            // had issues trying to evaluate the model on a constant true
+            // which can sometimes occur depending on the options
+            if (msat_term_is_true(refiner_, timed_axiom))
+            {
+              continue;
+            }
+
+            val = msat_get_model_value(refiner_, timed_axiom);
+            if (MSAT_ERROR_TERM(val))
+            {
+              std::cerr << "Got error term when evaluating model on "
+                        << msat_to_smtlib2_term(refiner_, timed_axiom) << std::endl;
+              throw std::exception();
+            }
+
+            if (msat_term_is_false(refiner_, val)) {
+              std::cout << "adding " << msat_to_smtlib2_term(msat_env_, timed_axiom) << std::endl;
+              violated_axioms.insert(timed_axiom);
+              untimed_axioms_to_add.insert(ax);
+            }
+          }
+        }
+        found_untimed_axioms = violated_axioms.size();
+      }
+
       if (!found_untimed_axioms)
       {
         for(auto axiom_vec : timed_axioms)
@@ -329,17 +367,17 @@ bool ProphIC3::fix_bmc()
 
           for (size_t i = 0; i < axiom_vec.size(); ++i)
           {
-	    if (opts_.max_array_axioms > 0 &&
-		lemma_cnt >= opts_.max_array_axioms) {
-	      break;
-	    }
+            if (opts_.max_array_axioms > 0 &&
+                lemma_cnt >= opts_.max_array_axioms) {
+              break;
+            }
 
             for (auto timed_axiom : axiom_vec[i])
             {
-	      if (opts_.max_array_axioms > 0 &&
-		  lemma_cnt >= opts_.max_array_axioms) {
-		break;
-	      }
+              if (opts_.max_array_axioms > 0 &&
+                  lemma_cnt >= opts_.max_array_axioms) {
+                break;
+              }
 
               //std::cout << "Checking timed axiom: " << msat_to_smtlib2_term(msat_env_, timed_axiom) << std::endl;
 
@@ -364,7 +402,7 @@ bool ProphIC3::fix_bmc()
                 //   std::endl;
                 violated_axioms.insert(timed_axiom);
                 timed_axioms_to_refine.insert(timed_axiom);
-		++lemma_cnt;
+                ++lemma_cnt;
               }
             }
           }
@@ -375,8 +413,8 @@ bool ProphIC3::fix_bmc()
       }
 
       if (!found_untimed_axioms & !found_timed_axioms) {
-	/* model for the witness */
-	msat_model model = msat_get_model(refiner_);
+        /* model for the witness */
+        msat_model model = msat_get_model(refiner_);
         print_witness(model, current_k_, aae_);
         // TODO: Use real exceptions
         std::cout << "It looks like there's a concrete counter-example (or some axioms are missing)" << std::endl;
@@ -388,22 +426,22 @@ bool ProphIC3::fix_bmc()
       }
 
       for (auto ax : violated_axioms) {
-	if (opts_.unsatcore_array_refiner) {
-	  msat_term l = lbl(ax);
-	  labels.push_back(l);
-	  label2axiom.push_back(ax);
-	  msat_assert_formula(refiner_, msat_make_or(refiner_, msat_make_not(refiner_, l), ax));
-	} else {
-	  msat_assert_formula(refiner_, ax);
-	}
+        if (opts_.unsatcore_array_refiner) {
+          msat_term l = lbl(ax);
+          labels.push_back(l);
+          label2axiom.push_back(ax);
+          msat_assert_formula(refiner_, msat_make_or(refiner_, msat_make_not(refiner_, l), ax));
+        } else {
+          msat_assert_formula(refiner_, ax);
+        }
       }
 
       if (opts_.unsatcore_array_refiner) {
-	broken = msat_solve_with_assumptions(refiner_, &labels[0], labels.size());
+        broken = msat_solve_with_assumptions(refiner_, &labels[0], labels.size());
       } else {
-	broken = msat_solve(refiner_) == MSAT_SAT;
+        broken = msat_solve(refiner_) == MSAT_SAT;
       }
-      
+
       violated_axioms.clear();
     }
 
@@ -441,17 +479,17 @@ bool ProphIC3::fix_bmc()
       msat_free(uc);
 
       std::cout << "REFINER-UNSATCORE SIZE " << core.size() << std::endl;
-      
+
       for (size_t i = 0; i < label2axiom.size(); ++i) {
-	msat_term a = label2axiom[i];
-	msat_term l = labels[i];
- 	if (core.find(l) == core.end()) {
-	  untimed_axioms_to_add.erase(a);
-	  timed_axioms_to_refine.erase(a);
-	}
+        msat_term a = label2axiom[i];
+        msat_term l = labels[i];
+        if (core.find(l) == core.end()) {
+          untimed_axioms_to_add.erase(a);
+          timed_axioms_to_refine.erase(a);
+        }
       }
     }
-    
+
     /************************************* Fix the transition system ************************************/
 
     TermSet out_timed_axioms;
@@ -840,21 +878,21 @@ bool ProphIC3::contains_vars(msat_term term, const TermSet &vars) const {
 
   auto visit = [](msat_env e, msat_term t, int preorder,
                   void *data) -> msat_visit_status {
-    Data *d = static_cast<Data *>(data);
-    // a variable is a term with no children and no built-in
-    // interpretation
-    if (preorder && msat_term_arity(t) == 0 &&
-        msat_decl_get_tag(e, msat_term_get_decl(t)) == MSAT_TAG_UNKNOWN &&
-        !msat_term_is_number(e, t)) {
+                 Data *d = static_cast<Data *>(data);
+                 // a variable is a term with no children and no built-in
+                 // interpretation
+                 if (preorder && msat_term_arity(t) == 0 &&
+                     msat_decl_get_tag(e, msat_term_get_decl(t)) == MSAT_TAG_UNKNOWN &&
+                     !msat_term_is_number(e, t)) {
 
-      // check if it's in the var set
-      if (d->vars.find(t) != d->vars.end()) {
-        d->contains_var = true;
-        return MSAT_VISIT_ABORT;
-      }
-    }
-    return MSAT_VISIT_PROCESS;
-  };
+                   // check if it's in the var set
+                   if (d->vars.find(t) != d->vars.end()) {
+                     d->contains_var = true;
+                     return MSAT_VISIT_ABORT;
+                   }
+                 }
+                 return MSAT_VISIT_PROCESS;
+               };
 
   Data data(vars);
   msat_visit_term(msat_env_, term, visit, &data);
@@ -956,7 +994,7 @@ bool ProphIC3::reduce_timed_axioms(const ic3ia::TermSet & untimed_axioms,
     msat_term aa = msat_make_true(msat_env_);
     for (auto ax : ax_set)
     {
-        aa = msat_make_and(msat_env_, aa, ax);
+      aa = msat_make_and(msat_env_, aa, ax);
     }
     // label -> constraints
     msat_assert_formula(reducer_,
