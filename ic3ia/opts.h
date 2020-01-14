@@ -96,7 +96,7 @@ struct Options {
         max_array_axioms = 0;
         multi_uf = false;
         unsatcore_array_refiner = false;
-        track_proph_vars_pred = false;
+        track_proph_vars_pred = true;
     }
 };
 
