@@ -203,7 +203,7 @@ ic3ia::TermSet ArrayAxiomEnumerator::lambda_alldiff_axioms()
     typestr = msat_type_repr(orig_types.at(l));
     for (auto i : all_indices_.at(typestr))
     {
-      if (lambdas.find(ts_.cur(i)) == lambdas.end())
+      if (ts_.cur(i) != l)
       {
         axioms.insert(msat_make_not(msat_env_,
                                     msat_make_eq(msat_env_, i, l)));
