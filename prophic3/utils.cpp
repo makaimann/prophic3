@@ -240,6 +240,8 @@ Options get_options(int argc, const char **argv)
           ret.use_single_uf = true;
         } else if (a == "-unsatcore-array-refiner") {
           ret.unsatcore_array_refiner = true;
+        } else if (a == "-track-proph-vars-pred") {
+          ret.track_proph_vars_pred = true;
         } else if (a == "-h" || a == "-help" || a == "--help") {
             std::cout << "USAGE: " << argv[0] << " [OPTIONS] FILENAME.vmt"
                       << "\n\n   -v N : set verbosity level"
@@ -278,6 +280,8 @@ Options get_options(int argc, const char **argv)
                       << "\n   -use-single-uf : use a single UF per array type (without this option "
                       << "it's per array variable)"
                       << "\n   -unsatcore-array-refiner : use unsatcore in the array refiner to filter axioms "
+                      << "\n -track-proph-vars-pred : don't throw away predicates while minimizing if they "
+                      << "contain prophecy variables"
                       << std::endl;
             exit(0);
             break;

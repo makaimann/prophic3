@@ -142,6 +142,14 @@ msat_truth_value ProphIC3::prove()
     std::cout << "Running IC3" << std::endl;
     IC3 ic3(abs_ts_, opts_, l2s_);
     ic3.set_initial_predicates(preds_);
+    // tell ic3 about imporant variables (prophecy variables)
+    for (auto v : prop_free_vars) {
+      ic3.add_imp_pred_var(v);
+    }
+    for (auto v : frozen_proph_vars_) {
+      ic3.add_imp_pred_var(v.first);
+    }
+
     res = ic3.prove();
 
     if (res == MSAT_FALSE)

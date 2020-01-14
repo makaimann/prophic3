@@ -60,6 +60,7 @@ struct Options {
     int max_array_axioms;
     bool use_single_uf;
     bool unsatcore_array_refiner;
+    bool track_proph_vars_pred;
 
     Options()
     {
@@ -94,7 +95,8 @@ struct Options {
         use_hist_eq_initial_preds = true;
         max_array_axioms = 0;
         use_single_uf = false;
-	unsatcore_array_refiner = false;
+        unsatcore_array_refiner = false;
+        track_proph_vars_pred = false;
     }
 };
 
