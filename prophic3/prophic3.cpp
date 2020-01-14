@@ -47,7 +47,7 @@ ProphIC3::ProphIC3(const ic3ia::TransitionSystem &ts, const ic3ia::Options &opts
   : msat_env_(ts.get_env()),
     conc_ts_(ts),
     rw_(conc_ts_),
-    aa_(rw_.rewrite_transition_system(), opts.use_uf_for_arr_eq, opts.use_single_uf),
+    aa_(rw_.rewrite_transition_system(), opts.use_uf_for_arr_eq, opts.multi_uf),
     abs_ts_(aa_.abstract_transition_system()),
     aae_(abs_ts_, aa_),
     hr_(abs_ts_),

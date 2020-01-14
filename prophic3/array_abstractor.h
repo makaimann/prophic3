@@ -32,7 +32,7 @@ void detect_arrays(msat_env env, msat_term term, ic3ia::TermSet & out_const_arrs
 
 class ArrayAbstractor {
 public:
-    ArrayAbstractor(const ic3ia::TransitionSystem &ts, bool use_eq_uf, bool use_single_uf);
+    ArrayAbstractor(const ic3ia::TransitionSystem &ts, bool use_eq_uf, bool use_multi_uf);
     ~ArrayAbstractor();
 
     const ic3ia::TransitionSystem &abstract_transition_system() const
@@ -66,7 +66,12 @@ public:
     /* returns the read function for array arr */
     msat_decl get_read(msat_term arr) const
     {
-      if (use_single_uf_)
+      if (use_multi_uf_)
+      {
+        assert(read_ufs_.find(arr) != read_ufs_.end());
+        return read_ufs_.at(arr);
+      }
+      else
       {
         assert(orig_types_.find(arr) != orig_types_.end());
         std::string typestr = msat_type_repr(orig_types_.at(arr));
@@ -79,27 +84,22 @@ public:
         }
         return read;
       }
-      else
-      {
-        assert(read_ufs_.find(arr) != read_ufs_.end());
-        return read_ufs_.at(arr);
-      }
     }
 
     /* returns the write function for array arr */
     msat_decl get_write(msat_term arr) const
     {
-      if (use_single_uf_)
+      if (use_multi_uf_)
+      {
+        assert(write_ufs_.find(arr) != write_ufs_.end());
+        return write_ufs_.at(arr);
+      }
+      else
       {
         assert(orig_types_.find(arr) != orig_types_.end());
         std::string typestr = msat_type_repr(orig_types_.at(arr));
         assert(type2write_.find(typestr) != type2write_.end());
         return type2write_.at(typestr);
-      }
-      else
-      {
-        assert(write_ufs_.find(arr) != write_ufs_.end());
-        return write_ufs_.at(arr);
       }
     }
 
@@ -130,9 +130,9 @@ public:
     // sets whether array equality is abstracted with a UF
     // or if it's an equality between the abstract arrays (of uninterpreted sort)
     bool use_eq_uf_;
-    // if true, uses a single read/write UF per array *sort*
-    // if false, uses a read/write UF per array *variable*
-    bool use_single_uf_;
+    // if false, uses a single read/write UF per array *sort*
+    // if true, uses a read/write UF per array *variable*
+    bool use_multi_uf_;
 
     ic3ia::TransitionSystem abs_ts_;
 
@@ -159,7 +159,7 @@ public:
     // set of store equalities -- note: these have been flattened
     ic3ia::TermSet stores_;
 
-    // these are used if use_single_uf is true
+    // these are used if use_multi_uf is false
     std::unordered_map<std::string, msat_decl> type2read_;
     std::unordered_map<std::string, msat_decl> type2write_;
 

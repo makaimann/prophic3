@@ -236,8 +236,8 @@ Options get_options(int argc, const char **argv)
           ret.use_hist_eq_initial_preds = false;
         } else if (a == "-max-array-axioms") {
           ok = getint(++i, ret.max_array_axioms);
-        } else if (a == "-use-single-uf") {
-          ret.use_single_uf = true;
+        } else if (a == "-multi-uf") {
+          ret.multi_uf = true;
         } else if (a == "-unsatcore-array-refiner") {
           ret.unsatcore_array_refiner = true;
         } else if (a == "-track-proph-vars-pred") {
@@ -277,8 +277,7 @@ Options get_options(int argc, const char **argv)
                       << "\n   -no-eq-uf : use actual equalities between abstracted arrays"
                       << "\n   -no-hist-eq-preds : don't use history equalities as initial predicates"
                       << "\n   -max-array-axioms : maximum number of array axioms per iteration (per BMC model)"
-                      << "\n   -use-single-uf : use a single UF per array type (without this option "
-                      << "it's per array variable)"
+                      << "\n   -multi-uf : use a read/write UF per array variable instead of per array type"
                       << "\n   -unsatcore-array-refiner : use unsatcore in the array refiner to filter axioms "
                       << "\n -track-proph-vars-pred : don't throw away predicates while minimizing if they "
                       << "contain prophecy variables"
