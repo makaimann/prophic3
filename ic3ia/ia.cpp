@@ -377,6 +377,7 @@ bool PredRefMinimizer::operator()(msat_term trans,
         return true;
     } else {
         // HACK just return all the predicates in this case
+        newpreds.clear();
         newpreds.insert(curpreds.begin(), curpreds.end());
         return newpreds.size();
     }
