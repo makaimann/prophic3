@@ -8,8 +8,8 @@ using namespace ic3ia;
 
 namespace prophic3 {
 
-ArrayAbstractor::ArrayAbstractor(const TransitionSystem &ts, bool use_eq_uf, bool use_single_uf)
-  : msat_env_(ts.get_env()), conc_ts_(ts), use_eq_uf_(use_eq_uf), use_single_uf_(use_single_uf), abs_ts_(msat_env_) {
+ArrayAbstractor::ArrayAbstractor(const TransitionSystem &ts, bool use_eq_uf, bool use_multi_uf)
+  : msat_env_(ts.get_env()), conc_ts_(ts), use_eq_uf_(use_eq_uf), use_multi_uf_(use_multi_uf), abs_ts_(msat_env_) {
   do_abstraction();
 }
 
@@ -240,9 +240,9 @@ void ArrayAbstractor::abstract_array_terms()
   for (auto arr : arrays)
   {
     // only works for multi-dimensional arrays with this configuration
-    if (msat_term_is_array_read(msat_env_, arr) && !use_single_uf_)
+    if (msat_term_is_array_read(msat_env_, arr) && use_multi_uf_)
     {
-      std::cout << "multi-dimensional array not supported except with option -use-single-uf" << std::endl;
+      std::cout << "multi-dimensional array not supported with option -multi-uf" << std::endl;
       throw 12;
     }
 
@@ -288,7 +288,7 @@ void ArrayAbstractor::abstract_array_terms()
     // keep track of the original type
     orig_types_[arr_abs] = arr_type;
 
-    if (!use_single_uf_)
+    if (use_multi_uf_)
     {
       // create a read function for these arrays
       msat_type idxtype = msat_get_integer_type(msat_env_);
@@ -361,7 +361,7 @@ msat_type ArrayAbstractor::abstract_array_type(msat_type t)
                                                               eq_funtype);
 
     // create read and write functions
-    if (use_single_uf_)
+    if (!use_multi_uf_)
     {
       // create a read function for these arrays
       msat_type idxtype = msat_get_integer_type(msat_env_);
