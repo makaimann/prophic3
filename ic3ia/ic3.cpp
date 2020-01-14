@@ -170,6 +170,12 @@ void IC3::print_stats() const
 }
 
 
+void IC3::add_imp_pred_var(msat_term v)
+{
+    imp_pred_vars_.insert(v);
+}
+
+
 //-----------------------------------------------------------------------------
 // major methods
 //-----------------------------------------------------------------------------
@@ -593,7 +599,7 @@ msat_truth_value IC3::refine_abstraction(std::vector<TermList> &cex)
         }
     }
 
-    if (ref_.refine(cex)) {
+    if (ref_.refine(cex, &imp_pred_vars_)) {
         // if refinement is successful, we extract new predicates from the
         // sequence interpolant
         int c = 0;

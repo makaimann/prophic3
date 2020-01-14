@@ -25,6 +25,36 @@
 
 namespace ic3ia {
 
+static bool contains_var(msat_env e, msat_term p, const TermSet & imp_vars)
+{
+  struct Data {
+    const TermSet &imp_vars;
+    bool res;
+    Data(const TermSet &vars) : imp_vars(vars), res(false) {};
+  };
+  auto visit = [](msat_env e, msat_term t, int preorder,
+                  void *data) -> msat_visit_status {
+                 Data *d = static_cast<Data *>(data);
+                 // a variable is a term with no children and no built-in
+                 // interpretation
+                 if (preorder && msat_term_arity(t) == 0 &&
+                     msat_decl_get_tag(e, msat_term_get_decl(t)) == MSAT_TAG_UNKNOWN &&
+                     !msat_term_is_number(e, t)) {
+                   if (d->imp_vars.find(t) != d->imp_vars.end()) {
+                     d->res = true;
+                     return MSAT_VISIT_ABORT;
+                   }
+                 }
+                 return MSAT_VISIT_PROCESS;
+               };
+
+  Data data(imp_vars);
+  msat_visit_term(e, p, visit, &data);
+
+  return data.res;
+}
+
+
 //-----------------------------------------------------------------------------
 // Abstractor
 //-----------------------------------------------------------------------------
@@ -119,7 +149,7 @@ Refiner::~Refiner()
 }
 
 
-bool Refiner::refine(const std::vector<TermList> &cex)
+bool Refiner::refine(const std::vector<TermList> &cex, const TermSet *imp_vars)
 {
     // reset the interpolating solver
     msat_reset_env(solver_);
@@ -156,7 +186,7 @@ bool Refiner::refine(const std::vector<TermList> &cex)
         // sequence (after proper untiming -- see Unroller::untime())
         extract_predicates(solver_);
         if (minpreds_) {
-            minimize_predicates(cex);
+           minimize_predicates(cex, imp_vars);
         }
     } else {
         logger(3) << "counterexample is real" << endlog;
@@ -227,9 +257,9 @@ void Refiner::add_predicate(msat_term p)
 }
 
 
-void Refiner::minimize_predicates(const std::vector<TermList> &cex)
+void Refiner::minimize_predicates(const std::vector<TermList> &cex, const TermSet *imp_vars)
 {
-    bool ok = predminimizer_(ts_.trans(), cex, predabs_, preds_);
+    bool ok = predminimizer_(ts_.trans(), cex, predabs_, preds_, imp_vars);
     assert(ok);
 }
 
@@ -252,6 +282,7 @@ PredRefMinimizer::PredRefMinimizer(const TransitionSystem &ts,
         msat_set_option(cfg, "debug.api_call_trace", "1");
         msat_set_option(cfg, "debug.api_call_trace_filename", name.c_str());
     }
+    track_proph_vars_pred = opts.track_proph_vars_pred;
     minsolver_ = msat_create_shared_env(cfg, ts_.get_env());
     msat_destroy_config(cfg);
 }
@@ -267,7 +298,8 @@ PredRefMinimizer::~PredRefMinimizer()
 
 bool PredRefMinimizer::operator()(msat_term trans,
                                   const std::vector<TermList> &cex,
-                                  msat_term predabs, TermSet &newpreds)
+                                  msat_term predabs, TermSet &newpreds,
+                                  const TermSet *imp_vars)
 {
     msat_env env = minsolver_;
     msat_reset_env(env);
@@ -296,7 +328,7 @@ bool PredRefMinimizer::operator()(msat_term trans,
 
     TermList curpreds(newpreds.begin(), newpreds.end());
     std::shuffle(curpreds.begin(), curpreds.end(), rng_);
-    
+
     for (msat_term p : curpreds) {
         msat_term np = ts_.next(p);
         msat_term ap = abs_.abstract(np);
@@ -324,6 +356,9 @@ bool PredRefMinimizer::operator()(msat_term trans,
             msat_term p = curpreds[i];
             msat_term l = labels[i];
             if (core.find(l) != core.end()) {
+                newpreds.insert(p);
+            } else if (track_proph_vars_pred &&
+                       imp_vars != NULL && contains_var(env, p, *imp_vars)) {
                 newpreds.insert(p);
             }
         }

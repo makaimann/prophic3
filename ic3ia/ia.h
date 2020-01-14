@@ -65,7 +65,8 @@ public:
     ~PredRefMinimizer();
     
     bool operator()(msat_term trans, const std::vector<TermList> &cex,
-                    msat_term predabs, TermSet &newpreds);
+                    msat_term predabs, TermSet &newpreds,
+                    const TermSet *imp_vars = NULL);
 
 private:
     const TransitionSystem &ts_;
@@ -81,6 +82,8 @@ private:
     
     msat_env minsolver_;
     ///< the solver for predicate minimization
+
+    bool track_proph_vars_pred;
 };
 
 
@@ -92,7 +95,7 @@ public:
     Refiner(const TransitionSystem &ts, const Options &opts, Abstractor &abs);
     ~Refiner();
 
-    bool refine(const std::vector<TermList> &cex);
+    bool refine(const std::vector<TermList> &cex, const TermSet *imp_vars=NULL);
     ///< try to refine the given counterexample trace. If successful, computes
     ///< a sequence interpolant for the trace. Otherwise, a concrete
     ///< counterexample trace is generated
@@ -111,7 +114,7 @@ public:
 
 private:
     void extract_predicates(msat_env env);
-    void minimize_predicates(const std::vector<TermList> &cex);
+    void minimize_predicates(const std::vector<TermList> &cex, const TermSet *imp_vars=NULL);
     
     const TransitionSystem &ts_;
     ///< the input transition system

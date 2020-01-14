@@ -63,7 +63,11 @@ public:
 
     void print_stats() const;
     ///< print search statistics on stdout
-    
+
+    void add_imp_pred_var(msat_term v);
+    ////< adds a variable that is important to track with implicit predicate
+    ////< abstraction
+
 private:
     //------------------------------------------------------------------------
     // internal data structures
@@ -78,6 +82,7 @@ private:
     typedef std::vector<Frame> FrameList;
     ///< the trace F is a vector of frames
 
+  
     /**
      * A proof obligation is a pair <C,k> where C is a bad cube to block and k
      * is a position in the current trace. The pair represents the relative
@@ -358,6 +363,9 @@ private:
     LiveRefiner liveref_; ///< refiner for liveness properties
     RankRelList rankrels_; ///< list of ranking relations used in the encoding
     TermSet livepreds_; ///< set of predicates for the abstract L2S
+
+    TermSet imp_pred_vars_; ///< set of variables that are important to track in
+                            ///the implicit abstraction
 
     //------------------------------------------------------------------------
     // statistics
