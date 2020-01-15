@@ -485,7 +485,10 @@ bool ProphIC3::fix_bmc()
         msat_term l = labels[i];
         if (core.find(l) == core.end()) {
           untimed_axioms_to_add.erase(a);
-          timed_axioms_to_refine.erase(a);
+          // HACK let the reduce_timed_axioms procedure handle these
+          //      it will work harder to minimize the number of
+          //      introduced auxiliary variables
+          // timed_axioms_to_refine.erase(a);
         }
       }
     }
