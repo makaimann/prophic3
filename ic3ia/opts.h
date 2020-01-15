@@ -61,6 +61,7 @@ struct Options {
     bool multi_uf;
     bool unsatcore_array_refiner;
     bool track_proph_vars_pred;
+    bool axiom_reduction;
 
     Options()
     {
@@ -97,6 +98,7 @@ struct Options {
         multi_uf = false;
         unsatcore_array_refiner = true;
         track_proph_vars_pred = true;
+        axiom_reduction = true;
     }
 };
 
