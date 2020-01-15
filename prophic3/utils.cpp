@@ -238,8 +238,8 @@ Options get_options(int argc, const char **argv)
           ok = getint(++i, ret.max_array_axioms);
         } else if (a == "-multi-uf") {
           ret.multi_uf = true;
-        } else if (a == "-unsatcore-array-refiner") {
-          ret.unsatcore_array_refiner = true;
+        } else if (a == "-no-unsatcore-array-refiner") {
+          ret.unsatcore_array_refiner = false;
         } else if (a == "-no-track-proph-vars-pred") {
           ret.track_proph_vars_pred = false;
         } else if (a == "-h" || a == "-help" || a == "--help") {
@@ -278,9 +278,8 @@ Options get_options(int argc, const char **argv)
                       << "\n   -no-hist-eq-preds : don't use history equalities as initial predicates"
                       << "\n   -max-array-axioms : maximum number of array axioms per iteration (per BMC model)"
                       << "\n   -multi-uf : use a read/write UF per array variable instead of per array type"
-                      << "\n   -unsatcore-array-refiner : use unsatcore in the array refiner to filter axioms "
-                      << "\n -track-proph-vars-pred : don't throw away predicates while minimizing if they "
-                      << "contain prophecy variables"
+                      << "\n   -no-unsatcore-array-refiner : don't use unsatcore in the array refiner to filter axioms "
+                      << "\n   -no-track-proph-vars-pred : don't track prophecy variables in predicate minimizer"
                       << std::endl;
             exit(0);
             break;
