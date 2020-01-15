@@ -661,7 +661,6 @@ void ArrayAbstractor::create_lambdas() {
     }
   }
 
-  TermTypeMap lambdas;
   for (auto elem : idx_types) {
     msat_type _type = elem.second;
     std::string name = "arrlambda_" + std::to_string(lambda_id_++);
@@ -669,6 +668,7 @@ void ArrayAbstractor::create_lambdas() {
                                                   name.c_str(),
                                                   msat_get_integer_type(msat_env_));
     msat_term lambda = msat_make_constant(msat_env_, lambda_decl);
+    lambdas_.insert(lambda);
     msat_decl lambda_declN = msat_declare_function(msat_env_,
                                                    (name + ".next").c_str(),
                                                    msat_get_integer_type(msat_env_));
@@ -676,23 +676,6 @@ void ArrayAbstractor::create_lambdas() {
     abs_ts_.add_statevar(lambda, lambdaN);
     abs_ts_.add_trans(msat_make_equal(msat_env_, lambda,
                                       lambdaN)); // lambda is a frozen var
-
-    // enforce that it's different from all other indices
-    // TODO: optimization idea -- use strictly less than instead of not equals
-    // for unbounded domains
-    //       can always find a value in that case
-    msat_term alldiff = msat_make_true(msat_env_);
-    for (auto i : indices_) {
-      // only if the sorts match
-      if (orig_types_[i] == _type) {
-        alldiff = msat_make_and(
-                                msat_env_, alldiff,
-                                msat_make_not(msat_env_, msat_make_equal(msat_env_, lambda, i)));
-      }
-    }
-    abs_ts_.add_trans(alldiff);
-    // add next version (should be different in all time-steps)
-    abs_ts_.add_trans(abs_ts_.next(alldiff));
 
     // store original sort (might be the same if it's already an integer)
     orig_types_[lambda] = _type;
