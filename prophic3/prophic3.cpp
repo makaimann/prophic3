@@ -426,7 +426,7 @@ bool ProphIC3::fix_bmc()
       }
 
       for (auto ax : violated_axioms) {
-        if (opts_.unsatcore_array_refiner) {
+        if (opts_.unsatcore_array_refiner && opts_.axiom_reduction) {
           msat_term l = lbl(ax);
           labels.push_back(l);
           label2axiom.push_back(ax);
@@ -471,72 +471,90 @@ bool ProphIC3::fix_bmc()
       }
     }
 
-    if (opts_.unsatcore_array_refiner) {
-      size_t ucsz = 0;
-      msat_term *uc = msat_get_unsat_assumptions(refiner_, &ucsz);
-      assert(uc);
-      TermSet core(uc, uc+ucsz);
-      msat_free(uc);
+    /************************************* Reduce the axioms ************************************/
+    TermSet red_untimed_axioms;
+    TermSet red_timed_axioms;
 
-      std::cout << "REFINER-UNSATCORE SIZE " << core.size() << std::endl;
-
-      for (size_t i = 0; i < label2axiom.size(); ++i) {
-        msat_term a = label2axiom[i];
-        msat_term l = labels[i];
-        if (core.find(l) == core.end()) {
-          untimed_axioms_to_add.erase(a);
-          timed_axioms_to_refine.erase(a);
-        }
-      }
-    }
-
-    /************************************* Fix the transition system ************************************/
-
-    TermSet out_timed_axioms;
-    if (timed_axioms_to_refine.size())
+    if (opts_.axiom_reduction)
     {
-      // use map to sort by distance from safety violation
-      std::map<int, std::map<msat_term, ic3ia::TermSet>> sorted_map;
-      for (auto timed_ax : timed_axioms_to_refine)
-      {
-        msat_term tmp_idx = aae_.get_index(timed_ax);
-        int delay_amount = current_k_ - un_.get_time(tmp_idx);
-        msat_term untimed_idx = un_.untime(tmp_idx);
-        sorted_map[delay_amount][untimed_idx].insert(timed_ax);
-      }
+      if (opts_.unsatcore_array_refiner) {
+        size_t ucsz = 0;
+        msat_term *uc = msat_get_unsat_assumptions(refiner_, &ucsz);
+        assert(uc);
+        TermSet core(uc, uc+ucsz);
+        msat_free(uc);
 
-      // place axiom sets in a vector
-      // relying on iteration order for sortedness
-      std::vector<ic3ia::TermSet> sorted_timed_axioms;
-      for (auto elem0 : sorted_map)
-      {
-        for (auto elem1 : elem0.second)
-        {
-          sorted_timed_axioms.push_back(elem1.second);
+        std::cout << "REFINER-UNSATCORE SIZE " << core.size() << std::endl;
+
+        for (size_t i = 0; i < label2axiom.size(); ++i) {
+          msat_term a = label2axiom[i];
+          msat_term l = labels[i];
+          if (core.find(l) == core.end()) {
+            untimed_axioms_to_add.erase(a);
+            // HACK let the reduce_timed_axioms procedure handle these
+            //      it will work harder to minimize the number of
+            //      introduced auxiliary variables
+            // timed_axioms_to_refine.erase(a);
+          }
         }
       }
 
-      bool ok = reduce_timed_axioms(untimed_axioms_to_add,
-                                    sorted_timed_axioms, out_timed_axioms);
-      assert(ok);
+      if (timed_axioms_to_refine.size())
+      {
+        // use map to sort by distance from safety violation
+        std::map<int, std::map<msat_term, ic3ia::TermSet>> sorted_map;
+        for (auto timed_ax : timed_axioms_to_refine)
+        {
+          msat_term tmp_idx = aae_.get_index(timed_ax);
+          int delay_amount = current_k_ - un_.get_time(tmp_idx);
+          msat_term untimed_idx = un_.untime(tmp_idx);
+          sorted_map[delay_amount][untimed_idx].insert(timed_ax);
+        }
 
-      // add prophecy variables but not axioms
-      // don't refine with untimed axioms search for them again
-      prophesize_abs_ts(out_timed_axioms, false);
+        // place axiom sets in a vector
+        // relying on iteration order for sortedness
+        std::vector<ic3ia::TermSet> sorted_timed_axioms;
+        for (auto elem0 : sorted_map)
+        {
+          for (auto elem1 : elem0.second)
+          {
+            sorted_timed_axioms.push_back(elem1.second);
+          }
+        }
 
-      // continue with the same k
-      cont = true;
+        bool ok = reduce_timed_axioms(untimed_axioms_to_add,
+                                      sorted_timed_axioms, red_timed_axioms);
+        assert(ok);
+
+        // continue with the same k
+        cont = true;
+      }
+      else
+      {
+        bool ok = reduce_axioms(untimed_axioms_to_add, red_untimed_axioms);
+        assert(ok);
+
+        // heuristic -- don't stop at initial state even if you didn't need to add axioms
+        cont = axioms_added || (current_k_ == 0);
+      }
     }
     else
     {
-      // Reduce the axioms
-      TermSet red_untimed_axioms;
-      bool ok = reduce_axioms(untimed_axioms_to_add, red_untimed_axioms);
-      assert(ok);
-      refine_abs_ts(red_untimed_axioms);
+      // not reducing axioms
+      red_timed_axioms = timed_axioms_to_refine;
+      red_untimed_axioms = untimed_axioms_to_add;
+    }
 
-      // heuristic -- don't stop at initial state even if you didn't need to add axioms
-      cont = axioms_added || (current_k_ == 0);
+    /************************************* Fix the transition system ************************************/
+    if (red_timed_axioms.size()) {
+      // add prophecy variables but not axioms
+      // don't refine with untimed axioms search for them again
+      prophesize_abs_ts(red_timed_axioms, false);
+      // don't update k, should come back and find more untimeable axioms at the same k
+    }
+    else {
+      refine_abs_ts(red_untimed_axioms);
+      // only update k if we're continuing
       current_k_ += cont ? 1 : 0;
     }
 
