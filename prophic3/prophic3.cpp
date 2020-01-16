@@ -426,7 +426,7 @@ bool ProphIC3::fix_bmc()
       }
 
       for (auto ax : violated_axioms) {
-        if (opts_.unsatcore_array_refiner) {
+        if (opts_.unsatcore_array_refiner && opts_.axiom_reduction) {
           msat_term l = lbl(ax);
           labels.push_back(l);
           label2axiom.push_back(ax);
