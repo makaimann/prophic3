@@ -550,12 +550,13 @@ bool ProphIC3::fix_bmc()
       // add prophecy variables but not axioms
       // don't refine with untimed axioms search for them again
       prophesize_abs_ts(red_timed_axioms, false);
+      // don't update k, should come back and find more untimeable axioms at the same k
     }
     else {
       refine_abs_ts(red_untimed_axioms);
+      // only update k if we're continuing
+      current_k_ += cont ? 1 : 0;
     }
-
-    current_k_ += cont ? 1 : 0;
 
     untimed_axioms_to_add.clear();
     timed_axioms_to_refine.clear();
