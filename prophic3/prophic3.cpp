@@ -525,17 +525,11 @@ bool ProphIC3::fix_bmc()
         bool ok = reduce_timed_axioms(untimed_axioms_to_add,
                                       sorted_timed_axioms, red_timed_axioms);
         assert(ok);
-
-        // continue with the same k
-        cont = true;
       }
       else
       {
         bool ok = reduce_axioms(untimed_axioms_to_add, red_untimed_axioms);
         assert(ok);
-
-        // heuristic -- don't stop at initial state even if you didn't need to add axioms
-        cont = axioms_added || (current_k_ == 0);
       }
     }
     else
@@ -544,6 +538,8 @@ bool ProphIC3::fix_bmc()
       red_timed_axioms = timed_axioms_to_refine;
       red_untimed_axioms = untimed_axioms_to_add;
     }
+
+    cont = axioms_added || (current_k_ == 0);
 
     /************************************* Fix the transition system ************************************/
     if (red_timed_axioms.size()) {
