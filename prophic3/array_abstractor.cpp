@@ -197,7 +197,13 @@ void ArrayAbstractor::do_abstraction()
   // collect them before adding lambdas
   TermSet init_trans_vars;
   get_free_vars(msat_env_, abs_ts_.init(), init_trans_vars);
-  get_free_vars(msat_env_, abs_ts_.cur(abs_ts_.trans()), init_trans_vars);
+  get_free_vars(msat_env_, abs_ts_.trans(), init_trans_vars);
+
+  for(auto var : init_trans_vars)
+  {
+    init_trans_vars.insert(abs_ts_.cur(var));
+  }
+
   TermSet prop_vars;
   get_free_vars(msat_env_, abs_ts_.prop(), prop_vars);
   for (auto v : prop_vars) {
