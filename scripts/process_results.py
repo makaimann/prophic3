@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import argparse
+from collections import defaultdict
 import csv
+import pandas as pd
 
 from typing import List, Set
 
@@ -9,10 +11,11 @@ BENCHMARK='benchmark'
 STATUS='status'
 RESULT='result'
 TIME='time_cpu'
+columns = [STATUS, RESULT, TIME]
 
 #########################################################
-result_map = {'10': 'sat',
-              '20': 'unsat',
+result_map = {'10': 'safe',
+              '20': 'unsafe',
               '30': 'unknown'}
 
 def import_csv(filename:str):
@@ -81,10 +84,52 @@ def replace_result(csvlist:List[List[str]]):
         new_csvlist.append(row)
     return new_csvlist
 
+def gen_pandas_df(csvlist:List[List[str]]):
+    solvers = csvlist[0]
+    labels = csvlist[1]
+
+    data_dict = defaultdict(lambda: defaultdict(dict))
+
+    for row in csvlist[2:]:
+        benchmark = row[0]
+        solver = solvers[1]
+        for i, elem in enumerate(row[1:]):
+            if i + 1 < len(solvers):
+                label=labels[i+1]
+                if solvers[i+1]:
+                    solver=solvers[i+1]
+            data_dict[solver][benchmark][label] = elem
+
+    df_dict = defaultdict(dict)
+
+    for solver, data in data_dict.items():
+        for benchmark, results in data.items():
+            res = None
+
+            if results['status'] != 'ok':
+                res = results['status']
+
+                # special case for prophic3
+                if 'prophic3' in solver and res == 'ee':
+                    res = 'unk'
+            elif results['result'] not in {'safe', 'unsafe'}:
+                res = results['result']
+            else:
+                assert results['time_cpu']
+                res = results['time_cpu']
+
+            assert res is not None
+            if res == 'unknown':
+                res = 'unk'
+            df_dict[solver][benchmark] = res
+
+    return pd.DataFrame(df_dict)
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Process prophic3 results from cluster')
     parser.add_argument('filename', metavar='FILENAME', help='The csv file to parse')
-    parser.add_argument('--output', '-o', metavar='OUTPUT', help='The csv file to write to', default=None)
+    parser.add_argument('--latex', action='store_true', help='generate a latex table')
+    parser.add_argument('--output', '-o', metavar='OUTPUT', help='The file to write to', default=None)
 
     args = parser.parse_args()
 
@@ -93,10 +138,19 @@ if __name__ == '__main__':
     csvlist = clean_filenames(csvlist)
     csvlist = replace_result(csvlist)
 
+    output = ''
+
+    if args.latex:
+        output = gen_pandas_df(csvlist).to_latex()
+    else:
+        for row in csvlist:
+            print(row)
+            output = output + ','.join(row) + '\n'
+
+    assert output
+
     if args.output is None:
-        print(csvlist)
+        print(output)
     else:
         with open(args.output, 'w') as f:
-            for row in csvlist:
-                f.write(','.join(row))
-                f.write('\n')
+            f.write(output)
