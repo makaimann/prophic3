@@ -5,6 +5,8 @@ import numpy as np
 import pandas as pd
 from process_results import import_csv, filter_results, clean_filenames, replace_result, gen_pandas_df, BENCHMARK, STATUS, RESULT, TIME
 
+FONTSIZE=22
+
 MARKERMAP = {
     'spacer': 's',
     'quic3': 'd',
@@ -83,8 +85,8 @@ if __name__ == '__main__':
     ax  = plt.gca()
     fig.tight_layout()
     ax.set_yscale('symlog')
-    ax.set_ylabel('cumulative runtime (s)', size=16)
-    ax.set_xlabel('# solved benchmarks', size=16)
+    ax.set_ylabel('cumulative runtime (s)', size=FONTSIZE)
+    ax.set_xlabel('# solved benchmarks', size=FONTSIZE)
     plt.grid()
-    plt.legend(loc='best', prop={'size': 16})
+    plt.legend(loc='best', prop={'size': FONTSIZE})
     plt.show()
