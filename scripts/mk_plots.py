@@ -72,19 +72,19 @@ if __name__ == '__main__':
     df = df.cumsum()
 
     for idx in df:
-        x = df[idx].values
-        x = x[~np.isnan(x)]
-        x = np.insert(x, 0, 0, axis=0)
-        y = list(range(len(x)))
+        times = df[idx].values
+        times = times[~np.isnan(times)]
+        times = np.insert(times, 0, 0, axis=0)
+        solved = list(range(len(times)))
         name = filter_name(idx)
-        plt.plot(x, y, label=name, linewidth=4, marker=MARKERMAP[name], markersize=10, linestyle=LINESTYLEMAP[name], color=COLORMAP[name])
+        plt.plot(solved, times, label=name, linewidth=4, marker=MARKERMAP[name], markersize=10, linestyle=LINESTYLEMAP[name], color=COLORMAP[name])
 
     fig = plt.gcf()
     ax  = plt.gca()
     fig.tight_layout()
-    ax.set_xscale('symlog')
-    ax.set_xlabel('cumulative runtime (s)', size=16)
-    ax.set_ylabel('# solved benchmarks', size=16)
+    ax.set_yscale('symlog')
+    ax.set_ylabel('cumulative runtime (s)', size=16)
+    ax.set_xlabel('# solved benchmarks', size=16)
     plt.grid()
     plt.legend(loc='best', prop={'size': 16})
     plt.show()
