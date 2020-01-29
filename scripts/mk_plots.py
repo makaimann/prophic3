@@ -3,7 +3,7 @@ import argparse
 from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
-from process_results import import_csv, filter_results, clean_filenames, replace_result, gen_pandas_df, BENCHMARK, STATUS, RESULT, TIME
+from process_results import import_csv, filter_results, filter_names, clean_filenames, replace_result, gen_pandas_df, BENCHMARK, STATUS, RESULT, TIME
 
 FONTSIZE=22
 
@@ -40,19 +40,6 @@ COLORMAP={
     'prophic3-SA': 'C7',
     'virtual best solver (portfolio)': 'C8'
 }
-
-# HACK
-def filter_name(n):
-    n = n.replace('-master', '')
-    n = n.replace('-no-hist-eq-preds-no-track-proph-vars-pred', '-nh')
-    n = n.replace('-no-axiom-reduction', '-nr')
-    n = n.replace('-no-eq-uf', '-SA')
-
-    nlist = n.split('-')
-    if len(nlist) > 1 and nlist[1] in {'nr', 'nh', 'SA'}:
-        return nlist[0] + '-' + nlist[1]
-    else:
-        return nlist[0]
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Process prophic3 results from cluster')

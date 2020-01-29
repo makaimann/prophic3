@@ -18,6 +18,22 @@ result_map = {'10': 'safe',
               '20': 'unsafe',
               '30': 'unknown'}
 
+# HACK
+def filter_name(n):
+    if '-' not in n:
+        return n
+
+    n = n.replace('-master', '')
+    n = n.replace('-no-hist-eq-preds-no-track-proph-vars-pred', '-nh')
+    n = n.replace('-no-axiom-reduction', '-nr')
+    n = n.replace('-no-eq-uf', '-SA')
+
+    nlist = n.split('-')
+    if len(nlist) > 1 and nlist[1] in {'nr', 'nh', 'SA'}:
+        return nlist[0] + '-' + nlist[1]
+    else:
+        return nlist[0]
+
 def import_csv(filename:str):
     csvlist = []
     with open(filename, 'r') as f:
@@ -137,6 +153,9 @@ if __name__ == '__main__':
     csvlist = filter_results(csvlist, {BENCHMARK, STATUS, RESULT, TIME})
     csvlist = clean_filenames(csvlist)
     csvlist = replace_result(csvlist)
+
+    filtered_names = [filter_name(c) for c in csvlist[0]]
+    csvlist[0] = filtered_names
 
     output = ''
 
