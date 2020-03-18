@@ -1,6 +1,15 @@
 /* -*- C -*-
  * 
- * $MATHSAT5_LICENSE_BANNER_HERE$
+ * MathSAT5 is copyrighted 2009-2020 by Fondazione Bruno Kessler, Trento, Italy,
+ * University of Trento, Italy, and others. All rights reserved.
+ * 
+ * MathSAT5 is available for research and evaluation purposes only.
+ * It can not be used in a commercial environment, particularly as part of a
+ * commercial product, without written permission. MathSAT5 is provided as is,
+ * without any warranty.
+ * 
+ * Please write to mathsat@fbk.eu for additional questions regarding licensing
+ * MathSAT5 or obtaining more up-to-date versions.
  *
  * C API for the MathSAT 5 solver
  *
@@ -166,6 +175,8 @@ typedef enum {
     MSAT_TAG_EXP,           /**< Exponential function */
     MSAT_TAG_SIN,           /**< Sine function */
     MSAT_TAG_LOG,           /**< Natural logarithm function */
+    MSAT_TAG_POW,           /**< Power function */
+    MSAT_TAG_ASIN,          /**< Arcsin function */
     MSAT_TAG_FORALL,        /**< Universal quantifier */
     MSAT_TAG_EXISTS         /**< Existential quantifier */
 } msat_symbol_tag;
@@ -853,10 +864,59 @@ msat_term msat_make_int_modular_congruence(msat_env e, mpz_t modulus,
  */
 msat_term msat_make_floor(msat_env e, msat_term t);
 
+/**
+ * \brief Returns the constant representing the pi number
+ * \param e The environment of the definition
+ * \return The created term, or a t s.t. ::MSAT_ERROR_TERM(t) is true
+ *         in case of errors.
+ */
 msat_term msat_make_pi(msat_env e);
+
+/**
+ * \brief Returns an expression representing exp(t)
+ * \param e The environment of the definition
+ * \param t The argument.
+ * \return The created term, or a t s.t. ::MSAT_ERROR_TERM(t) is true
+ *         in case of errors.
+ */
 msat_term msat_make_exp(msat_env e, msat_term t);
+
+/**
+ * \brief Returns an expression representing sin(t)
+ * \param e The environment of the definition
+ * \param t The argument.
+ * \return The created term, or a t s.t. ::MSAT_ERROR_TERM(t) is true
+ *         in case of errors.
+ */
 msat_term msat_make_sin(msat_env e, msat_term t);
+
+/**
+ * \brief Returns an expression representing the natural log of t
+ * \param e The environment of the definition
+ * \param t The argument.
+ * \return The created term, or a t s.t. ::MSAT_ERROR_TERM(t) is true
+ *         in case of errors.
+ */
 msat_term msat_make_log(msat_env e, msat_term t);
+
+/**
+ * \brief Returns an expression representing tb to the power of te
+ * \param e The environment of the definition
+ * \param tb The base of the power
+ * \param te The exponent of the power
+ * \return The created term, or a t s.t. ::MSAT_ERROR_TERM(t) is true
+ *         in case of errors.
+ */
+msat_term msat_make_pow(msat_env e, msat_term tb, msat_term te);
+
+/**
+ * \brief Returns an expression representing arcsin(t)
+ * \param e The environment of the definition
+ * \param t The argument
+ * \return The created term, or a t s.t. ::MSAT_ERROR_TERM(t) is true
+ *         in case of errors.
+ */
+msat_term msat_make_asin(msat_env e, msat_term t);
 
 /**
  * \brief Returns an expression representing an integer or rational number.
@@ -1988,10 +2048,53 @@ int msat_term_is_int_modular_congruence(msat_env e, msat_term t, mpz_t out_mod);
  */
 int msat_term_is_floor(msat_env e, msat_term t);
 
+/**
+ * \brief Checks whether \a t is a the pi constant
+ * \param e The environment in which to operate
+ * \param t A term.
+ * \return nonzero if \a t is the pi constant
+ */
 int msat_term_is_pi(msat_env e, msat_term t);
+
+/**
+ * \brief Checks whether \a t is a (exp t1) expression
+ * \param e The environment in which to operate
+ * \param t A term.
+ * \return nonzero if \a t is a exp expression
+ */
 int msat_term_is_exp(msat_env e, msat_term t);
+
+/**
+ * \brief Checks whether \a t is a (sin t1) expression
+ * \param e The environment in which to operate
+ * \param t A term.
+ * \return nonzero if \a t is a sin expression
+ */
 int msat_term_is_sin(msat_env e, msat_term t);
+
+/**
+ * \brief Checks whether \a t is a (log t1) expression
+ * \param e The environment in which to operate
+ * \param t A term.
+ * \return nonzero if \a t is a log expression
+ */
 int msat_term_is_log(msat_env e, msat_term t);
+
+/**
+ * \brief Checks whether \a t is a (pow t1 t2) expression
+ * \param e The environment in which to operate
+ * \param t A term.
+ * \return nonzero if \a t is a pow expression
+ */
+int msat_term_is_pow(msat_env e, msat_term t);
+
+/**
+ * \brief Checks whether \a t is a (asin t1) expression
+ * \param e The environment in which to operate
+ * \param t A term.
+ * \return nonzero if \a t is a asin expression
+ */
+int msat_term_is_asin(msat_env e, msat_term t);
 
 /**
  * \brief Checks whether \a t is an array read
