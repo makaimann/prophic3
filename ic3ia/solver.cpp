@@ -32,6 +32,7 @@ Solver::Solver(msat_env env, const Options &opts)
         std::string name = opts.trace + ".main.smt2";
         msat_set_option(cfg, "debug.api_call_trace", "1");
         msat_set_option(cfg, "debug.api_call_trace_filename", name.c_str());
+        msat_set_option(cfg, "printer.defines_prefix", "_def_");
     }
     env_ = msat_create_shared_env(cfg, env);
     msat_destroy_config(cfg);

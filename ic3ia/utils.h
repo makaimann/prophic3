@@ -229,11 +229,11 @@ public:
     {
         buf_.str("");
         if (name.empty()) {
-            buf_ << ".fresh.";
+            buf_ << "_fresh_";
         } else if (name[0] == '.') {
-            buf_ << name << ".";
+            buf_ << "_" << name.substr(1, name.size()) << "_";
         } else {
-            buf_ << "." << name << ".";
+            buf_ << "_" << name << "_";
         }
         auto p = buf_.tellp();
         std::string s;
