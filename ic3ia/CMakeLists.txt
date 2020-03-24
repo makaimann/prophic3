@@ -29,6 +29,8 @@ set(SRCS
     bmc.cpp
     ltl.cpp
     proof.cpp
+    api.cpp
+    ic3ia.cpp
     )
 
 include_directories(. ${MSAT_INCLUDE_DIR})

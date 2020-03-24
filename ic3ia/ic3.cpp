@@ -37,7 +37,8 @@ IC3::IC3(TransitionSystem &ts, const Options &opts, LiveEncoder &l2s):
     abs_(ts),
     ref_(ts, opts, abs_),
     l2s_(l2s),
-    liveref_(ts, opts, abs_, l2s_)
+    liveref_(ts, opts, abs_, l2s_),
+    cb_(nullptr)
 {
     init_label_ = make_label("init");
     trans_label_ = make_label("trans");
@@ -80,6 +81,12 @@ IC3::IC3(TransitionSystem &ts, const Options &opts, LiveEncoder &l2s):
 // public methods
 //-----------------------------------------------------------------------------
 
+void IC3::set_search_bound_callback(SearchBoundCallback *cb)
+{
+    cb_ = cb;
+}
+
+
 void IC3::set_initial_predicates(const TermList &preds)
 {
     preds_.insert(preds.begin(), preds.end());
@@ -93,6 +100,9 @@ msat_truth_value IC3::prove()
     initialize();
     if (!check_init()) {
         return MSAT_FALSE;
+    }
+    if (cb_ && !(*cb_)(0)) {
+        return MSAT_UNDEF;
     }
 
     while (true) {
@@ -113,6 +123,9 @@ msat_truth_value IC3::prove()
         if (propagate()) {
             return MSAT_TRUE;
         }
+        if (cb_ && !(*cb_)(depth())) {
+            return MSAT_UNDEF;
+        }
     }
 }
 
@@ -127,11 +140,11 @@ int IC3::witness(std::vector<TermList> &out)
 }
 
 
-void IC3::print_stats() const
+void IC3::print_stats(std::ostream &out) const
 {
 #define print_stat(n)                        \
-    std::cout << #n << " = " << std::setprecision(3) << std::fixed       \
-              << n ## _ << "\n"
+    out << #n << " = " << std::setprecision(3) << std::fixed       \
+        << n ## _ << "\n"
 
     print_stat(num_solve_calls);
     print_stat(num_solve_sat_calls);
