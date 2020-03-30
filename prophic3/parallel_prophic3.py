@@ -44,8 +44,7 @@ if __name__ == "__main__":
             proc.terminate()
             proc.kill()
         out, _ = proc.communicate()
-        print(out.decode('utf-8'))
-        print()
+        print(out.decode('utf-8').strip())
         sys.stdout.flush()
 
 
