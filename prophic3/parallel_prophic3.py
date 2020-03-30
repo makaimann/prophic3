@@ -21,10 +21,17 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     chc_file = args.chc_file
+    vmt = None
+    with open(chc_file, 'rb') as f:
+        horn = f.read()
+        horn2vmt = subprocess.Popen(['./horn2vmt'], stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+        vmt = horn2vmt.communicate(horn)[0]
+
+    assert vmt is not None, 'horn2vmt translation failed'
 
     commands = {
-        "WA": ['./prophic3', chc_file],
-        "SA": ['./prophic3', '-no-eq-uf', chc_file],
+        "WA": ['./prophic3'],
+        "SA": ['./prophic3', '-no-eq-uf'],
     }
 
     all_processes = []
@@ -34,7 +41,10 @@ if __name__ == "__main__":
     processes = []
 
     for name, cmd in commands.items():
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+        read, write = os.pipe()
+        os.write(write, vmt)
+        os.close(write)
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stdin=read)
         processes.append(proc)
         all_processes.append(proc)
         # name_map[proc] = name
