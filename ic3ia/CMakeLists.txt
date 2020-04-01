@@ -31,6 +31,7 @@ set(SRCS
     proof.cpp
     api.cpp
     ic3ia.cpp
+    kind.cpp
     )
 
 include_directories(. ${MSAT_INCLUDE_DIR})
