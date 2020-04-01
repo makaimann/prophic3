@@ -14,6 +14,7 @@ if __name__ == "__main__":
 
     # TODO: maybe run ic3ia without abstraction?
     parser = argparse.ArgumentParser(description="Run weak and strong abstraction in parallel")
+    parser.add_argument('-k', '--bound', type=int, default=100)
     parser.add_argument('chc_file')
     # parser.add_argument('-v', '--verbosity', action="store_true", help="Enable verbose output."
     #                     "   Note: this is buffered and only prints when a process finishes"
@@ -21,6 +22,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     chc_file = args.chc_file
+    bound = args.bound
     vmt = None
     with open(chc_file, 'rb') as f:
         horn = f.read()
@@ -32,6 +34,8 @@ if __name__ == "__main__":
     commands = {
         "WA": ['./prophic3'],
         "SA": ['./prophic3', '-no-eq-uf'],
+        "BMC": ['./prophic3', '-bmc', '-bmc-k', str(bound)],
+        "KIND": ['./prophic3', '-kind', '-bmc-k', str(bound)]
     }
 
     all_processes = []
