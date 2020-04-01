@@ -5,6 +5,7 @@
 
 #include "bmc.h"
 #include "ic3.h"
+#include "kind.h"
 #include "ltl.h"
 
 #include "array_abstractor.h"
@@ -34,7 +35,7 @@ int main(int argc, const char **argv)
 
   if (!read_ts(opts, ts, ltl, tableau, product, preds)) {
     std::cout << "ERROR reading input" << std::endl;
-    return 1;
+    return 3;
   }
 
   if (!opts.trace.empty()) {
@@ -42,16 +43,47 @@ int main(int argc, const char **argv)
               << endlog;
   }
 
+  if (opts.bmc && opts.kind)
+  {
+    std::cout << "ERROR: can't select bmc and kind" << std::endl;
+    return 3;
+  }
+
   LiveEncoder liveenc(product, opts);
 
-  // ArrayFlattener af(ts);
-  // TransitionSystem abs_ts = af.flatten_transition_system();
-  // ArrayAbstractor aa(abs_ts);
-  // abs_ts = aa.abstract_transition_system();
-  ProphIC3 prophic3(product, opts, liveenc, opts.verbosity);
+  msat_truth_value res = MSAT_UNDEF;
+  if (opts.bmc)
+  {
+    Bmc bmc(product, opts);
+    if (opts.bmc_max_k > 0)
+    {
+      if (!bmc.check_until(opts.bmc_max_k)) {
+        res = MSAT_FALSE;
+      }
+    }
+    else
+    {
+      res = bmc.prove();
+    }
+  }
+  else if (opts.kind)
+  {
+    Kind kind(product, opts);
+    if (opts.bmc_max_k > 0)
+    {
+      res = kind.check_until(opts.bmc_max_k);
+    }
+    else
+    {
+      res = kind.prove();
+    }
+  }
+  else
+  {
+    ProphIC3 prophic3(product, opts, liveenc, opts.verbosity);
+    res = prophic3.prove();
+  }
 
-  // TODO: finish implementing prove and uncomment this
-  msat_truth_value res = prophic3.prove();
   if (res == MSAT_FALSE) {
     // cout << "The property is false" << endl;
     cout << "unsat" << endl; // similar to spacer
@@ -66,5 +98,5 @@ int main(int argc, const char **argv)
     return 2;
   }
 
-  return 0;
+  return 3;
 }

@@ -148,7 +148,7 @@ bool Kind::inductive_step()
   return false;
 }
 
-int witness(std::vector<TermList> &out)
+int Kind::witness(std::vector<TermList> &out)
 {
   throw std::exception();
 }

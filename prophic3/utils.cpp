@@ -244,6 +244,8 @@ Options get_options(int argc, const char **argv)
           ret.track_proph_vars_pred = false;
         } else if (a == "-no-axiom-reduction") {
           ret.axiom_reduction = false;
+        } else if (a == "-kind") {
+          ret.kind = true;
         } else if (a == "-h" || a == "-help" || a == "--help") {
             std::cout << "USAGE: " << argv[0] << " [OPTIONS] FILENAME.vmt"
                       << "\n\n   -v N : set verbosity level"
@@ -283,6 +285,7 @@ Options get_options(int argc, const char **argv)
                       << "\n   -no-unsatcore-array-refiner : don't use unsatcore in the array refiner to filter axioms "
                       << "\n   -no-track-proph-vars-pred : don't track prophecy variables in predicate minimizer"
                       << "\n   -no-axiom-reduction: don't reduce enumerated axioms at all"
+                      << "\n   -kind : use k-induction instead of prophic3"
                       << std::endl;
             exit(0);
             break;
