@@ -214,7 +214,7 @@ void ArrayAbstractor::do_abstraction()
 
   for (auto v : prop_free_vars_) {
     abs_ts_.add_trans(msat_make_eq(msat_env_, v, abs_ts_.next(v)));
-    std::cout << msat_to_smtlib2_term(msat_env_, v) << std::endl;
+    logger(1) << "detected free variable in property: " << msat_to_smtlib2_term(msat_env_, v) << endlog;
   }
 
   // create the lambdas used to refer to indices which have never been
