@@ -35,6 +35,7 @@ set(SRCS
     )
 
 include_directories(. ${MSAT_INCLUDE_DIR})
+link_directories(${MATHSAT_DIR}/lib)
 
 add_definitions(-std=c++11)
 add_library(ic3ia ${SRCS})
@@ -43,7 +44,7 @@ set_target_properties(ic3ia_main PROPERTIES OUTPUT_NAME ic3ia)
 target_link_libraries(ic3ia_main ic3ia ${mathsat} ${gmp} ${gmpxx})
 
 add_executable(horn2vmt horn2vmt.cpp)
-target_link_libraries(horn2vmt ic3ia ${mathsat} ${gmp} ${gmpxx})
+target_link_libraries(horn2vmt ic3ia mathsat ${gmp} ${gmpxx} -static)
 
 add_custom_target(proofchecker ALL
     COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PROJECT_SOURCE_DIR}/proofchecker.py" proofchecker.py
