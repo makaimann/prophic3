@@ -26,8 +26,14 @@ if __name__ == "__main__":
     vmt = None
     with open(chc_file, 'rb') as f:
         horn = f.read()
-        horn2vmt = subprocess.Popen(['./horn2vmt'], stdout=subprocess.PIPE, stdin=subprocess.PIPE)
-        vmt = horn2vmt.communicate(horn)[0]
+        horn2vmt = subprocess.Popen(['./horn2vmt'], stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+        vmt, err = horn2vmt.communicate(horn)
+        if horn2vmt.returncode != 0:
+            print("unknown")
+            print("unable to translate chc to vmt:")
+            print(vmt.decode())
+            print(err.decode())
+            sys.exit(horn2vmt.returncode)
 
     assert vmt is not None, 'horn2vmt translation failed'
 
