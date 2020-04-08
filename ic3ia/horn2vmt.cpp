@@ -732,35 +732,21 @@ bool HornRewriter::operator()(const std::vector<HornClause> &src)
     }
 
     if (opts_.optimization_level > 1) {
-      int num_applied = 0;
-      while(apply_rule(this, &HornRewriter::elim_nonrec, cur, res_, tmp))
-      {
-        num_applied++;
-      }
-      std::cout << "Applied elim_nonrec " << num_applied << " times." << std::endl;
-    }
+        apply_rule(this, &HornRewriter::elim_nonrec, cur, res_, tmp);
+        debug_print("elim_nonrec", env_, *cur);
+    }    
 
     if (0 && opts_.collapse_same_arity) {
         apply_rule(this, &HornRewriter::collapse, cur, res_, tmp);
     }
 
     if (opts_.optimization_level > 1) {
-      int num_applied = 0;
-      while(apply_rule(this, &HornRewriter::elim_nonrec, cur, res_, tmp))
-      {
-        num_applied++;
-      }
-      std::cout << "Applied elim_nonrec " << num_applied << " times." << std::endl;
+        apply_rule(this, &HornRewriter::elim_nonrec, cur, res_, tmp);
     }
 
     if (opts_.only_binary) {
         apply_rule(this, &HornRewriter::make_binary, cur, res_, tmp);
         debug_print("make_binary", env_, *cur);
-    }
-
-    if (opts_.coi) {
-      apply_rule(this, &HornRewriter::remove_not_in_coi, cur, res_, tmp);
-      debug_print("coi", env_, *cur);
     }
 
     if (opts_.single_predicate) {
@@ -773,37 +759,9 @@ bool HornRewriter::operator()(const std::vector<HornClause> &src)
         debug_print("make_single", env_, *cur);
     }
 
-    if (opts_.coi) {
-      apply_rule(this, &HornRewriter::remove_not_in_coi, cur, res_, tmp);
-      debug_print("coi", env_, *cur);
-    }
-
-    if (opts_.optimization_level > 1) {
-      int num_applied = 0;
-      while(apply_rule(this, &HornRewriter::elim_nonrec, cur, res_, tmp))
-      {
-        num_applied++;
-      }
-      std::cout << "Applied elim_nonrec " << num_applied << " times." << std::endl;
-    }
-
     apply_rule(this, &HornRewriter::remove_tautologies, cur, res_, tmp);
     debug_print("remove_tautologies", env_, *cur);
-
-    if (opts_.coi) {
-      apply_rule(this, &HornRewriter::remove_not_in_coi, cur, res_, tmp);
-      debug_print("coi", env_, *cur);
-    }
-
-    if (opts_.optimization_level > 1) {
-      int num_applied = 0;
-      while(apply_rule(this, &HornRewriter::elim_nonrec, cur, res_, tmp))
-      {
-        num_applied++;
-      }
-      std::cout << "Applied elim_nonrec " << num_applied << " times." << std::endl;
-    }
-
+    
     return true;
 }
 
