@@ -41,7 +41,7 @@ add_definitions(-std=c++11)
 add_library(ic3ia ${SRCS})
 add_executable(ic3ia_main main.cpp)
 set_target_properties(ic3ia_main PROPERTIES OUTPUT_NAME ic3ia)
-target_link_libraries(ic3ia_main ic3ia ${mathsat} ${gmp} ${gmpxx})
+target_link_libraries(ic3ia_main ic3ia mathsat ${gmp} ${gmpxx} -static)
 
 add_executable(horn2vmt horn2vmt.cpp)
 target_link_libraries(horn2vmt ic3ia mathsat ${gmp} ${gmpxx} -static)
