@@ -23,6 +23,7 @@
 #include "api.h"
 #include "ic3.h"
 #include "bmc.h"
+#include "kind.h"
 #include <iostream>
 
 
@@ -120,6 +121,8 @@ Options get_options(const std::vector<std::string> &argv)
             ok = getbool(++i, ret.ltl_single_fairness_sorted);
         } else if (a == "-solver-reset-interval") {
             ok = getint(++i, ret.solver_reset_interval);
+        } else if (a == "-kind") {
+          ret.kind = true;
         } else if (a == "-h" || a == "-help" || a == "--help") {
             std::cout << "USAGE: " << argv[0] << " [OPTIONS] FILENAME.vmt"
                       << "\n\n   -v N : set verbosity level"
@@ -169,6 +172,7 @@ Options get_options(const std::vector<std::string> &argv)
                       << "(forced to true when -check-witness is on)."
                       << "\n   -solver-reset-interval N : reset interval for "
                       << "the SMT solver in the IC3 engine."
+                      << "\n   -kind : use k-induction instead of IC3."
                       << std::endl;
             exit(0);
             break;
@@ -418,6 +422,8 @@ bool IC3IA::init_prover()
     
     if (opts.bmc) {
         prover = new Bmc(*product, opts);
+    } else if (opts.kind) {
+        prover = new Kind(*product, opts);
     } else {
         prover = new IC3(*product, opts, *liveenc);
     }
