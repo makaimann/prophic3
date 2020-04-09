@@ -731,31 +731,32 @@ bool HornRewriter::operator()(const std::vector<HornClause> &src)
         debug_print("inline_locals", env_, *cur);
     }
 
-    bool changed = false;
+    bool changed;
     do {
+      changed = false;
       if (opts_.optimization_level > 1) {
-        changed = apply_rule(this, &HornRewriter::elim_nonrec, cur, res_, tmp);
+        changed |= apply_rule(this, &HornRewriter::elim_nonrec, cur, res_, tmp);
         debug_print("elim_nonrec", env_, *cur);
       }
 
       if (0 && opts_.collapse_same_arity) {
-        changed = apply_rule(this, &HornRewriter::collapse, cur, res_, tmp);
+        changed |= apply_rule(this, &HornRewriter::collapse, cur, res_, tmp);
       }
 
       if (opts_.optimization_level > 1) {
-        changed = apply_rule(this, &HornRewriter::elim_nonrec, cur, res_, tmp);
+        changed |= apply_rule(this, &HornRewriter::elim_nonrec, cur, res_, tmp);
       }
 
       if (opts_.only_binary) {
-        changed = apply_rule(this, &HornRewriter::make_binary, cur, res_, tmp);
+        changed |= apply_rule(this, &HornRewriter::make_binary, cur, res_, tmp);
         debug_print("make_binary", env_, *cur);
       }
 
-      changed = apply_rule(this, &HornRewriter::inline_locals, cur, res_, tmp);
-      changed = apply_rule(this, &HornRewriter::remove_tautologies, cur, res_, tmp);
+      changed |= apply_rule(this, &HornRewriter::inline_locals, cur, res_, tmp);
+      changed |= apply_rule(this, &HornRewriter::remove_tautologies, cur, res_, tmp);
 
       if (opts_.coi) {
-        changed = apply_rule(this, &HornRewriter::remove_not_in_coi, cur, res_, tmp);
+        changed |= apply_rule(this, &HornRewriter::remove_not_in_coi, cur, res_, tmp);
       }
     }
     while(changed);
@@ -769,36 +770,6 @@ bool HornRewriter::operator()(const std::vector<HornClause> &src)
         }
         debug_print("make_single", env_, *cur);
     }
-
-
-    changed = false;
-    do {
-      if (opts_.optimization_level > 1) {
-        changed = apply_rule(this, &HornRewriter::elim_nonrec, cur, res_, tmp);
-        debug_print("elim_nonrec", env_, *cur);
-      }
-
-      if (0 && opts_.collapse_same_arity) {
-        changed = apply_rule(this, &HornRewriter::collapse, cur, res_, tmp);
-      }
-
-      if (opts_.optimization_level > 1) {
-        changed = apply_rule(this, &HornRewriter::elim_nonrec, cur, res_, tmp);
-      }
-
-      if (opts_.only_binary) {
-        changed = apply_rule(this, &HornRewriter::make_binary, cur, res_, tmp);
-        debug_print("make_binary", env_, *cur);
-      }
-
-      changed = apply_rule(this, &HornRewriter::inline_locals, cur, res_, tmp);
-      changed = apply_rule(this, &HornRewriter::remove_tautologies, cur, res_, tmp);
-
-      if (opts_.coi) {
-        changed = apply_rule(this, &HornRewriter::remove_not_in_coi, cur, res_, tmp);
-      }
-    }
-    while(changed);
 
     apply_rule(this, &HornRewriter::remove_tautologies, cur, res_, tmp);
     debug_print("remove_tautologies", env_, *cur);
