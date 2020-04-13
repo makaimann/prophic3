@@ -527,8 +527,8 @@ int main(int argc, const char **argv)
     std::cout << "total_time = "
               << std::setprecision(3) << std::fixed << tk.get() << std::endl;
 
-    std::cout << (res == MSAT_TRUE ? "safe" :
-                  res == MSAT_FALSE ? "unsafe" : "unknown") << std::endl;
+    std::cout << (res == MSAT_TRUE ? "sat" :
+                  res == MSAT_FALSE ? "unsat" : "unknown") << std::endl;
 
     delete the_prover;
     
