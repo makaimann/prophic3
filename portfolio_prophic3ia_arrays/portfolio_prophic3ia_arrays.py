@@ -58,7 +58,7 @@ if __name__ == "__main__":
 
 
     for name, cmd in commands.items():
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stdin=None)
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stdin=None, stderr=subprocess.PIPE)
         processes.append(proc)
         all_processes.append(proc)
         # name_map[proc] = name
