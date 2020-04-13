@@ -16,6 +16,7 @@ MARKERMAP = {
     'prophic3-nh': 'x',
     'prophic3-nr': '2',
     'prophic3-SA': '>',
+    'ic3ia': '',
     'virtual best solver (portfolio)': '*'
 }
 LINESTYLEMAP = {
@@ -27,6 +28,7 @@ LINESTYLEMAP = {
     'prophic3-nh': 'solid',
     'prophic3-nr': 'solid',
     'prophic3-SA': 'solid',
+    'ic3ia': '--',
     'virtual best solver (portfolio)': (0, (1, 10))
 }
 COLORMAP={
@@ -38,7 +40,8 @@ COLORMAP={
     'prophic3-nh': 'C5',
     'prophic3-nr': 'C6',
     'prophic3-SA': 'C7',
-    'virtual best solver (portfolio)': 'C8'
+    'virtual best solver (portfolio)': 'C8',
+    'ic3ia': 'C9'
 }
 
 if __name__ == '__main__':
