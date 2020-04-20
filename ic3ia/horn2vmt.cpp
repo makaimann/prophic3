@@ -1911,27 +1911,37 @@ void HornManager::init(msat_env env, const std::vector<HornClause> &src)
                   << endlog;
     }
 
-    if (trans_idx != clauses.size() && !bad_combinational) {
-        // populate the state vars from the transition relation
-        msat_term pc = clauses[trans_idx].body[0];
-        msat_term pn = clauses[trans_idx].head;
+    if (!bad_combinational) {
+        if (trans_idx != clauses.size()) {
+            // populate the state vars from the transition relation
+            msat_term pc = clauses[trans_idx].body[0];
+            msat_term pn = clauses[trans_idx].head;
 
-        for (size_t i = 0; i < msat_term_arity(pc); ++i) {
-            msat_term c = msat_term_get_arg(pc, i);
-            msat_term n = msat_term_get_arg(pn, i);
-            msat_term cv = msat_make_copy_from(menv, c, env);
-            msat_term nv = msat_make_copy_from(menv, n, env);
-            statevars[cv] = nv;
-            values.push_back(c);
+            for (size_t i = 0; i < msat_term_arity(pc); ++i) {
+                msat_term c = msat_term_get_arg(pc, i);
+                msat_term n = msat_term_get_arg(pn, i);
+                msat_term cv = msat_make_copy_from(menv, c, env);
+                msat_term nv = msat_make_copy_from(menv, n, env);
+                statevars[cv] = nv;
+                values.push_back(c);
+            }
+
+            trans = msat_make_copy_from(menv,
+                                        clauses[trans_idx].constraint, env);
+        } else {
+            logger(1) << ";; transition relation not found, assuming FALSE"
+                      << endlog;
+            trans = msat_make_false(menv);
         }
-
-        trans = msat_make_copy_from(menv, clauses[trans_idx].constraint, env);
 
         if (init_idx != clauses.size()) {
             msat_term p = clauses[init_idx].head;
             to_subst.reserve(msat_term_arity(p));
             for (size_t i = 0; i < msat_term_arity(p); ++i) {
                 to_subst.push_back(msat_term_get_arg(p, i));
+                if (trans_idx == clauses.size()) {
+                    values.push_back(to_subst.back());
+                }
             }
 
             msat_term f = msat_apply_substitution(
@@ -1951,17 +1961,15 @@ void HornManager::init(msat_env env, const std::vector<HornClause> &src)
             to_subst.clear();
             for (size_t i = 0; i < msat_term_arity(p); ++i) {
                 to_subst.push_back(msat_term_get_arg(p, i));
+                if (trans_idx == clauses.size() && init_idx == clauses.size()) {
+                    values.push_back(to_subst.back());
+                }
             }
 
             f = msat_apply_substitution(
                 env, f, to_subst.size(), &to_subst[0], &values[0]);
             bad = msat_make_copy_from(menv, f, env);
         }
-    } else if (!bad_combinational && !clauses.empty()) {
-        // if the transition relation is not there, it must be false
-        trans = msat_make_false(menv);
-        logger(1) << ";; transition relation not found, assuming FALSE"
-                  << endlog;
     } else {
         if (bad_idx != clauses.size()) {
             bad = msat_make_copy_from(menv, clauses[bad_idx].constraint, env);
