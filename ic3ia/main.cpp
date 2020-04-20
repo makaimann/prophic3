@@ -157,9 +157,16 @@ int main(int argc, const char **argv)
     std::cout << "total_time = "
               << std::setprecision(3) << std::fixed << tk.get() << std::endl;
 
-    std::cout << (solver.result == MSAT_TRUE ? "safe" :
-                  solver.result == MSAT_FALSE ? "unsafe" : "unknown")
+    std::cout << (solver.result == MSAT_TRUE
+                      ? "sat"
+                      : solver.result == MSAT_FALSE ? "unsat" : "unknown")
               << std::endl;
 
-    return 0;
+    if (solver.result == MSAT_TRUE) {
+      return 0;
+    } else if (solver.result == MSAT_FALSE) {
+      return 1;
+    }
+
+    return 2;
 }

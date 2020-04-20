@@ -4,6 +4,7 @@ import argparse
 import signal
 import subprocess
 import sys
+import tempfile
 import time
 import os
 
@@ -37,10 +38,15 @@ if __name__ == "__main__":
 
     assert vmt is not None, 'horn2vmt translation failed'
 
+    # write vmt to a tempfile
+    vmtfile = tempfile.NamedTemporaryFile(mode='w')
+    vmtfile.write(vmt.decode())
+    vmtfile.flush()
+
     commands = {
-        "IC3": ['./ic3ia'],
-        "BMC": ['./ic3ia', '-bmc', '-bmc-k', str(bound)],
-        "KIND": ['./ic3ia', '-kind', '-bmc-k', str(bound)]
+        "IC3": ['./ic3ia', vmtfile.name],
+        "BMC": ['./ic3ia', '-bmc', '-bmc-k', str(bound), vmtfile.name],
+        "KIND": ['./ic3ia', '-kind', '-bmc-k', str(bound), vmtfile.name]
     }
 
     all_processes = []
@@ -50,10 +56,7 @@ if __name__ == "__main__":
     processes = []
 
     for name, cmd in commands.items():
-        read, write = os.pipe()
-        os.write(write, vmt)
-        os.close(write)
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stdin=read)
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stdin=None, stderr=subprocess.PIPE)
         processes.append(proc)
         all_processes.append(proc)
         # name_map[proc] = name
