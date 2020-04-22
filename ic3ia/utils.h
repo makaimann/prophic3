@@ -140,7 +140,7 @@ enum ModelGeneration {
     FULL_MODEL
 };
 msat_config get_config(ModelGeneration model=NO_MODEL,
-                       bool interpolation=false);
+                       bool interpolation=false, bool approx=false);
 
 
 /**

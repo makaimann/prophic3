@@ -182,7 +182,6 @@ void IC3::print_stats(std::ostream &out) const
     print_stat(prove_time);
 }
 
-
 void IC3::add_imp_pred_var(msat_term v)
 {
     imp_pred_vars_.insert(v);
@@ -623,9 +622,17 @@ msat_truth_value IC3::refine_abstraction(std::vector<TermList> &cex)
             }
         }
         if (c == 0) {
-            logger(1) << "refinement failure (no new predicate found)"
-                      << endlog;
-            return MSAT_UNDEF;
+            if (solver_.is_approx()) {
+                logger(1) << "no new predicate found, setting solver to precise"
+                          << endlog;
+                solver_.reset(true);
+                reset_solver();
+                return MSAT_TRUE;
+            } else {
+                logger(1) << "refinement failure (no new predicate found)"
+                          << endlog;
+                return MSAT_UNDEF;
+            }
         }
         logger(1) << "refinement added " << c << " new predicates" << endlog;
         return MSAT_TRUE;
