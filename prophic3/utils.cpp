@@ -208,6 +208,10 @@ Options get_options(int argc, const char **argv)
             ret.stack = true;
         } else if (a == "-m") {
             ret.minpreds = false;
+        } else if (a == "-g") {
+          ret.generalize_pre = true;
+        } else if (a == "-inc-ref") {
+          ok = getbool(++i, ret.inc_ref);
         } else if (a == "-live-ref-maxiter") {
             ok = getint(++i, ret.live_ref_maxiter);
         } else if (a == "-live-ref-eager") {
@@ -246,6 +250,8 @@ Options get_options(int argc, const char **argv)
           ret.axiom_reduction = false;
         } else if (a == "-kind") {
           ret.kind = true;
+        } else if (a == "-solver-approx") {
+          ok = getbool(++i, ret.solver_approx);
         } else if (a == "-h" || a == "-help" || a == "--help") {
             std::cout << "USAGE: " << argv[0] << " [OPTIONS] FILENAME.vmt"
                       << "\n\n   -v N : set verbosity level"
