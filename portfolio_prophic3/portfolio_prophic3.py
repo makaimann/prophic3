@@ -52,17 +52,27 @@ if __name__ == "__main__":
     vmtfile.write(vmt.decode())
     vmtfile.flush()
 
-    ic3_command = ['./ic3ia']
-    ic3_command.extend(solver_options)
-    ic3_command.append(vmtfile.name)
+    wa_command = ['./prophic3']
+    wa_command.extend(solver_options)
+    wa_command.append(vmtfile.name)
 
-    bmc_command = ['./ic3ia', '-bmc', '-bmc-k', str(bound)]
+    sa_command = ['./prophic3', '-no-eq-uf']
+    sa_command.extend(solver_options)
+    sa_command.append(vmtfile.name)
+
+    bmc_command = ['./prophic3', '-bmc', '-bmc-k', str(bound)]
     bmc_command.extend(solver_options)
     bmc_command.append(vmtfile.name)
 
+    kind_command = ['./prophic3', '-kind', '-bmc-k', str(bound)]
+    kind_command.extend(solver_options)
+    kind_command.append(vmtfile.name)
+
     commands = {
-        "IC3": ic3_command,
+        "WA": wa_command,
+        "SA": sa_command,
         "BMC": bmc_command,
+        "KIND": kind_command
     }
 
     all_processes = []
@@ -70,6 +80,7 @@ if __name__ == "__main__":
 
     # this one gets updated on the fly as processes end
     processes = []
+
 
     for name, cmd in commands.items():
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stdin=None, stderr=subprocess.PIPE)

@@ -265,6 +265,8 @@ Options get_options(int argc, const char **argv)
                       << "\n   -s : stack-based proof obligation management"
                       << "\n   -m : disable predicate minimization "
                       << "in refinement"
+                      << "\n   -g : enable predecessor generalization"
+                      << "\n   -inc-ref B : use incremental refinement"
                       << "\n   -live-ref-maxiter N : max number of unrollings "
                       << "when refining liveness properites"
                       << "\n   -live-ref-ranking B : use ranking functions for "
@@ -292,6 +294,8 @@ Options get_options(int argc, const char **argv)
                       << "\n   -no-track-proph-vars-pred : don't track prophecy variables in predicate minimizer"
                       << "\n   -no-axiom-reduction: don't reduce enumerated axioms at all"
                       << "\n   -kind : use k-induction instead of prophic3"
+                      << "\n   -solver-approx B : use approximate SMT queries "
+                      << "in IC3."
                       << std::endl;
             exit(0);
             break;
