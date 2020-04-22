@@ -3357,6 +3357,25 @@ msat_term *msat_get_theory_lemmas(msat_env e, size_t *num_tlemmas);
  */
 char *msat_get_search_stats(msat_env e);
 
+/**
+ * \brief Simplify the input formula by performing variable elimination with
+ *        toplevel equalities.
+ *
+ * Apply "toplevel propagation", i.e. inlining of toplevel equalities, until a
+ * fixpoint is reached. The constants occurring in \a to_protect will not be
+ * eliminated.
+ *
+ * \param e The environment in which to operate.
+ * \param formula The formula to simplify.
+ * \param to_protect The constants that should never be eliminated.
+ * \param num_to_protect The size of the \a to_protect array.
+ *
+ * \return The simplified formula, or a t s.t. ::MSAT_ERROR_TERM(t) is true in
+ *         case of errors
+ */
+msat_term msat_simplify(msat_env e, msat_term formula,
+                        msat_term *to_protect, size_t num_to_protect);
+
 
 /*@}*/ /* end of Problem solving group */
 

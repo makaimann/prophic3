@@ -6171,6 +6171,44 @@ arg1_e.repr = (void *)((size_t)arg1);
 
 }
 
+JNIEXPORT jlong JNICALL Java_mathsat_api_msat_1simplify
+  (JNIEnv *jenv, jclass jcls, jlong arg1, jlong arg2, jlongArray arg3, jint arg4)
+{
+  msat_env arg1_e;
+  msat_term arg2_formula;
+  msat_term * arg3_to_protect;
+  size_t arg4_num_to_protect;
+  msat_term msat_simplify_retval;
+  jlong msat_simplify_jretval;
+  
+  
+  
+  
+
+arg1_e.repr = (void *)((size_t)arg1);
+arg2_formula.repr = (void *)((size_t)arg2);
+{
+  size_t i, sz;
+  jlong *tmp = (jlong *)((*jenv)->GetLongArrayElements(jenv, arg3, NULL));
+  sz = (size_t)((*jenv)->GetArrayLength(jenv, arg3));
+  arg3_to_protect = (msat_term *)malloc(sizeof(msat_term) * sz);
+  for (i = 0; i < sz; ++i) {
+     arg3_to_protect[i].repr = (void *)((size_t)tmp[i]);
+  }
+  (*jenv)->ReleaseLongArrayElements(jenv, arg3, tmp, 0);
+}
+
+arg4_num_to_protect = arg4;
+
+  msat_simplify_retval = msat_simplify(arg1_e, arg2_formula, arg3_to_protect, arg4_num_to_protect);
+
+  msat_simplify_jretval = (jlong)((size_t)(msat_simplify_retval.repr));
+free(arg3_to_protect);
+
+  return msat_simplify_jretval;
+
+}
+
 JNIEXPORT jint JNICALL Java_mathsat_api_msat_1create_1itp_1group
   (JNIEnv *jenv, jclass jcls, jlong arg1)
 {
