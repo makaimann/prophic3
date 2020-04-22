@@ -49,17 +49,6 @@ public:
       }
     }
 
-    // don't count witnesses as original indices
-    for (auto elem : abstractor_.witnesses())
-    {
-      msat_term w = elem.second;
-      typestr = msat_type_repr(abstractor_.get_orig_type(w));
-      if (orig_indices_[typestr].find(w) != orig_indices_[typestr].end())
-      {
-        orig_indices_[typestr].erase(w);
-      }
-    }
-
     // Find all the array equalities
     collect_equalities(ts.init(), init_equalities_);
     collect_equalities(ts.trans(), trans_equalities_);
