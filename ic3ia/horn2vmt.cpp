@@ -1274,7 +1274,6 @@ msat_term HornRewriter::make_loc_val(const TermList &locvars, size_t idx)
 
 bool HornRewriter::do_inline_locals(const HornClause &cur, HornClause &out)
 {
-    TermMap subst;
     TermSet forbidden;
         
     for (size_t j = 0; j < cur.body.size(); ++j) {
@@ -1298,114 +1297,9 @@ bool HornRewriter::do_inline_locals(const HornClause &cur, HornClause &out)
         }
     }
 
-    const auto is_subst =
-        [&](msat_term f, msat_term &t, msat_term &v) -> bool
-        {
-            bool neg = false;
-            if (msat_term_is_not(env_, f)) {
-                neg = true;
-                f = msat_term_get_arg(f, 0);
-            }
-            
-            if (msat_term_is_boolean_constant(env_, f)) {
-                if (forbidden.find(f) == forbidden.end()) {
-                    t = f;
-                    v = neg ? msat_make_false(env_) : msat_make_true(env_);
-                    return true;
-                }
-            } else if (msat_term_is_iff(env_, f)) {
-                t = msat_term_get_arg(f, 0);
-                v = msat_term_get_arg(f, 1);
-                if (msat_term_is_constant(env_, t) &&
-                    msat_term_is_constant(env_, v)) {
-                    bool t_s = subst.find(t) != subst.end();
-                    bool v_s = subst.find(v) != subst.end();
-                    bool t_f = forbidden.find(t) != forbidden.end();
-                    bool v_f = forbidden.find(v) != forbidden.end();
-                    if (t_s || v_s || (t_f && v_f)) {
-                        return false;
-                    }
-                    if (!t_f && !v_f) {
-                        if (v < t) {
-                            std::swap(t, v);
-                        }
-                    } else if (!v_f) {
-                        std::swap(t, v);
-                    }
-                    if (neg) {
-                        v = msat_make_not(env_, v);
-                    }
-                    return true;
-                }
-            } else if (!neg && msat_term_is_equal(env_, f)) {
-                t = msat_term_get_arg(f, 0);
-                v = msat_term_get_arg(f, 1);
-                bool t_c = msat_term_is_constant(env_, t);
-                bool v_c = msat_term_is_constant(env_, v);
-                bool t_n = msat_term_is_number(env_, t);
-                bool v_n = msat_term_is_number(env_, v);
-                if (t_c && v_c) {
-                    bool t_s = subst.find(t) != subst.end();
-                    bool v_s = subst.find(v) != subst.end();
-                    bool t_f = forbidden.find(t) != forbidden.end();
-                    bool v_f = forbidden.find(v) != forbidden.end();
-                    if (t_s || v_s || (t_f && v_f)) {
-                        return false;
-                    }
-                    if (!t_f && !v_f) {
-                        if (v < t) {
-                            std::swap(t, v);
-                        }
-                    } else if (!v_f) {
-                        std::swap(t, v);
-                    }
-                    return true;
-                }
-                if (t_n) {
-                    std::swap(t, v);
-                    std::swap(t_c, v_c);
-                    std::swap(t_n, v_n);
-                }
-                if (t_c && v_n && forbidden.find(t) == forbidden.end() &&
-                    subst.find(t) == subst.end()) {
-                    return true;
-                }
-            }
-            return false;
-        };
-
-    msat_term cc = cur.constraint;
-    TermSet seen;
-    TermList to_process;
-
-    while (true) {
-        subst.clear();
-        seen.clear();
-        to_process.push_back(cc);
-        
-        msat_term t, v;
-    
-        while (!to_process.empty()) {
-            auto cur = to_process.back();
-            to_process.pop_back();
-            if (seen.insert(cur).second) {
-                if (msat_term_is_and(env_, cur)) {
-                    to_process.push_back(msat_term_get_arg(cur, 1));
-                    to_process.push_back(msat_term_get_arg(cur, 0));
-                } else if (is_subst(cur, t, v)) {
-                    subst[t] = v;
-                }
-            }
-        }
-
-        if (subst.empty()) {
-            break;
-        }
-
-        cc = apply_substitution(
-            env_, cc, subst, [](msat_term t) { return t; });
-    }
-
+    TermList to_protect(forbidden.begin(), forbidden.end());
+    msat_term cc = msat_simplify(env_, cur.constraint,
+                                 &(to_protect[0]), to_protect.size());
     out = cur;
     if (cc != cur.constraint) {
         out.constraint = cc;

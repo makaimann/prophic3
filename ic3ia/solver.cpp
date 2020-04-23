@@ -25,16 +25,12 @@
 namespace ic3ia {
 
 
-Solver::Solver(msat_env env, const Options &opts)
+Solver::Solver(msat_env env, const Options &opts):
+    parent_env_(env),
+    is_approx_(opts.solver_approx),
+    trace_(opts.trace)
 {
-    msat_config cfg = get_config(BOOL_MODEL);
-    if (!opts.trace.empty()) {
-        std::string name = opts.trace + ".main.smt2";
-        msat_set_option(cfg, "debug.api_call_trace", "1");
-        msat_set_option(cfg, "debug.api_call_trace_filename", name.c_str());
-    }
-    env_ = msat_create_shared_env(cfg, env);
-    msat_destroy_config(cfg);
+    create_env();
 }
 
 
@@ -46,9 +42,28 @@ Solver::~Solver()
 }
 
 
-void Solver::reset()
+void Solver::create_env()
 {
-    msat_reset_env(env_);
+    msat_config cfg = get_config(BOOL_MODEL, false, is_approx_);
+    if (!trace_.empty()) {
+        auto name = trace_ + (is_approx_ ? ".approx" : "") + ".main.smt2";
+        msat_set_option(cfg, "debug.api_call_trace", "1");
+        msat_set_option(cfg, "debug.api_call_trace_filename", name.c_str());
+    }
+    env_ = msat_create_shared_env(cfg, parent_env_);
+    msat_destroy_config(cfg);
+}
+
+
+void Solver::reset(bool precise)
+{
+    if (!precise || !is_approx_) {
+        msat_reset_env(env_);
+    } else {
+        msat_destroy_env(env_);
+        is_approx_ = false;
+        create_env();
+    }
 }
 
 

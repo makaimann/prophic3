@@ -208,6 +208,10 @@ Options get_options(int argc, const char **argv)
             ret.stack = true;
         } else if (a == "-m") {
             ret.minpreds = false;
+        } else if (a == "-g") {
+          ret.generalize_pre = true;
+        } else if (a == "-inc-ref") {
+          ok = getbool(++i, ret.inc_ref);
         } else if (a == "-live-ref-maxiter") {
             ok = getint(++i, ret.live_ref_maxiter);
         } else if (a == "-live-ref-eager") {
@@ -246,6 +250,8 @@ Options get_options(int argc, const char **argv)
           ret.axiom_reduction = false;
         } else if (a == "-kind") {
           ret.kind = true;
+        } else if (a == "-solver-approx") {
+          ok = getbool(++i, ret.solver_approx);
         } else if (a == "-h" || a == "-help" || a == "--help") {
             std::cout << "USAGE: " << argv[0] << " [OPTIONS] FILENAME.vmt"
                       << "\n\n   -v N : set verbosity level"
@@ -259,6 +265,8 @@ Options get_options(int argc, const char **argv)
                       << "\n   -s : stack-based proof obligation management"
                       << "\n   -m : disable predicate minimization "
                       << "in refinement"
+                      << "\n   -g : enable predecessor generalization"
+                      << "\n   -inc-ref B : use incremental refinement"
                       << "\n   -live-ref-maxiter N : max number of unrollings "
                       << "when refining liveness properites"
                       << "\n   -live-ref-ranking B : use ranking functions for "
@@ -286,6 +294,8 @@ Options get_options(int argc, const char **argv)
                       << "\n   -no-track-proph-vars-pred : don't track prophecy variables in predicate minimizer"
                       << "\n   -no-axiom-reduction: don't reduce enumerated axioms at all"
                       << "\n   -kind : use k-induction instead of prophic3"
+                      << "\n   -solver-approx B : use approximate SMT queries "
+                      << "in IC3."
                       << std::endl;
             exit(0);
             break;

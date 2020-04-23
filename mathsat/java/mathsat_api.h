@@ -2281,6 +2281,14 @@ JNIEXPORT jstring JNICALL Java_mathsat_api_msat_1get_1search_1stats
 
 /*
  * Class:     mathsat_api
+ * Method:    msat_simplify
+ * Signature: (JJ[JI)J
+ */
+JNIEXPORT jlong JNICALL Java_mathsat_api_msat_1simplify
+  (JNIEnv *, jclass, jlong, jlong, jlongArray, jint);
+
+/*
+ * Class:     mathsat_api
  * Method:    msat_create_itp_group
  * Signature: (J)I
  */

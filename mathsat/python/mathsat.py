@@ -1610,6 +1610,10 @@ def msat_get_search_stats(e):
     return _mathsat.msat_get_search_stats(e)
 msat_get_search_stats = _mathsat.msat_get_search_stats
 
+def _msat_simplify(e, formula, to_protect, num_to_protect):
+    return _mathsat._msat_simplify(e, formula, to_protect, num_to_protect)
+_msat_simplify = _mathsat._msat_simplify
+
 def msat_create_itp_group(e):
     return _mathsat.msat_create_itp_group(e)
 msat_create_itp_group = _mathsat.msat_create_itp_group
@@ -2144,6 +2148,9 @@ def msat_apply_substitution(env, term, to_subst, values=None):
                 to_subst.append(k)
                 values.append(v)
     return _msat_apply_substitution(env, term, len(to_subst), to_subst, values)
+
+def msat_simplify(env, formula, to_protect):
+    return _msat_simplify(env, formula, to_protect, len(to_protect))
 
 ## EXTRA_PYTHON_CODE_TAG
 

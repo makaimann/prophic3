@@ -1,10 +1,10 @@
-;; setting the :global-decls option to true will turn off the scoping of
-;; declarations and definitions. According to the SMT-LIBv2 standard,
-;; declarations and definitions should be scoped wrt. the current assertion
-;; stack. However, sometimes this behaviour is not desirable. MathSAT support
-;; both scoped and global declarations (with scoped declarations being the
-;; default)
-(set-option :global-decls true)
+;; setting the :global-declarations option to true will turn off the scoping of
+;; declarations and definitions. According to the SMT-LIBv2 standard, in the
+;; scoped option, declarations and definitions should be scoped wrt. the current
+;; assertion stack. However, sometimes this behaviour is not desirable. MathSAT
+;; support both scoped and global declarations (with scoped declarations being
+;; the default)
+(set-option :global-declarations true)
 
 (set-option :produce-models true)
             

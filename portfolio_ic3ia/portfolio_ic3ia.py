@@ -16,6 +16,8 @@ if __name__ == "__main__":
     # TODO: maybe run ic3ia without abstraction?
     parser = argparse.ArgumentParser(description="Run weak and strong abstraction in parallel")
     parser.add_argument('-k', '--bound', type=int, default=1000)
+    parser.add_argument('-inc-ref', type=int)
+    parser.add_argument('-solver-approx', type=int)
     parser.add_argument('chc_file')
     # parser.add_argument('-v', '--verbosity', action="store_true", help="Enable verbose output."
     #                     "   Note: this is buffered and only prints when a process finishes"
@@ -24,6 +26,13 @@ if __name__ == "__main__":
     args = parser.parse_args()
     chc_file = args.chc_file
     bound = args.bound
+    solver_options = []
+    if args.inc_ref is not None:
+        solver_options.append('-inc-ref')
+        solver_options.append(str(args.inc_ref))
+    if args.solver_approx is not None:
+        solver_options.append('-solver-approx')
+        solver_options.append(str(args.solver_approx))
     vmt = None
     with open(chc_file, 'rb') as f:
         horn = f.read()
@@ -43,10 +52,17 @@ if __name__ == "__main__":
     vmtfile.write(vmt.decode())
     vmtfile.flush()
 
+    ic3_command = ['./ic3ia']
+    ic3_command.extend(solver_options)
+    ic3_command.append(vmtfile.name)
+
+    bmc_command = ['./ic3ia', '-bmc', '-bmc-k', str(bound)]
+    bmc_command.extend(solver_options)
+    bmc_command.append(vmtfile.name)
+
     commands = {
-        "IC3": ['./ic3ia', vmtfile.name],
-        "BMC": ['./ic3ia', '-bmc', '-bmc-k', str(bound), vmtfile.name],
-        "KIND": ['./ic3ia', '-kind', '-bmc-k', str(bound), vmtfile.name]
+        "IC3": ic3_command,
+        "BMC": bmc_command,
     }
 
     all_processes = []

@@ -18154,6 +18154,92 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap__msat_simplify(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  msat_env arg1 ;
+  msat_term arg2 ;
+  msat_term *arg3 = (msat_term *) 0 ;
+  size_t arg4 ;
+  void *argp1 ;
+  int res1 = 0 ;
+  void *argp2 ;
+  int res2 = 0 ;
+  size_t val4 ;
+  int ecode4 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  PyObject * obj2 = 0 ;
+  PyObject * obj3 = 0 ;
+  msat_term result;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OOOO:_msat_simplify",&obj0,&obj1,&obj2,&obj3)) SWIG_fail;
+  {
+    res1 = SWIG_ConvertPtr(obj0, &argp1, SWIGTYPE_p_msat_env,  0 );
+    if (!SWIG_IsOK(res1)) {
+      SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "_msat_simplify" "', argument " "1"" of type '" "msat_env""'"); 
+    }  
+    if (!argp1) {
+      SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "_msat_simplify" "', argument " "1"" of type '" "msat_env""'");
+    } else {
+      arg1 = *((msat_env *)(argp1));
+    }
+  }
+  {
+    res2 = SWIG_ConvertPtr(obj1, &argp2, SWIGTYPE_p_msat_term,  0 );
+    if (!SWIG_IsOK(res2)) {
+      SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "_msat_simplify" "', argument " "2"" of type '" "msat_term""'"); 
+    }  
+    if (!argp2) {
+      SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "_msat_simplify" "', argument " "2"" of type '" "msat_term""'");
+    } else {
+      arg2 = *((msat_term *)(argp2));
+    }
+  }
+  {
+    int i, sz;
+    msat_term *tmp;
+    void *ptr;
+    int r;
+    if (!PySequence_Check(obj2)) {
+      PyErr_SetString(PyExc_TypeError, "Sequence object required");
+      return NULL;
+    }
+    sz = PySequence_Size(obj2);
+    tmp = malloc(sizeof(msat_term) * sz);
+    for (i = 0; i < sz; ++i) {
+      PyObject *p = PySequence_ITEM(obj2, i);
+      r = SWIG_ConvertPtr(p, &ptr, SWIGTYPE_p_msat_term, 0);
+      Py_DECREF(p);
+      if (!SWIG_IsOK(r)) {
+        free(tmp);
+        PyErr_SetString(PyExc_TypeError, "Invalid type for argument, " \
+          "msat_term object expected");
+        return NULL;
+      } else {
+        tmp[i] = *((msat_term *)(ptr));
+      }
+    }
+    arg3 = tmp;
+  }
+  ecode4 = SWIG_AsVal_size_t(obj3, &val4);
+  if (!SWIG_IsOK(ecode4)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode4), "in method '" "_msat_simplify" "', argument " "4"" of type '" "size_t""'");
+  } 
+  arg4 = (size_t)(val4);
+  result = msat_simplify(arg1,arg2,arg3,arg4);
+  resultobj = SWIG_NewPointerObj((msat_term *)memcpy((msat_term *)malloc(sizeof(msat_term)),&result,sizeof(msat_term)), SWIGTYPE_p_msat_term, SWIG_POINTER_OWN |  0 );
+  {
+    if (arg3) free(arg3);
+  }
+  return resultobj;
+fail:
+  {
+    if (arg3) free(arg3);
+  }
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *_wrap_msat_create_itp_group(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   msat_env arg1 ;
@@ -21205,6 +21291,7 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"_msat_get_asserted_formulas", _wrap__msat_get_asserted_formulas, METH_VARARGS, NULL},
 	 { (char *)"_msat_get_theory_lemmas", _wrap__msat_get_theory_lemmas, METH_VARARGS, NULL},
 	 { (char *)"msat_get_search_stats", _wrap_msat_get_search_stats, METH_VARARGS, NULL},
+	 { (char *)"_msat_simplify", _wrap__msat_simplify, METH_VARARGS, NULL},
 	 { (char *)"msat_create_itp_group", _wrap_msat_create_itp_group, METH_VARARGS, NULL},
 	 { (char *)"msat_set_itp_group", _wrap_msat_set_itp_group, METH_VARARGS, NULL},
 	 { (char *)"_msat_get_interpolant", _wrap__msat_get_interpolant, METH_VARARGS, NULL},

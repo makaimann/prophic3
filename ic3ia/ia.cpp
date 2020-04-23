@@ -128,6 +128,7 @@ Refiner::Refiner(const TransitionSystem &ts, const Options &opts,
     predminimizer_(ts, opts, abs, un_)
 {
     minpreds_ = opts.minpreds;
+    incref_ = opts.inc_ref;
     msat_config cfg = get_config(FULL_MODEL, true);
     if (!opts.trace.empty()) {
         std::string name = opts.trace + ".itp.smt2";
@@ -165,18 +166,29 @@ bool Refiner::refine(const std::vector<TermList> &cex, const TermSet *imp_vars)
 
     // generate the BMC problem for the input abstract counterexample trace,
     // putting each step in a different interpolation group
+    msat_result res = MSAT_UNKNOWN;
     for (size_t k = 0; k < cex.size(); ++k) {
         msat_set_itp_group(solver_, groups_[k]);
         msat_term s = make_and(solver_, cex[k]);
-        msat_assert_formula(solver_, un_.at_time(s, k));
+        msat_term formula = un_.at_time(s, k);
         if (k != cex.size()-1) {
-            msat_assert_formula(solver_, un_.at_time(ts_.trans(), k));
+            formula = msat_make_and(solver_, formula,
+                                    un_.at_time(ts_.trans(), k));
         }
+        msat_assert_formula(solver_, simplify(formula, k));
         logger(3) << "abstract state " << k << ": " << logterm(solver_, s)
                   << endlog;
+        if (incref_) {
+            res = msat_solve(solver_);
+            if (res == MSAT_UNSAT) {
+                break;
+            }
+        }
     }
     // check whether the counterexample is concrete
-    msat_result res = msat_solve(solver_);    
+    if (res != MSAT_UNSAT) {
+        res = msat_solve(solver_);
+    }
 
     if (res == MSAT_UNSAT) {
         logger(3) << "counterexample is spurious, extracting interpolants"
@@ -196,6 +208,18 @@ bool Refiner::refine(const std::vector<TermList> &cex, const TermSet *imp_vars)
 }
 
 
+msat_term Refiner::simplify(msat_term formula, size_t k)
+{
+    to_protect_.clear();
+    for (auto v : ts_.statevars()) {
+        to_protect_.push_back(un_.at_time(v, k));
+        to_protect_.push_back(un_.at_time(v, k+1));
+    }
+    return msat_simplify(solver_, formula,
+                         &(to_protect_[0]), to_protect_.size());
+}
+
+
 void Refiner::extract_predicates(msat_env env)
 {
     preds_.clear();
@@ -204,10 +228,9 @@ void Refiner::extract_predicates(msat_env env)
         msat_term t = msat_get_interpolant(env, &groups_[0], i);
         if (MSAT_ERROR_TERM(t))
         {
-          std::cout << "Failed to get interpolant." << std::endl;
+          logger(0) << "Failed to get an interpolant." << endlog;
           throw std::exception();
         }
-
         logger(3) << "got interpolant " << i << ": " << logterm(env, t)
                   << endlog;
         get_predicates(env, un_.untime(t), preds_);
@@ -328,7 +351,7 @@ bool PredRefMinimizer::operator()(msat_term trans,
 
     TermList curpreds(newpreds.begin(), newpreds.end());
     std::shuffle(curpreds.begin(), curpreds.end(), rng_);
-
+    
     for (msat_term p : curpreds) {
         msat_term np = ts_.next(p);
         msat_term ap = abs_.abstract(np);
@@ -359,7 +382,7 @@ bool PredRefMinimizer::operator()(msat_term trans,
                 newpreds.insert(p);
             } else if (track_proph_vars_pred &&
                        imp_vars != NULL && contains_var(env, p, *imp_vars)) {
-                newpreds.insert(p);
+                 newpreds.insert(p);
             }
         }
         if (newpreds.empty()) {
