@@ -108,10 +108,12 @@ if __name__ == "__main__":
     while not shutdown:
         for p in processes:
             if p.poll() is not None:
+                # 0 is sat, 1 is unsat
                 # return code for unknown is 2
-                # anything higher than that is an error
+                # anything else is an error
                 # keep solving unless there are no more running processes
-                if p.returncode >= 2:
+                ret = p.returncode
+                if ret != 0 and ret != 1:
                     processes.remove(p)
                     # print unknown only if this is the last process
                     if not processes:
