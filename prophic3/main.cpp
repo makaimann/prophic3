@@ -20,83 +20,77 @@ using namespace prophic3;
 
 int main(int argc, const char **argv)
 {
-  Options opts = get_options(argc, argv);
+  try {
+    Options opts = get_options(argc, argv);
 
-  msat_config cfg = msat_create_config();
-  msat_env env = msat_create_env(cfg);
-  EnvDeleter del_env(env);
-  msat_destroy_config(cfg);
+    msat_config cfg = msat_create_config();
+    msat_env env = msat_create_env(cfg);
+    EnvDeleter del_env(env);
+    msat_destroy_config(cfg);
 
-  TransitionSystem ts(env);
-  TransitionSystem product(env);
-  LTLEncoder ltl(opts, env);
-  TransitionSystem tableau(env);
-  TermList preds;
+    TransitionSystem ts(env);
+    TransitionSystem product(env);
+    LTLEncoder ltl(opts, env);
+    TransitionSystem tableau(env);
+    TermList preds;
 
-  if (!read_ts(opts, ts, ltl, tableau, product, preds)) {
-    std::cout << "ERROR reading input" << std::endl;
-    return 3;
-  }
+    if (!read_ts(opts, ts, ltl, tableau, product, preds)) {
+      std::cout << "ERROR reading input" << std::endl;
+      return 3;
+    }
 
-  if (!opts.trace.empty()) {
-    logger(1) << "dumping SMT traces to " << opts.trace << ".*.smt2"
-              << endlog;
-  }
+    if (!opts.trace.empty()) {
+      logger(1) << "dumping SMT traces to " << opts.trace << ".*.smt2"
+                << endlog;
+    }
 
-  if (opts.bmc && opts.kind)
-  {
-    std::cout << "ERROR: can't select bmc and kind" << std::endl;
-    return 3;
-  }
+    if (opts.bmc && opts.kind) {
+      std::cout << "ERROR: can't select bmc and kind" << std::endl;
+      return 3;
+    }
 
-  LiveEncoder liveenc(product, opts);
+    LiveEncoder liveenc(product, opts);
 
-  msat_truth_value res = MSAT_UNDEF;
-  if (opts.bmc)
-  {
-    Bmc bmc(product, opts);
-    if (opts.bmc_max_k > 0)
-    {
-      if (!bmc.check_until(opts.bmc_max_k)) {
-        res = MSAT_FALSE;
+    msat_truth_value res = MSAT_UNDEF;
+    if (opts.bmc) {
+      Bmc bmc(product, opts);
+      if (opts.bmc_max_k > 0) {
+        if (!bmc.check_until(opts.bmc_max_k)) {
+          res = MSAT_FALSE;
+        }
+      } else {
+        res = bmc.prove();
+      }
+    } else if (opts.kind) {
+      Kind kind(product, opts);
+      if (opts.bmc_max_k > 0) {
+        res = kind.check_until(opts.bmc_max_k);
+      } else {
+        res = kind.prove();
       }
     }
     else
     {
-      res = bmc.prove();
+      ProphIC3 prophic3(product, opts, liveenc, opts.verbosity);
+      res = prophic3.prove();
     }
-  }
-  else if (opts.kind)
-  {
-    Kind kind(product, opts);
-    if (opts.bmc_max_k > 0)
-    {
-      res = kind.check_until(opts.bmc_max_k);
-    }
-    else
-    {
-      res = kind.prove();
-    }
-  }
-  else
-  {
-    ProphIC3 prophic3(product, opts, liveenc, opts.verbosity);
-    res = prophic3.prove();
-  }
 
-  if (res == MSAT_FALSE) {
-    // cout << "The property is false" << endl;
-    cout << "unsat" << endl; // similar to spacer
-    return 1;
-  } else if (res == MSAT_TRUE) {
-    // cout << "The property is true" << endl;
-    cout << "sat" << endl; // similar to spacer
-    return 0;
-  } else {
-    // cout << "Failed to prove or disprove the property..." << endl;
-    cout << "unknown" << endl; // similar to spacer
-    return 2;
+    if (res == MSAT_FALSE) {
+      // cout << "The property is false" << endl;
+      cout << "unsat" << endl; // similar to spacer
+      return 1;
+    } else if (res == MSAT_TRUE) {
+      // cout << "The property is true" << endl;
+      cout << "sat" << endl; // similar to spacer
+      return 0;
+    } else {
+      // cout << "Failed to prove or disprove the property..." << endl;
+      cout << "unknown" << endl; // similar to spacer
+      return 2;
+    }
+  } catch (std::exception &e) {
+    std::cerr << e.what() << std::endl;
+    return 3;
   }
-
   return 3;
 }
