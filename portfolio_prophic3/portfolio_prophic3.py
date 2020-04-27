@@ -12,27 +12,13 @@ import sys
 from subprocess import PIPE, Popen
 
 if __name__ == "__main__":
-
-    # TODO: maybe run ic3ia without abstraction?
-    parser = argparse.ArgumentParser(description="Run weak and strong abstraction in parallel")
+    parser = argparse.ArgumentParser(description="Run weak and strong abstraction prophic3, as well as bmc and k-induction in parallel")
     parser.add_argument('-k', '--bound', type=int, default=1000)
-    parser.add_argument('-inc-ref', type=int)
-    parser.add_argument('-solver-approx', type=int)
     parser.add_argument('chc_file')
-    # parser.add_argument('-v', '--verbosity', action="store_true", help="Enable verbose output."
-    #                     "   Note: this is buffered and only prints when a process finishes"
-    #                     "         or there is an interrupt")
 
     args = parser.parse_args()
     chc_file = args.chc_file
     bound = args.bound
-    solver_options = []
-    if args.inc_ref is not None:
-        solver_options.append('-inc-ref')
-        solver_options.append(str(args.inc_ref))
-    if args.solver_approx is not None:
-        solver_options.append('-solver-approx')
-        solver_options.append(str(args.solver_approx))
     vmt = None
     with open(chc_file, 'rb') as f:
         horn = f.read()
@@ -52,27 +38,11 @@ if __name__ == "__main__":
     vmtfile.write(vmt.decode())
     vmtfile.flush()
 
-    wa_command = ['./prophic3']
-    wa_command.extend(solver_options)
-    wa_command.append(vmtfile.name)
-
-    sa_command = ['./prophic3', '-no-eq-uf']
-    sa_command.extend(solver_options)
-    sa_command.append(vmtfile.name)
-
-    bmc_command = ['./prophic3', '-bmc', '-bmc-k', str(bound)]
-    bmc_command.extend(solver_options)
-    bmc_command.append(vmtfile.name)
-
-    kind_command = ['./prophic3', '-kind', '-bmc-k', str(bound)]
-    kind_command.extend(solver_options)
-    kind_command.append(vmtfile.name)
-
     commands = {
-        "WA": wa_command,
-        "SA": sa_command,
-        "BMC": bmc_command,
-        "KIND": kind_command
+        "WA": ['./prophic3', vmtfile.name],
+        "SA": ['./prophic3', '-no-eq-uf', vmtfile.name],
+        "BMC": ['./prophic3', '-bmc', '-bmc-k', str(bound), vmtfile.name],
+        "KIND": ['./prophic3', '-kind', '-bmc-k', str(bound), vmtfile.name]
     }
 
     all_processes = []
