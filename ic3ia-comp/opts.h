@@ -63,7 +63,7 @@ struct Options {
         witness = false;
         nopreds = false;
         generalize_pre = false;
-        solver_approx = true;
+        solver_approx = false;
         solver_reset_interval = 5000;
         filename = "";
         trace = "";

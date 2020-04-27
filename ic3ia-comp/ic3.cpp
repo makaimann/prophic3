@@ -197,6 +197,16 @@ bool IC3::check_init()
     
     bool sat = solve();
 
+    if (sat && solver_.is_approx()) {
+        logger(1) << "possible counterexample found at depth 0, "
+                  << "setting solver to precise" << endlog;
+        solver_.reset(true);
+        reset_solver();
+        activate_frame(0);
+        activate_bad();
+        sat = solve();
+    }
+
     if (sat) {
         wit_.push_back(TermList());
         // this is a bit more abstract than it could...
