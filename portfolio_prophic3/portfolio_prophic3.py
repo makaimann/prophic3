@@ -13,7 +13,7 @@ from subprocess import PIPE, Popen
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run strong abstraction prophic3 and bmc in parallel")
-    parser.add_argument('-k', '--bound', type=int, default=1000)
+    parser.add_argument('-k', '--bound', type=int, default=100)
     parser.add_argument('chc_file')
 
     args = parser.parse_args()
