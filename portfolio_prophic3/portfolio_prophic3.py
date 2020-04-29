@@ -42,7 +42,6 @@ if __name__ == "__main__":
         "WA": ['./prophic3', vmtfile.name],
         "SA": ['./prophic3', '-no-eq-uf', vmtfile.name],
         "BMC": ['./prophic3', '-bmc', '-bmc-k', str(bound), vmtfile.name],
-        "KIND": ['./prophic3', '-kind', '-bmc-k', str(bound), vmtfile.name]
     }
 
     all_processes = []
