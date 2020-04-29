@@ -12,7 +12,7 @@ import sys
 from subprocess import PIPE, Popen
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Run weak and strong abstraction prophic3, as well as bmc and k-induction in parallel")
+    parser = argparse.ArgumentParser(description="Run strong abstraction prophic3 and bmc in parallel")
     parser.add_argument('-k', '--bound', type=int, default=1000)
     parser.add_argument('chc_file')
 
@@ -39,7 +39,6 @@ if __name__ == "__main__":
     vmtfile.flush()
 
     commands = {
-        "WA": ['./prophic3', vmtfile.name],
         "SA": ['./prophic3', '-no-eq-uf', vmtfile.name],
         "BMC": ['./prophic3', '-bmc', '-bmc-k', str(bound), vmtfile.name],
     }
