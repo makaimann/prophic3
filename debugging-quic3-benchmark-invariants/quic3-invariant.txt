@@ -1,0 +1,23 @@
+(define-fun main@bb22.i ((x!0 Int)
+ (x!1 (Array Int Int))
+ (c Int)
+ (x!3 Int)
+ (x!4 Int)) Bool
+  (let (
+         (a!1
+              (forall ((sk!0 Int))
+                    (or (<= (+ x!0 x!4 (* (- 1) sk!0)) 0)
+                        (<= (+ c (* (- 1) (select x!1 sk!0))) 0)
+                        (<= (+ sk!0 (* (- 1) x!0) (* (- 1) x!3)) 0))
+              )
+          )
+        )
+
+     (let (
+            (a!3 (or
+                    (<= (+ x!4 (* (- 1) x!3)) 0)
+                    (<= (+ c (* (- 1) (select x!1 (+ x!0 x!3)))) 0)
+                  )
+            )
+          )
+      (and a!1 a!3))))
