@@ -46,6 +46,9 @@ void handle_interrupt(int signo)
 
 int main(int argc, const char **argv)
 {
+
+  try
+  {
     double total_time;
     TimeKeeper tk(total_time);
     std::vector<std::string> args(argv+1, argv+argc);
@@ -157,9 +160,31 @@ int main(int argc, const char **argv)
     std::cout << "total_time = "
               << std::setprecision(3) << std::fixed << tk.get() << std::endl;
 
-    std::cout << (solver.result == MSAT_TRUE ? "safe" :
-                  solver.result == MSAT_FALSE ? "unsafe" : "unknown")
-              << std::endl;
+    // std::cout << (solver.result == MSAT_TRUE ? "sat" :
+    //               solver.result == MSAT_FALSE ? "unsat" : "unknown")
+    //           << std::endl;
+    if (solver.result == MSAT_FALSE)
+    {
+      std::cout << "unsat" << std::endl;
+      return 1;
+    }
+    else if (solver.result == MSAT_TRUE)
+    {
+      std::cout << "sat" << std::endl;
+      return 0;
+    }
+    else
+    {
+      std::cout << "unknown" << std::endl;
+      return 2;
+    }
+    return 3;
+  }
+  catch (std::exception & e)
+  {
+    std::cerr << e.what() << std::endl;
+    return 3;
+  }
 
-    return 0;
+  return 3;
 }
