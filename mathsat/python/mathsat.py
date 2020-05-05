@@ -289,6 +289,8 @@ MSAT_TAG_PI = _mathsat.MSAT_TAG_PI
 MSAT_TAG_EXP = _mathsat.MSAT_TAG_EXP
 MSAT_TAG_SIN = _mathsat.MSAT_TAG_SIN
 MSAT_TAG_LOG = _mathsat.MSAT_TAG_LOG
+MSAT_TAG_POW = _mathsat.MSAT_TAG_POW
+MSAT_TAG_ASIN = _mathsat.MSAT_TAG_ASIN
 MSAT_TAG_FORALL = _mathsat.MSAT_TAG_FORALL
 MSAT_TAG_EXISTS = _mathsat.MSAT_TAG_EXISTS
 class msat_model(_object):
@@ -578,6 +580,14 @@ msat_make_sin = _mathsat.msat_make_sin
 def msat_make_log(e, t):
     return _mathsat.msat_make_log(e, t)
 msat_make_log = _mathsat.msat_make_log
+
+def msat_make_pow(e, tb, te):
+    return _mathsat.msat_make_pow(e, tb, te)
+msat_make_pow = _mathsat.msat_make_pow
+
+def msat_make_asin(e, t):
+    return _mathsat.msat_make_asin(e, t)
+msat_make_asin = _mathsat.msat_make_asin
 
 def msat_make_number(e, num_rep):
     return _mathsat.msat_make_number(e, num_rep)
@@ -1003,6 +1013,14 @@ def msat_term_is_log(e, t):
     return _mathsat.msat_term_is_log(e, t)
 msat_term_is_log = _mathsat.msat_term_is_log
 
+def msat_term_is_pow(e, t):
+    return _mathsat.msat_term_is_pow(e, t)
+msat_term_is_pow = _mathsat.msat_term_is_pow
+
+def msat_term_is_asin(e, t):
+    return _mathsat.msat_term_is_asin(e, t)
+msat_term_is_asin = _mathsat.msat_term_is_asin
+
 def msat_term_is_array_read(e, t):
     return _mathsat.msat_term_is_array_read(e, t)
 msat_term_is_array_read = _mathsat.msat_term_is_array_read
@@ -1414,6 +1432,10 @@ _msat_get_theory_lemmas = _mathsat._msat_get_theory_lemmas
 def msat_get_search_stats(e):
     return _mathsat.msat_get_search_stats(e)
 msat_get_search_stats = _mathsat.msat_get_search_stats
+
+def _msat_simplify(e, formula, to_protect, num_to_protect):
+    return _mathsat._msat_simplify(e, formula, to_protect, num_to_protect)
+_msat_simplify = _mathsat._msat_simplify
 
 def msat_create_itp_group(e):
     return _mathsat.msat_create_itp_group(e)
@@ -1945,6 +1967,9 @@ def msat_apply_substitution(env, term, to_subst, values=None):
                 to_subst.append(k)
                 values.append(v)
     return _msat_apply_substitution(env, term, len(to_subst), to_subst, values)
+
+def msat_simplify(env, formula, to_protect):
+    return _msat_simplify(env, formula, to_protect, len(to_protect))
 
 ## EXTRA_PYTHON_CODE_TAG
 
