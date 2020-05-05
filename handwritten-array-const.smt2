@@ -10,8 +10,8 @@
                  (a (Array Int Int))
                 )
 
-                (=> (init i N c a)
-                    (= i 0))))
+                (=> (= i 0)
+                    (init i N c a))))
 
 (assert (forall (
                   (i Int)
