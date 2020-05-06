@@ -171,22 +171,6 @@ extern "C" {
 #define mathsat_api_MSAT_TAG_INT_FROM_SBV 70L
 #undef mathsat_api_MSAT_TAG_INT_TO_BV
 #define mathsat_api_MSAT_TAG_INT_TO_BV 71L
-#undef mathsat_api_MSAT_TAG_PI
-#define mathsat_api_MSAT_TAG_PI 72L
-#undef mathsat_api_MSAT_TAG_EXP
-#define mathsat_api_MSAT_TAG_EXP 73L
-#undef mathsat_api_MSAT_TAG_SIN
-#define mathsat_api_MSAT_TAG_SIN 74L
-#undef mathsat_api_MSAT_TAG_LOG
-#define mathsat_api_MSAT_TAG_LOG 75L
-#undef mathsat_api_MSAT_TAG_POW
-#define mathsat_api_MSAT_TAG_POW 76L
-#undef mathsat_api_MSAT_TAG_ASIN
-#define mathsat_api_MSAT_TAG_ASIN 77L
-#undef mathsat_api_MSAT_TAG_FORALL
-#define mathsat_api_MSAT_TAG_FORALL 78L
-#undef mathsat_api_MSAT_TAG_EXISTS
-#define mathsat_api_MSAT_TAG_EXISTS 79L
 #undef mathsat_api_MSAT_EXIST_ELIM_ALLSMT_FM
 #define mathsat_api_MSAT_EXIST_ELIM_ALLSMT_FM 0L
 #undef mathsat_api_MSAT_EXIST_ELIM_VTS
@@ -581,22 +565,6 @@ JNIEXPORT jlong JNICALL Java_mathsat_api_msat_1make_1sin
  * Signature: (JJ)J
  */
 JNIEXPORT jlong JNICALL Java_mathsat_api_msat_1make_1log
-  (JNIEnv *, jclass, jlong, jlong);
-
-/*
- * Class:     mathsat_api
- * Method:    msat_make_pow
- * Signature: (JJJ)J
- */
-JNIEXPORT jlong JNICALL Java_mathsat_api_msat_1make_1pow
-  (JNIEnv *, jclass, jlong, jlong, jlong);
-
-/*
- * Class:     mathsat_api
- * Method:    msat_make_asin
- * Signature: (JJ)J
- */
-JNIEXPORT jlong JNICALL Java_mathsat_api_msat_1make_1asin
   (JNIEnv *, jclass, jlong, jlong);
 
 /*
@@ -1177,38 +1145,6 @@ JNIEXPORT jlong JNICALL Java_mathsat_api_msat_1make_1int_1from_1sbv
 
 /*
  * Class:     mathsat_api
- * Method:    msat_make_forall
- * Signature: (JJJ)J
- */
-JNIEXPORT jlong JNICALL Java_mathsat_api_msat_1make_1forall
-  (JNIEnv *, jclass, jlong, jlong, jlong);
-
-/*
- * Class:     mathsat_api
- * Method:    msat_make_exists
- * Signature: (JJJ)J
- */
-JNIEXPORT jlong JNICALL Java_mathsat_api_msat_1make_1exists
-  (JNIEnv *, jclass, jlong, jlong, jlong);
-
-/*
- * Class:     mathsat_api
- * Method:    msat_make_variable
- * Signature: (JLjava/lang/String;J)J
- */
-JNIEXPORT jlong JNICALL Java_mathsat_api_msat_1make_1variable
-  (JNIEnv *, jclass, jlong, jstring, jlong);
-
-/*
- * Class:     mathsat_api
- * Method:    msat_existentially_quantify
- * Signature: (JJ[JI)J
- */
-JNIEXPORT jlong JNICALL Java_mathsat_api_msat_1existentially_1quantify
-  (JNIEnv *, jclass, jlong, jlong, jlongArray, jint);
-
-/*
- * Class:     mathsat_api
  * Method:    msat_make_term
  * Signature: (JJ[J)J
  */
@@ -1437,22 +1373,6 @@ JNIEXPORT jint JNICALL Java_mathsat_api_msat_1term_1is_1sin
  * Signature: (JJ)I
  */
 JNIEXPORT jint JNICALL Java_mathsat_api_msat_1term_1is_1log
-  (JNIEnv *, jclass, jlong, jlong);
-
-/*
- * Class:     mathsat_api
- * Method:    msat_term_is_pow
- * Signature: (JJ)I
- */
-JNIEXPORT jint JNICALL Java_mathsat_api_msat_1term_1is_1pow
-  (JNIEnv *, jclass, jlong, jlong);
-
-/*
- * Class:     mathsat_api
- * Method:    msat_term_is_asin
- * Signature: (JJ)I
- */
-JNIEXPORT jint JNICALL Java_mathsat_api_msat_1term_1is_1asin
   (JNIEnv *, jclass, jlong, jlong);
 
 /*
@@ -1953,38 +1873,6 @@ JNIEXPORT jint JNICALL Java_mathsat_api_msat_1term_1is_1int_1from_1sbv
 
 /*
  * Class:     mathsat_api
- * Method:    msat_term_is_quantifier
- * Signature: (JJ)I
- */
-JNIEXPORT jint JNICALL Java_mathsat_api_msat_1term_1is_1quantifier
-  (JNIEnv *, jclass, jlong, jlong);
-
-/*
- * Class:     mathsat_api
- * Method:    msat_term_is_forall
- * Signature: (JJ)I
- */
-JNIEXPORT jint JNICALL Java_mathsat_api_msat_1term_1is_1forall
-  (JNIEnv *, jclass, jlong, jlong);
-
-/*
- * Class:     mathsat_api
- * Method:    msat_term_is_exists
- * Signature: (JJ)I
- */
-JNIEXPORT jint JNICALL Java_mathsat_api_msat_1term_1is_1exists
-  (JNIEnv *, jclass, jlong, jlong);
-
-/*
- * Class:     mathsat_api
- * Method:    msat_term_is_variable
- * Signature: (JJ)I
- */
-JNIEXPORT jint JNICALL Java_mathsat_api_msat_1term_1is_1variable
-  (JNIEnv *, jclass, jlong, jlong);
-
-/*
- * Class:     mathsat_api
  * Method:    msat_visit_term
  * Signature: (JJLmathsat/VisitTermCallback;I)I
  */
@@ -2278,14 +2166,6 @@ JNIEXPORT jlongArray JNICALL Java_mathsat_api_msat_1get_1theory_1lemmas
  */
 JNIEXPORT jstring JNICALL Java_mathsat_api_msat_1get_1search_1stats
   (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     mathsat_api
- * Method:    msat_simplify
- * Signature: (JJ[JI)J
- */
-JNIEXPORT jlong JNICALL Java_mathsat_api_msat_1simplify
-  (JNIEnv *, jclass, jlong, jlong, jlongArray, jint);
 
 /*
  * Class:     mathsat_api
