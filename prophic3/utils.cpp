@@ -208,6 +208,10 @@ Options get_options(int argc, const char **argv)
             ret.stack = true;
         } else if (a == "-m") {
             ret.minpreds = false;
+        } else if (a == "-g") {
+          ret.generalize_pre = true;
+        } else if (a == "-inc-ref") {
+          ok = getbool(++i, ret.inc_ref);
         } else if (a == "-live-ref-maxiter") {
             ok = getint(++i, ret.live_ref_maxiter);
         } else if (a == "-live-ref-eager") {
@@ -232,6 +236,8 @@ Options get_options(int argc, const char **argv)
             ok = getint(++i, ret.bmc_max_k);
         } else if (a == "-check-witness") {
           ok = getbool(++i, ret.check_witness);
+        } else if (a == "-solver-approx") {
+          ok = getbool(++i, ret.solver_approx);
         } else if (a == "-no-eq-uf") {
             ret.use_uf_for_arr_eq = false;
         } else if (a == "-no-hist-eq-preds") {
@@ -259,6 +265,8 @@ Options get_options(int argc, const char **argv)
                       << "\n   -s : stack-based proof obligation management"
                       << "\n   -m : disable predicate minimization "
                       << "in refinement"
+                      << "\n   -g : enable predecessor generalization"
+                      << "\n   -inc-ref B : use incremental refinement"
                       << "\n   -live-ref-maxiter N : max number of unrollings "
                       << "when refining liveness properites"
                       << "\n   -live-ref-ranking B : use ranking functions for "
@@ -280,6 +288,8 @@ Options get_options(int argc, const char **argv)
                       << "\n   -bmc-k N : max k value for BMC"
                       << "\n   -check-witness B : check the correctness "
                       << "of witnesses"
+                      << "\n   -solver-approx B : use approximate SMT queries "
+                      << "in IC3."
                       << "\n   -no-eq-uf : use actual equalities between abstracted arrays"
                       << "\n   -no-hist-eq-preds : don't use history equalities as initial predicates"
                       << "\n   -max-array-axioms : maximum number of array axioms per iteration (per BMC model)"
