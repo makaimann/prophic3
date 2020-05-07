@@ -774,29 +774,27 @@ TermMap ProphIC3::add_history_vars(const std::unordered_map<msat_term, size_t> t
     abs_ts_.add_statevar(v, next_hist_vars.at(v));
     msat_term hist_eq = hist_trans.at(v);
     abs_ts_.add_trans(hist_eq);
-    get_free_vars(msat_env_, hist_eq, free_vars);
 
     if (opts_.use_hist_eq_initial_preds)
     {
+      get_free_vars(msat_env_, abs_ts_.cur(hist_eq), free_vars);
       // heuristic -- use the current-state version of these equalities as initial predicates
       preds_.push_back(abs_ts_.cur(hist_eq));
     }
 
   }
 
-  msat_term fv_cur;
   for (auto fv : free_vars)
   {
-    fv_cur = abs_ts_.cur(fv);
-    if (!abs_ts_.is_statevar(fv_cur))
+    if (!abs_ts_.is_statevar(fv))
     {
       msat_decl fvN_decl = msat_declare_function(msat_env_,
-                                            (msat_to_smtlib2_term(msat_env_, fv_cur) + std::string(".next")).c_str(),
-                                            msat_term_get_type(fv_cur));
+                                            (msat_to_smtlib2_term(msat_env_, fv) + std::string(".next")).c_str(),
+                                            msat_term_get_type(fv));
       msat_term fvN = msat_make_constant(msat_env_, fvN_decl);
-      orig_types[fvN] = msat_term_get_type(fv_cur);
-      logger(2) << "promoting input " << msat_to_smtlib2_term(msat_env_, fv_cur) << " to a state variable." << endlog;
-      abs_ts_.add_statevar(fv_cur, fvN);
+      orig_types[fvN] = msat_term_get_type(fv);
+      logger(2) << "promoting input " << msat_to_smtlib2_term(msat_env_, fv) << " to a state variable." << endlog;
+      abs_ts_.add_statevar(fv, fvN);
     }
   }
 
