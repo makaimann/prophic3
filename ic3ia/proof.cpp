@@ -38,8 +38,8 @@ ProofChecker::ProofChecker(const Options &opts, TransitionSystem &ts):
     env_ = ts_.get_env();
 
     std::vector<msat_type> tps(2, msat_get_bool_type(env_));
-    or_decl_ = msat_declare_function(
-        env_, "or_", msat_get_function_type(env_, &tps[0], 2, tps[0]));
+    // or_decl_ = msat_declare_function(
+    //     env_, "or_", msat_get_function_type(env_, &tps[0], 2, tps[0]));
 }
 
 
