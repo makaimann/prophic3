@@ -62,6 +62,7 @@ struct Options {
     bool unsatcore_array_refiner;
     bool track_proph_vars_pred;
     bool axiom_reduction;
+    bool kind;
 
     Options()
     {
@@ -99,6 +100,7 @@ struct Options {
         unsatcore_array_refiner = true;
         track_proph_vars_pred = true;
         axiom_reduction = true;
+        kind = false;
     }
 };
 
