@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import os, sys
-sys.path.insert(0, '/usr/lib/python2.7/dist-packages/z3')
+sys.path.insert(0, '/home/irfan/local/z3/build/python')
 import z3
 
 def msg(s):
