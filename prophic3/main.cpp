@@ -53,6 +53,7 @@ int main(int argc, const char **argv)
   Options opts = get_options(argc, argv);
 
   msat_config cfg = msat_create_config();
+  msat_set_option(cfg, "allow_bool_function_args", "true");
   msat_env env = msat_create_env(cfg);
   EnvDeleter del_env(env);
   msat_destroy_config(cfg);
@@ -119,8 +120,9 @@ int main(int argc, const char **argv)
       double witness_check_time;
 
       if (safe && opts.check_witness) {
+          TransitionSystem & abs_ts = prophic3.get_abs_ts();
           TimeKeeper tk(witness_check_time);
-          if (!check_witness(opts, ts, wit, ltl, tableau, liveenc)) {
+          if (!check_witness(opts, abs_ts, wit, ltl, tableau, liveenc)) {
               std::cout << "ERROR: the witness is incorrect\n" << std::endl;
           } else {
               std::cout << "the witness is correct\n" << std::endl;
