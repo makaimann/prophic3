@@ -35,7 +35,9 @@ struct Options {
     int seed;
     bool stack;
     bool minpreds;
+    bool inc_ref;
     bool generalize_pre;
+    bool solver_approx;
     int solver_reset_interval;
     int live_ref_maxiter;
     bool live_ref_eager;
@@ -70,12 +72,14 @@ struct Options {
         witness = false;
         nopreds = false;
         generalize_pre = false;
+        solver_approx = false;
         solver_reset_interval = 5000;
         filename = "";
         trace = "";
         seed = 0;
         stack = false;
         minpreds = true;
+        inc_ref = false;
         live_ref_maxiter = 10;
         live_ref_eager = true;
         live_ref_ranking = true;

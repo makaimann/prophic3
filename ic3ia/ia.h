@@ -115,6 +115,7 @@ public:
 private:
     void extract_predicates(msat_env env);
     void minimize_predicates(const std::vector<TermList> &cex, const TermSet *imp_vars=NULL);
+    msat_term simplify(msat_term formula, size_t k);
     
     const TransitionSystem &ts_;
     ///< the input transition system
@@ -140,8 +141,14 @@ private:
     bool minpreds_;
     ///< if true, use predicate minimization
 
+    bool incref_;
+    ///< if true, use incremental refinement
+
     PredRefMinimizer predminimizer_;
     ///< the predicate minimizer (used only if minpreds_ is true)
+
+    TermList to_protect_;
+    ///< helper for simplify()
 };
 
 } // namespace ic3ia

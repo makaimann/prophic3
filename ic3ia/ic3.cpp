@@ -203,6 +203,16 @@ bool IC3::check_init()
     
     bool sat = solve();
 
+    if (sat && solver_.is_approx()) {
+        logger(1) << "possible counterexample found at depth 0, "
+                  << "setting solver to precise" << endlog;
+        solver_.reset(true);
+        reset_solver();
+        activate_frame(0);
+        activate_bad();
+        sat = solve();
+    }
+
     if (sat) {
         wit_.push_back(TermList());
         // this is a bit more abstract than it could...
@@ -455,7 +465,7 @@ bool IC3::block(const Cube &c, unsigned int idx, Cube *out, bool compute_cti)
     if (opts_.seed) {
         std::vector<size_t> idx(primed.size());
         std::iota(idx.begin(), idx.end(), 0);
-        std::shuffle(idx.begin(), idx.end(), rng_);
+        shuffle(idx, rng_);
 
         for (size_t i : idx) {
             solver_.assume(primed[i]);
@@ -623,9 +633,17 @@ msat_truth_value IC3::refine_abstraction(std::vector<TermList> &cex)
             }
         }
         if (c == 0) {
-            logger(1) << "refinement failure (no new predicate found)"
-                      << endlog;
-            return MSAT_UNDEF;
+            if (solver_.is_approx()) {
+                logger(1) << "no new predicate found, setting solver to precise"
+                          << endlog;
+                solver_.reset(true);
+                reset_solver();
+                return MSAT_TRUE;
+            } else {
+                logger(1) << "refinement failure (no new predicate found)"
+                          << endlog;
+                return MSAT_UNDEF;
+            }
         }
         logger(1) << "refinement added " << c << " new predicates" << endlog;
         return MSAT_TRUE;

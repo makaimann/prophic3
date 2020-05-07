@@ -71,13 +71,19 @@ public:
     ///< if the last check() call returned true, get the truth assignment to
     ///< the given predicate
     
-    void reset();
+    void reset(bool precise=false);
     ///< reset the SMT context completely (removing all the asserted formulas
     ///< and reinitializing the internal solver state)
 
+    bool is_approx() const { return is_approx_; }
+
 private:
+    void create_env();
     Solver(const Solver &other);
     Solver &operator=(const Solver &other);
+
+    msat_env parent_env_;
+    ///< the parent environment
 
     msat_env env_;
     ///< the underlying SMT solver
@@ -87,6 +93,12 @@ private:
 
     TermSet uc_;
     ///< subset of assumptions sufficient for unsatisfiability
+
+    bool is_approx_;
+    ///< true if this is an approx solver
+
+    std::string trace_;
+    ///< base name for the trace output file if enabled
 };
 
 } // namespace ic3ia
