@@ -65,6 +65,7 @@ struct Options {
     bool track_proph_vars_pred;
     bool axiom_reduction;
     bool kind;
+    bool state_promotion;
 
     Options()
     {
@@ -105,6 +106,7 @@ struct Options {
         track_proph_vars_pred = true;
         axiom_reduction = true;
         kind = false;
+        state_promotion=false;
     }
 };
 

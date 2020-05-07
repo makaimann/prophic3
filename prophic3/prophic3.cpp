@@ -782,6 +782,23 @@ TermMap ProphIC3::add_history_vars(const std::unordered_map<msat_term, size_t> t
         // heuristic -- use the current-state version of these equalities as initial predicates
         preds_.push_back(hist_eq_cur);
       }
+      else if (opts_.state_promotion)
+      {
+        TermSet free_vars;
+        get_free_vars(msat_env_, hist_eq_cur, free_vars);
+        for (auto fv : free_vars) {
+          if (!abs_ts_.is_statevar(fv))
+          {
+            msat_decl fvN_decl = msat_declare_function(msat_env_,
+                                                       (msat_to_smtlib2_term(msat_env_, fv) + std::string(".next")).c_str(),
+                                                       msat_term_get_type(fv));
+            msat_term fvN = msat_make_constant(msat_env_, fvN_decl);
+            orig_types[fvN] = msat_term_get_type(fv);
+            logger(1) << "promoting input " << msat_to_smtlib2_term(msat_env_, fv) << " to a state variable." << endlog;
+            abs_ts_.add_statevar(fv, fvN);
+          }
+        }
+      }
       else
       {
         logger(1) << "skipping a predicate that has inputs " << msat_to_smtlib2_term(msat_env_, hist_eq_cur) << endlog;
