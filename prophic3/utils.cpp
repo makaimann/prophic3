@@ -230,6 +230,8 @@ Options get_options(int argc, const char **argv)
             ret.bmc = true;
         } else if (a == "-bmc-k") {
             ok = getint(++i, ret.bmc_max_k);
+        } else if (a == "-check-witness") {
+          ok = getbool(++i, ret.check_witness);
         } else if (a == "-no-eq-uf") {
             ret.use_uf_for_arr_eq = false;
         } else if (a == "-no-hist-eq-preds") {
@@ -276,6 +278,8 @@ Options get_options(int argc, const char **argv)
                       << "k-liveness counter"
                       << "\n   -bmc : use BMC instead of IC3"
                       << "\n   -bmc-k N : max k value for BMC"
+                      << "\n   -check-witness B : check the correctness "
+                      << "of witnesses"
                       << "\n   -no-eq-uf : use actual equalities between abstracted arrays"
                       << "\n   -no-hist-eq-preds : don't use history equalities as initial predicates"
                       << "\n   -max-array-axioms : maximum number of array axioms per iteration (per BMC model)"

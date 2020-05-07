@@ -154,10 +154,16 @@ msat_truth_value ProphIC3::prove()
 
     if (res == MSAT_FALSE)
     {
-      std::vector<TermList> witness;
-      ic3.witness(witness);
-      current_k_ = witness.size() - 1;
+      witness_.clear();
+      ic3.witness(witness_);
+      current_k_ = witness_.size() - 1;
       std::cout << "IC3 got counter-example at: " << current_k_ << std::endl;
+    }
+    else if (res == MSAT_TRUE)
+    {
+      witness_.clear();
+      // get witness proof
+      ic3.witness(witness_);
     }
 
     if (res == MSAT_UNDEF)
@@ -172,7 +178,11 @@ msat_truth_value ProphIC3::prove()
 
 int ProphIC3::witness(std::vector<TermList> & out)
 {
-  throw "Not implemented";
+  for (auto tl : witness_)
+  {
+    out.push_back(tl);
+  }
+  return out.size();
 }
 
 bool ProphIC3::fix_bmc()
