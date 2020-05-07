@@ -97,6 +97,11 @@ public:
     bool contains_next(msat_term t) const;
     ///< checks if term t has any next state variables
 
+    // added by Makai -- convenience function
+    bool contains_inputs(msat_term t) const;
+    ///< checks if term t has any input variables
+
+
 private:
     void reset();
     void collect_inputs();
