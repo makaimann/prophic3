@@ -768,7 +768,6 @@ TermMap ProphIC3::add_history_vars(const std::unordered_map<msat_term, size_t> t
 
   const TermMap & next_hist_vars = hr_.next_hist_vars();
   const TermMap & hist_trans = hr_.hist_trans();
-  TermSet free_vars;
   for (auto v : all_created_hist_vars)
   {
     abs_ts_.add_statevar(v, next_hist_vars.at(v));
@@ -777,25 +776,18 @@ TermMap ProphIC3::add_history_vars(const std::unordered_map<msat_term, size_t> t
 
     if (opts_.use_hist_eq_initial_preds)
     {
-      get_free_vars(msat_env_, abs_ts_.cur(hist_eq), free_vars);
-      // heuristic -- use the current-state version of these equalities as initial predicates
-      preds_.push_back(abs_ts_.cur(hist_eq));
+      msat_term hist_eq_cur = abs_ts_.cur(hist_eq);
+      if (abs_ts_.only_cur(hist_eq_cur))
+      {
+        // heuristic -- use the current-state version of these equalities as initial predicates
+        preds_.push_back(hist_eq_cur);
+      }
+      else
+      {
+        logger(1) << "skipping a predicate that has inputs " << msat_to_smtlib2_term(msat_env_, hist_eq_cur) << endlog;
+      }
     }
 
-  }
-
-  for (auto fv : free_vars)
-  {
-    if (!abs_ts_.is_statevar(fv))
-    {
-      msat_decl fvN_decl = msat_declare_function(msat_env_,
-                                            (msat_to_smtlib2_term(msat_env_, fv) + std::string(".next")).c_str(),
-                                            msat_term_get_type(fv));
-      msat_term fvN = msat_make_constant(msat_env_, fvN_decl);
-      orig_types[fvN] = msat_term_get_type(fv);
-      logger(2) << "promoting input " << msat_to_smtlib2_term(msat_env_, fv) << " to a state variable." << endlog;
-      abs_ts_.add_statevar(fv, fvN);
-    }
   }
 
   return hist_vars_to_refine;
