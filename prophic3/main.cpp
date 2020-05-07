@@ -120,7 +120,7 @@ int main(int argc, const char **argv)
 
       if (safe && opts.check_witness) {
           TimeKeeper tk(witness_check_time);
-          if (!check_witness(opts, ts, wit, ltl, tableau, liveenc)) {
+          if (!check_witness(opts, prophic3.get_abs_ts(), wit, ltl, tableau, liveenc)) {
               std::cout << "ERROR: the witness is incorrect\n" << std::endl;
           } else {
               std::cout << "the witness is correct\n" << std::endl;
