@@ -40,6 +40,8 @@ namespace prophic3
     ic3ia::LiveEncoder &l2s_;
     ic3ia::Unroller un_;
 
+    std::vector<ic3ia::TermList> witness_;
+
     msat_env refiner_;
     msat_env reducer_;
     msat_term refinement_formula_;
