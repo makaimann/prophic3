@@ -79,7 +79,7 @@ msat_term ProofChecker::make_or_nosimpl(const TermList &tl)
 msat_term ProofChecker::subst_labels(msat_term t)
 {
     LTLEncoder ltl(opts_, env_);
-    
+    ltl.init();
     const auto make_X =
         [&](msat_term v) -> msat_term
         {
@@ -619,6 +619,33 @@ bool InvarProofChecker::check(const std::vector<TermList> &witness)
     EnvDeleter del_env(wenv);
 
     logger(1) << "checking inductive invariant" << endlog;
+
+    logger(1) << "check that inductive invariant only uses state variables" << endlog;
+
+    struct Data {
+      TransitionSystem & ts;
+      Data(TransitionSystem & t) : ts(t) {}
+    };
+
+    auto visit = [](msat_env e, msat_term t, int preorder,
+                    void *data) -> msat_visit_status {
+                   // check all free variables
+                   if (preorder &&
+                       (msat_term_arity(t) == 0)
+                       && (msat_decl_get_tag(e, msat_term_get_decl(t)) == MSAT_TAG_UNKNOWN)
+                       && !msat_term_is_number(e, t))
+                   {
+                     Data * d = static_cast<Data *>(data);
+                     if (!d->ts.is_statevar(t))
+                     {
+                       std::cout << "found a non-state variable in the invariant: " << msat_to_smtlib2_term(e, t) << std::endl;
+                       throw std::exception();
+                     }
+                   }
+                   return MSAT_VISIT_PROCESS;
+                 };
+    Data d = Data(ts_);
+    msat_visit_term(wenv, inv_, visit, &d);
     
     logger(1) << "checking init -> inv... " << flushlog;
     msat_assert_formula(wenv, ts_.init());
