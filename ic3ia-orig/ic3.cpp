@@ -459,7 +459,7 @@ bool IC3::block(const Cube &c, unsigned int idx, Cube *out, bool compute_cti)
     if (opts_.seed) {
         std::vector<size_t> idx(primed.size());
         std::iota(idx.begin(), idx.end(), 0);
-        std::shuffle(idx.begin(), idx.end(), rng_);
+        shuffle(idx, rng_);
 
         for (size_t i : idx) {
             solver_.assume(primed[i]);

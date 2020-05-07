@@ -196,14 +196,14 @@ void Refiner::extract_predicates(msat_env env)
 
     for (size_t i = 1; i < groups_.size(); ++i) {
         msat_term t = msat_get_interpolant(env, &groups_[0], i);
-        if (MSAT_ERROR_TERM(t))
-        {
-          logger(0) << "Failed to get an interpolant." << endlog;
-          throw std::exception();
+        if (!MSAT_ERROR_TERM(t)) {
+            logger(3) << "got interpolant " << i << ": " << logterm(env, t)
+                      << endlog;
+            get_predicates(env, un_.untime(t), preds_);
+        } else {
+            logger(2) << "interpolation failure: "
+                      << msat_last_error_message(env) << endlog;
         }
-        logger(3) << "got interpolant " << i << ": " << logterm(env, t)
-                  << endlog;
-        get_predicates(env, un_.untime(t), preds_);
     }
 }
 
@@ -253,7 +253,9 @@ void Refiner::add_predicate(msat_term p)
 void Refiner::minimize_predicates(const std::vector<TermList> &cex)
 {
     bool ok = predminimizer_(ts_.trans(), cex, predabs_, preds_);
-    assert(ok);
+    if (!ok) {
+        logger(2) << "predicate minimization failure!" << endlog;
+    }
 }
 
 
@@ -318,7 +320,7 @@ bool PredRefMinimizer::operator()(msat_term trans,
     TermList labels;
 
     TermList curpreds(newpreds.begin(), newpreds.end());
-    std::shuffle(curpreds.begin(), curpreds.end(), rng_);
+    shuffle(curpreds, rng_);
     
     for (msat_term p : curpreds) {
         msat_term np = ts_.next(p);
