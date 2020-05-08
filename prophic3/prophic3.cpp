@@ -778,9 +778,11 @@ TermMap ProphIC3::add_history_vars(const std::unordered_map<msat_term, size_t> t
     {
       msat_term hist_eq_cur = abs_ts_.cur(hist_eq);
       // should only have current state variables (no next or inputs)
-      assert(abs_ts_.only_cur(hist_eq_cur));
-      // heuristic -- use the current-state version of these equalities as initial predicates
-      preds_.push_back(hist_eq_cur);
+      if (abs_ts_.only_cur(hist_eq_cur))
+      {
+        // heuristic -- use the current-state version of these equalities as initial predicates
+        preds_.push_back(hist_eq_cur);
+      }
     }
   }
 
