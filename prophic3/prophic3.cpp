@@ -468,6 +468,10 @@ bool ProphIC3::fix_bmc()
       }
 
       violated_axioms.clear();
+      if (!broken)
+      {
+        logger(0) << "refined at " << current_k_ << endlog;
+      }
     }
 
     axioms_added = untimed_axioms_to_add.size();
