@@ -61,11 +61,6 @@ namespace prophic3
     ic3ia::TermList preds_;
     std::vector<ic3ia::TermList> witness_;
 
-    /* Run bmc and add axioms until it reaches a bound that doesn't
-     * any new axioms
-     */
-    bool fix_bmc();
-
     /* Fix the abstract counterexample returned by ic3ia */
     bool refine_abstract_cex();
 
