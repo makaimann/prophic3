@@ -597,16 +597,19 @@ bool ProphIC3::refine_abstract_cex()
     refinement_formula_ = msat_make_and(refiner_, refinement_formula_,
                                         un_.at_time(bad, current_k_));
 
-    msat_reset_env(refiner_);
-    msat_assert_formula(refiner_, refinement_formula_);
-
     for (size_t time = 0; time < witness_.size(); ++time)
     {
       for (auto eq : witness_.at(time))
       {
-        msat_assert_formula(refiner_, un_.at_time(eq, time));
+        refinement_formula_ = msat_make_and(refiner_,
+                                            refinement_formula_,
+                                            un_.at_time(eq, time));
       }
     }
+
+    msat_reset_env(refiner_);
+    msat_assert_formula(refiner_, refinement_formula_);
+
 
     if (opts_.unsatcore_array_refiner) {
       broken = (msat_solve_with_assumptions(refiner_, &labels[0], labels.size()) == MSAT_SAT);
@@ -1416,7 +1419,8 @@ bool ProphIC3::reduce_timed_axioms(const ic3ia::TermSet & untimed_axioms,
   if (s != MSAT_UNSAT)
   {
     // not ok -- should be unsat with all assumptions
-    return false;
+    std::cout << "should be unsat with all assumptions" << std::endl;
+    throw std::exception();
   }
 
   std::vector<bool> unused(labels.size());
