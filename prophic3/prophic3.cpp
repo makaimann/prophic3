@@ -117,61 +117,67 @@ msat_truth_value ProphIC3::prove()
   std::cout << "Created " << prop_indices_map.size();
   std::cout << " prophecy variables for the property" << std::endl;
 
-  int iter_cnt = 0;
-  while (res != MSAT_TRUE)
+  bool bmc_res = fix_bmc();
+  if (!bmc_res)
   {
-    std::cout << "Fixing BMC" << std::endl;
-    if(!fix_bmc())
-    {
-      // got a real counter-example
-      return MSAT_FALSE;
-    }
-
-    if (!opts_.trace.empty())
-    {
-      ofstream f;
-      std::string filename = opts_.trace;
-      filename += "_abs_system_" + std::to_string(iter_cnt) + ".vmt";
-      f.open(filename);
-      abs_ts_.to_vmt(f);
-      f.close();
-    }
-    iter_cnt++;
-
-    std::cout << "Fixed BMC up to " << current_k_ << std::endl;
-    std::cout << "Running IC3" << std::endl;
-    IC3 ic3(abs_ts_, opts_, l2s_);
-    ic3.set_initial_predicates(preds_);
-    // tell ic3 about imporant variables (prophecy variables)
-    for (auto v : prop_free_vars) {
-      ic3.add_imp_pred_var(v);
-    }
-    for (auto v : frozen_proph_vars_) {
-      ic3.add_imp_pred_var(v.first);
-    }
-
-    res = ic3.prove();
-
-    if (res == MSAT_FALSE)
-    {
-      witness_.clear();
-      ic3.witness(witness_);
-      current_k_ = witness_.size() - 1;
-      std::cout << "IC3 got counter-example at: " << current_k_ << std::endl;
-    }
-    else if (res == MSAT_TRUE)
-    {
-      witness_.clear();
-      // get witness proof
-      ic3.witness(witness_);
-    }
-
-    if (res == MSAT_UNDEF)
-    {
-      std::cout << "IC3 returned undefined..." << std::endl;
-      throw std::exception();
-    }
+    res = MSAT_FALSE;
   }
+
+  // int iter_cnt = 0;
+  // while (res != MSAT_TRUE)
+  // {
+  //   std::cout << "Fixing BMC" << std::endl;
+  //   if(!fix_bmc())
+  //   {
+  //     // got a real counter-example
+  //     return MSAT_FALSE;
+  //   }
+
+  //   if (!opts_.trace.empty())
+  //   {
+  //     ofstream f;
+  //     std::string filename = opts_.trace;
+  //     filename += "_abs_system_" + std::to_string(iter_cnt) + ".vmt";
+  //     f.open(filename);
+  //     abs_ts_.to_vmt(f);
+  //     f.close();
+  //   }
+  //   iter_cnt++;
+
+  //   std::cout << "Fixed BMC up to " << current_k_ << std::endl;
+  //   std::cout << "Running IC3" << std::endl;
+  //   IC3 ic3(abs_ts_, opts_, l2s_);
+  //   ic3.set_initial_predicates(preds_);
+  //   // tell ic3 about imporant variables (prophecy variables)
+  //   for (auto v : prop_free_vars) {
+  //     ic3.add_imp_pred_var(v);
+  //   }
+  //   for (auto v : frozen_proph_vars_) {
+  //     ic3.add_imp_pred_var(v.first);
+  //   }
+
+  //   res = ic3.prove();
+
+  //   if (res == MSAT_FALSE)
+  //   {
+  //     witness_.clear();
+  //     ic3.witness(witness_);
+  //     current_k_ = witness_.size() - 1;
+  //     std::cout << "IC3 got counter-example at: " << current_k_ << std::endl;
+  //   }
+  //   else if (res == MSAT_TRUE)
+  //   {
+  //     witness_.clear();
+  //     // get witness proof
+  //     ic3.witness(witness_);
+  //   }
+
+  //   if (res == MSAT_UNDEF)
+  //   {
+  //     std::cout << "IC3 returned undefined..." << std::endl;
+  //     throw std::exception();
+  //   }
+  // }
 
   return res;
 }
@@ -219,7 +225,7 @@ bool ProphIC3::fix_bmc()
     labels.clear();
     label2axiom.clear();
 
-    std::cout << "--- Trying BMC " << current_k_ << " ---" << std::endl;
+    std::cout << "bmc: " << current_k_ << " --- ";
     // set up BMC
     msat_term bad = msat_make_not(refiner_, abs_ts_.prop());
     refinement_formula_ = un_.at_time(abs_ts_.init(), 0);
@@ -238,6 +244,15 @@ bool ProphIC3::fix_bmc()
       broken = msat_solve_with_assumptions(refiner_, &labels[0], labels.size());
     } else {
       broken = msat_solve(refiner_) == MSAT_SAT;
+    }
+
+    if (broken)
+    {
+      std::cout << "sat" << std::endl;
+    }
+    else
+    {
+      std::cout << "unsat" << std::endl;
     }
 
 
@@ -561,8 +576,10 @@ bool ProphIC3::fix_bmc()
     else {
       refine_abs_ts(red_untimed_axioms);
       // only update k if we're continuing
-      current_k_ += cont ? 1 : 0;
+      // current_k_ += cont ? 1 : 0;
     }
+
+    current_k_++;
 
     untimed_axioms_to_add.clear();
     timed_axioms_to_refine.clear();
@@ -571,7 +588,7 @@ bool ProphIC3::fix_bmc()
     found_untimed_axioms = false;
     found_timed_axioms = false;
 
-  } while(cont);
+  } while(current_k_ < opts_.bmc_max_k);
 
   // TODO: Just add timed refinements and re-find untimed axioms
   //       Has to do with ideas about monotonicity of history variables
