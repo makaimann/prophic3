@@ -299,6 +299,7 @@ void Rewriter::do_flatten_array_indices()
   struct Data {
     const TransitionSystem & ts;
     TermSet array_terms_with_input_indices;
+    TermSet indices_with_inputs;
     Data(const TransitionSystem & t) : ts(t) {};
   };
 
@@ -313,11 +314,13 @@ void Rewriter::do_flatten_array_indices()
 
                    {
                      d->array_terms_with_input_indices.insert(t);
+                     d->indices_with_inputs.insert(msat_term_get_arg(t, 1));
                    }
                    else if (msat_term_is_array_write(e, t) &&
                             d->ts.contains_inputs(msat_term_get_arg(t, 1)))
                    {
                      d->array_terms_with_input_indices.insert(t);
+                     d->indices_with_inputs.insert(msat_term_get_arg(t, 1));
                    }
                  }
                  return MSAT_VISIT_PROCESS;
@@ -334,19 +337,15 @@ void Rewriter::do_flatten_array_indices()
     new_state_vars[sv] = rewritten_ts_.next(sv);
   }
 
-  // flatten any indices that had inputs in them
-  // and replace with a state variable
-  size_t num_state_indices = 0;
+  // create a state variable for each index
+  TermMap idx2stidx;
   msat_term definitions = msat_make_true(msat_env_);
-  TermList subst_keys;
-  TermList subst_vals;
+  size_t num_state_indices = 0;
   std::string name;
-  msat_term idx;
   msat_type idxtype;
-  for (auto at : data.array_terms_with_input_indices)
+  for (auto idx : data.indices_with_inputs)
   {
-    assert(msat_term_arity(at) > 1);
-    idx = msat_term_get_arg(at, 1);
+
     idxtype = msat_term_get_type(idx);
     name = "idx" + std::to_string(num_state_indices);
     num_state_indices++;
@@ -361,11 +360,12 @@ void Rewriter::do_flatten_array_indices()
 
     // add it as state variable
     new_state_vars[stidx] = stidxN;
+    idx2stidx[idx] = stidx;
 
     // add the top-level definition
     msat_term stidx_def = msat_make_eq(msat_env_,
-                                        stidx,
-                                        idx);
+                                       stidx,
+                                       idx);
     definitions = msat_make_and(msat_env_,
                                 definitions,
                                 stidx_def);
@@ -377,6 +377,21 @@ void Rewriter::do_flatten_array_indices()
                                   definitions,
                                   rewritten_ts_.next(stidx_def));
     }
+  }
+
+
+  // flatten any indices that had inputs in them
+  // and replace with a state variable
+  TermList subst_keys;
+  TermList subst_vals;
+  msat_term idx;
+  msat_term stidx;
+  for (auto at : data.array_terms_with_input_indices)
+  {
+    assert(msat_term_arity(at) > 1);
+
+    idx = msat_term_get_arg(at, 1);
+    stidx = idx2stidx.at(idx);
 
     // add to substitution map
     // want to replace the index in the array with a state variable
