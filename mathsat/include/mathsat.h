@@ -166,6 +166,8 @@ typedef enum {
     MSAT_TAG_EXP,           /**< Exponential function */
     MSAT_TAG_SIN,           /**< Sine function */
     MSAT_TAG_LOG,           /**< Natural logarithm function */
+    MSAT_TAG_POW,           /**< Power function */
+    MSAT_TAG_ASIN,          /**< Arcsin function */
     MSAT_TAG_FORALL,        /**< Universal quantifier */
     MSAT_TAG_EXISTS         /**< Existential quantifier */
 } msat_symbol_tag;
@@ -853,10 +855,59 @@ msat_term msat_make_int_modular_congruence(msat_env e, mpz_t modulus,
  */
 msat_term msat_make_floor(msat_env e, msat_term t);
 
+/**
+ * \brief Returns the constant representing the pi number
+ * \param e The environment of the definition
+ * \return The created term, or a t s.t. ::MSAT_ERROR_TERM(t) is true
+ *         in case of errors.
+ */
 msat_term msat_make_pi(msat_env e);
+
+/**
+ * \brief Returns an expression representing exp(t)
+ * \param e The environment of the definition
+ * \param t The argument.
+ * \return The created term, or a t s.t. ::MSAT_ERROR_TERM(t) is true
+ *         in case of errors.
+ */
 msat_term msat_make_exp(msat_env e, msat_term t);
+
+/**
+ * \brief Returns an expression representing sin(t)
+ * \param e The environment of the definition
+ * \param t The argument.
+ * \return The created term, or a t s.t. ::MSAT_ERROR_TERM(t) is true
+ *         in case of errors.
+ */
 msat_term msat_make_sin(msat_env e, msat_term t);
+
+/**
+ * \brief Returns an expression representing the natural log of t
+ * \param e The environment of the definition
+ * \param t The argument.
+ * \return The created term, or a t s.t. ::MSAT_ERROR_TERM(t) is true
+ *         in case of errors.
+ */
 msat_term msat_make_log(msat_env e, msat_term t);
+
+/**
+ * \brief Returns an expression representing tb to the power of te
+ * \param e The environment of the definition
+ * \param tb The base of the power
+ * \param te The exponent of the power
+ * \return The created term, or a t s.t. ::MSAT_ERROR_TERM(t) is true
+ *         in case of errors.
+ */
+msat_term msat_make_pow(msat_env e, msat_term tb, msat_term te);
+
+/**
+ * \brief Returns an expression representing arcsin(t)
+ * \param e The environment of the definition
+ * \param t The argument
+ * \return The created term, or a t s.t. ::MSAT_ERROR_TERM(t) is true
+ *         in case of errors.
+ */
+msat_term msat_make_asin(msat_env e, msat_term t);
 
 /**
  * \brief Returns an expression representing an integer or rational number.
@@ -1988,10 +2039,53 @@ int msat_term_is_int_modular_congruence(msat_env e, msat_term t, mpz_t out_mod);
  */
 int msat_term_is_floor(msat_env e, msat_term t);
 
+/**
+ * \brief Checks whether \a t is a the pi constant
+ * \param e The environment in which to operate
+ * \param t A term.
+ * \return nonzero if \a t is the pi constant
+ */
 int msat_term_is_pi(msat_env e, msat_term t);
+
+/**
+ * \brief Checks whether \a t is a (exp t1) expression
+ * \param e The environment in which to operate
+ * \param t A term.
+ * \return nonzero if \a t is a exp expression
+ */
 int msat_term_is_exp(msat_env e, msat_term t);
+
+/**
+ * \brief Checks whether \a t is a (sin t1) expression
+ * \param e The environment in which to operate
+ * \param t A term.
+ * \return nonzero if \a t is a sin expression
+ */
 int msat_term_is_sin(msat_env e, msat_term t);
+
+/**
+ * \brief Checks whether \a t is a (log t1) expression
+ * \param e The environment in which to operate
+ * \param t A term.
+ * \return nonzero if \a t is a log expression
+ */
 int msat_term_is_log(msat_env e, msat_term t);
+
+/**
+ * \brief Checks whether \a t is a (pow t1 t2) expression
+ * \param e The environment in which to operate
+ * \param t A term.
+ * \return nonzero if \a t is a pow expression
+ */
+int msat_term_is_pow(msat_env e, msat_term t);
+
+/**
+ * \brief Checks whether \a t is a (asin t1) expression
+ * \param e The environment in which to operate
+ * \param t A term.
+ * \return nonzero if \a t is a asin expression
+ */
+int msat_term_is_asin(msat_env e, msat_term t);
 
 /**
  * \brief Checks whether \a t is an array read
@@ -3253,6 +3347,25 @@ msat_term *msat_get_theory_lemmas(msat_env e, size_t *num_tlemmas);
  *         The string must be deallocated by the user with ::msat_free(). 
  */
 char *msat_get_search_stats(msat_env e);
+
+/**
+ * \brief Simplify the input formula by performing variable elimination with
+ *        toplevel equalities.
+ *
+ * Apply "toplevel propagation", i.e. inlining of toplevel equalities, until a
+ * fixpoint is reached. The constants occurring in \a to_protect will not be
+ * eliminated.
+ *
+ * \param e The environment in which to operate.
+ * \param formula The formula to simplify.
+ * \param to_protect The constants that should never be eliminated.
+ * \param num_to_protect The size of the \a to_protect array.
+ *
+ * \return The simplified formula, or a t s.t. ::MSAT_ERROR_TERM(t) is true in
+ *         case of errors
+ */
+msat_term msat_simplify(msat_env e, msat_term formula,
+                        msat_term *to_protect, size_t num_to_protect);
 
 
 /*@}*/ /* end of Problem solving group */
