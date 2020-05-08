@@ -23,6 +23,7 @@ public:
 private:
 
     void do_flattening();
+    void do_flatten_array_indices();
     void do_rewriting();
     msat_term flatten(const msat_term t);
     msat_term rewrite_array_ite(const msat_term t);

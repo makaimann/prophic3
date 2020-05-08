@@ -272,7 +272,7 @@ bool TransitionSystem::contains_next(msat_term t) const {
 }
 
 // added by Makai
-bool TransitionSystem::contains_input(msat_term t) const {
+bool TransitionSystem::contains_inputs(msat_term t) const {
   struct Data {
     bool has_input;
     const TermSet &inputvars;

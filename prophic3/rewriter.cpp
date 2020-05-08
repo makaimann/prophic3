@@ -1,5 +1,7 @@
 #include "rewriter.h"
 
+#include "assert.h"
+
 using namespace ic3ia;
 
 namespace prophic3 {
@@ -10,6 +12,7 @@ Rewriter::Rewriter(const TransitionSystem &ts) :
     rewritten_ts_(ts.get_env())
 {
     do_flattening();
+    do_flatten_array_indices();
     do_rewriting();
 }
 
@@ -72,7 +75,7 @@ void Rewriter::do_flattening()
 
 void Rewriter::do_rewriting()
 {
-  // must be called after do_flattening
+  // must be called after do_flattening -- it happens to also be called after do_flatten_array_indices()
   assert(!MSAT_ERROR_TERM(rewritten_ts_.prop()));
 
   msat_term new_init = rewrite_array_ite(rewritten_ts_.init());
@@ -278,6 +281,143 @@ msat_term Rewriter::rewrite_array_ite(const msat_term t) {
   msat_visit_term(msat_env_, t, visit, &data);
 
   return cache_[t];
+}
+
+void Rewriter::do_flatten_array_indices()
+{
+  // needs to be called after do_flattening()
+  assert(!MSAT_ERROR_TERM(rewritten_ts_.trans()));
+
+  msat_term trans = rewritten_ts_.trans();
+  // TODO traverse whole formula
+  // find indices that have input variables in it
+  // create state variables for those indices
+  // substitute the index with the state variable
+  // create a top-level equality between the state variable and the index
+  // add the next-state version if there's no next in the index
+
+  struct Data {
+    const TransitionSystem & ts;
+    TermSet array_terms_with_input_indices;
+    Data(const TransitionSystem & t) : ts(t) {};
+  };
+
+  // find all indices that need to be replaced
+  auto visit = [](msat_env e, msat_term t, int preorder,
+                  void *data) -> msat_visit_status {
+                 Data *d = static_cast<Data *>(data);
+                 if (preorder)
+                 {
+                   if (msat_term_is_array_read(e, t) &&
+                       d->ts.contains_inputs(msat_term_get_arg(t, 1)))
+
+                   {
+                     d->array_terms_with_input_indices.insert(t);
+                   }
+                   else if (msat_term_is_array_write(e, t) &&
+                            d->ts.contains_inputs(msat_term_get_arg(t, 1)))
+                   {
+                     d->array_terms_with_input_indices.insert(t);
+                   }
+                 }
+                 return MSAT_VISIT_PROCESS;
+               };
+
+  // TODO update trans with substitution and toplevel equalities
+  Data data(rewritten_ts_);
+  msat_visit_term(msat_env_, trans, visit, &data);
+
+  TermMap new_state_vars;
+  // populate with existing state vars
+  for (auto sv : rewritten_ts_.statevars())
+  {
+    new_state_vars[sv] = rewritten_ts_.next(sv);
+  }
+
+  // flatten any indices that had inputs in them
+  // and replace with a state variable
+  size_t num_state_indices = 0;
+  msat_term definitions = msat_make_true(msat_env_);
+  TermList subst_keys;
+  TermList subst_vals;
+  std::string name;
+  msat_term idx;
+  msat_type idxtype;
+  for (auto at : data.array_terms_with_input_indices)
+  {
+    assert(msat_term_arity(at) > 1);
+    idx = msat_term_get_arg(at, 1);
+    idxtype = msat_term_get_type(idx);
+    name = "idx" + std::to_string(num_state_indices);
+    num_state_indices++;
+    msat_decl stidx_decl = msat_declare_function(msat_env_,
+                                                 name.c_str(),
+                                                 idxtype);
+    msat_term stidx = msat_make_constant(msat_env_, stidx_decl);
+    msat_decl stidx_declN = msat_declare_function(msat_env_,
+                                                  (name + ".next").c_str(),
+                                                  idxtype);
+    msat_term stidxN = msat_make_constant(msat_env_, stidx_declN);
+
+    // add it as state variable
+    new_state_vars[stidx] = stidxN;
+
+    // add the top-level definition
+    msat_term stidx_def = msat_make_eq(msat_env_,
+                                        stidx,
+                                        idx);
+    definitions = msat_make_and(msat_env_,
+                                definitions,
+                                stidx_def);
+    // if there were no next variables in idx
+    // need to add the next version to definitions
+    if (!rewritten_ts_.contains_next(idx))
+    {
+      definitions = msat_make_and(msat_env_,
+                                  definitions,
+                                  rewritten_ts_.next(stidx_def));
+    }
+
+    // add to substitution map
+    // want to replace the index in the array with a state variable
+    subst_keys.push_back(at);
+    if (msat_term_is_array_read(msat_env_, at))
+    {
+      subst_vals.push_back(msat_make_array_read(msat_env_,
+                                                msat_term_get_arg(at, 0),
+                                                stidx));
+    }
+    else if (msat_term_is_array_write(msat_env_, at))
+    {
+      subst_vals.push_back(msat_make_array_write(msat_env_,
+                                                 msat_term_get_arg(at, 0),
+                                                 stidx,
+                                                 msat_term_get_arg(at, 2)));
+    }
+    else
+    {
+      std::cout << "expecting an array read or write and got "
+                << msat_to_smtlib2_term(msat_env_, at) << std::endl;
+      throw std::exception();
+    }
+  }
+
+  assert(subst_keys.size() == subst_vals.size());
+  msat_term new_trans = msat_apply_substitution(msat_env_,
+                                                trans,
+                                                subst_keys.size(),
+                                                &(subst_keys[0]),
+                                                &(subst_vals[0]));
+
+  // include the definitions in the new transition relation
+  new_trans = msat_make_and(msat_env_,
+                            new_trans,
+                            definitions);
+  rewritten_ts_.initialize(new_state_vars,
+                           rewritten_ts_.init(),
+                           new_trans,
+                           rewritten_ts_.prop(),
+                           rewritten_ts_.live_prop());
 }
 
 } // namespace prophic3
