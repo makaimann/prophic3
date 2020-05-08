@@ -134,9 +134,9 @@ msat_truth_value ProphIC3::prove()
 
     if (res == MSAT_FALSE)
     {
-      std::vector<TermList> witness;
-      ic3.witness(witness);
-      current_k_ = witness.size() - 1;
+      witness_.clear();
+      ic3.witness(witness_);
+      current_k_ = witness_.size() - 1;
       std::cout << "IC3 got counter-example at: " << current_k_ << std::endl;
       // refine based on witness_
       if (!refine_abstract_cex())

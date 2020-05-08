@@ -59,6 +59,7 @@ namespace prophic3
      * equalities as predicates
      */
     ic3ia::TermList preds_;
+    std::vector<ic3ia::TermList> witness_;
 
     /* Run bmc and add axioms until it reaches a bound that doesn't
      * any new axioms
