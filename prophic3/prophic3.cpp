@@ -138,6 +138,11 @@ msat_truth_value ProphIC3::prove()
       ic3.witness(witness_);
       current_k_ = witness_.size() - 1;
       std::cout << "IC3 got counter-example at: " << current_k_ << std::endl;
+      if (!check_witness())
+      {
+        std::cout << "witness not concrete" << std::endl;
+        throw std::exception();
+      }
       // refine based on witness_
       if (!refine_abstract_cex())
       {
@@ -158,6 +163,48 @@ msat_truth_value ProphIC3::prove()
 int ProphIC3::witness(std::vector<TermList> & out)
 {
   throw "Not implemented";
+}
+
+bool ProphIC3::check_witness()
+{
+  msat_config cfg = get_config(FULL_MODEL);
+  if (!opts_.trace.empty()) {
+    std::string name = opts_.trace + ".witness_check.smt2";
+    msat_set_option(cfg, "debug.api_call_trace", "1");
+    msat_set_option(cfg, "debug.api_call_trace_filename", name.c_str());
+  }
+  msat_env wcenv = msat_create_shared_env(cfg, abs_ts_.get_env());
+  msat_destroy_config(cfg);
+
+  Unroller unroller(abs_ts_);
+
+  msat_term query = unroller.at_time(abs_ts_.init(), 0);
+  for (size_t i = 0; i < current_k_; ++i)
+  {
+    query = msat_make_and(wcenv,
+                          query,
+                          unroller.at_time(abs_ts_.trans(), i));
+  }
+  msat_term bad = unroller.at_time(msat_make_not(wcenv, abs_ts_.prop()), current_k_);
+  query = msat_make_and(wcenv,
+                        query,
+                        bad);
+
+  for (size_t time = 0; time < witness_.size(); ++time)
+  {
+    for (auto eq : witness_.at(time))
+    {
+      query = msat_make_and(wcenv,
+                            query,
+                            unroller.at_time(eq, time));
+    }
+  }
+
+  bool res = (msat_solve(wcenv) == MSAT_SAT);
+  msat_destroy_env(wcenv);
+
+  return res;
+
 }
 
 bool ProphIC3::refine_abstract_cex()
@@ -218,7 +265,7 @@ bool ProphIC3::refine_abstract_cex()
     if (opts_.unsatcore_array_refiner) {
       broken = (msat_solve_with_assumptions(refiner_, &labels[0], labels.size()) == MSAT_SAT);
     } else {
-      broken = msat_solve(refiner_) == MSAT_SAT;
+      broken = (msat_solve(refiner_) == MSAT_SAT);
     }
 
     // the first iteration should always be broken

@@ -61,6 +61,8 @@ namespace prophic3
     ic3ia::TermList preds_;
     std::vector<ic3ia::TermList> witness_;
 
+    bool check_witness();
+
     /* Fix the abstract counterexample returned by ic3ia */
     bool refine_abstract_cex();
 
