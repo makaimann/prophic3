@@ -98,8 +98,8 @@ msat_truth_value ProphIC3::prove()
 
   // make free vars in the property as frozen -- prophecies
   const TermSet &prop_free_vars = aa_.prop_free_vars();
-  std::cout << "Prop Free Vars " << prop_free_vars.size()
-            << std::endl;
+  logger(1) << "Prop Free Vars " << prop_free_vars.size()
+            << endlog;
 
   // heuristic -- add prophecy variables for indices in property up front
   TermSet prop_indices = detect_indices(abs_ts_.prop());
@@ -114,8 +114,8 @@ msat_truth_value ProphIC3::prove()
   }
   add_frozen_proph_vars(prop_indices_map);
 
-  std::cout << "Created " << prop_indices_map.size();
-  std::cout << " prophecy variables for the property" << std::endl;
+  logger(1) << "Created " << prop_indices_map.size();
+  logger(1) << " prophecy variables for the property" << endlog;
 
   bool bmc_res = fix_bmc();
   if (!bmc_res)
@@ -126,7 +126,7 @@ msat_truth_value ProphIC3::prove()
   // int iter_cnt = 0;
   // while (res != MSAT_TRUE)
   // {
-  //   std::cout << "Fixing BMC" << std::endl;
+  //   logger(1) << "Fixing BMC" << endlog;
   //   if(!fix_bmc())
   //   {
   //     // got a real counter-example
@@ -144,8 +144,8 @@ msat_truth_value ProphIC3::prove()
   //   }
   //   iter_cnt++;
 
-  //   std::cout << "Fixed BMC up to " << current_k_ << std::endl;
-  //   std::cout << "Running IC3" << std::endl;
+  //   logger(1) << "Fixed BMC up to " << current_k_ << endlog;
+  //   logger(1) << "Running IC3" << endlog;
   //   IC3 ic3(abs_ts_, opts_, l2s_);
   //   ic3.set_initial_predicates(preds_);
   //   // tell ic3 about imporant variables (prophecy variables)
@@ -163,7 +163,7 @@ msat_truth_value ProphIC3::prove()
   //     witness_.clear();
   //     ic3.witness(witness_);
   //     current_k_ = witness_.size() - 1;
-  //     std::cout << "IC3 got counter-example at: " << current_k_ << std::endl;
+  //     logger(1) << "IC3 got counter-example at: " << current_k_ << endlog;
   //   }
   //   else if (res == MSAT_TRUE)
   //   {
@@ -174,7 +174,7 @@ msat_truth_value ProphIC3::prove()
 
   //   if (res == MSAT_UNDEF)
   //   {
-  //     std::cout << "IC3 returned undefined..." << std::endl;
+  //     logger(1) << "IC3 returned undefined..." << endlog;
   //     throw std::exception();
   //   }
   // }
@@ -225,7 +225,7 @@ bool ProphIC3::fix_bmc()
     labels.clear();
     label2axiom.clear();
 
-    std::cout << "bmc: " << current_k_ << " --- ";
+    logger(0) << "bmc: " << current_k_ << " --- ";
     // set up BMC
     msat_term bad = msat_make_not(refiner_, abs_ts_.prop());
     refinement_formula_ = un_.at_time(abs_ts_.init(), 0);
@@ -248,11 +248,11 @@ bool ProphIC3::fix_bmc()
 
     if (broken)
     {
-      std::cout << "sat" << std::endl;
+      logger(0) << "sat" << endlog;
     }
     else
     {
-      std::cout << "unsat" << std::endl;
+      logger(0) << "unsat" << endlog;
     }
 
 
@@ -326,9 +326,9 @@ bool ProphIC3::fix_bmc()
               throw std::exception();
             }
             else if (msat_term_is_false(refiner_, val)) {
-              // std::cout << "violated axiom ";
-              // std::cout << msat_to_smtlib2_term(msat_env_, timed_axiom) <<
-              // std::endl;
+              // logger(1) << "violated axiom ";
+              // logger(1) << msat_to_smtlib2_term(msat_env_, timed_axiom) <<
+              // endlog;
               violated_axioms.insert(timed_axiom);
               untimed_axioms_to_add.insert(ax);
               ++lemma_cnt;
@@ -340,15 +340,15 @@ bool ProphIC3::fix_bmc()
 
       found_untimed_axioms = violated_axioms.size();
 
-      std::cout << "Found " << violated_axioms.size() << " violated untime-able axioms!"
-                << std::endl;
+      logger(1) << "Found " << violated_axioms.size() << " violated untime-able axioms!"
+                << endlog;
 
       // if there weren't any regular timed axioms or
       // history refinements possible,
       // try the lambda refinement (this is untime-able)
       if (!found_untimed_axioms)
       {
-        std::cout << "Trying lazy lambda all different refinement!" << std::endl;
+        logger(1) << "Trying lazy lambda all different refinement!" << endlog;
         for (auto ax : aae_.lambda_alldiff_axioms())
         {
           for(size_t k = 0; k <= current_k_; k++)
@@ -372,7 +372,7 @@ bool ProphIC3::fix_bmc()
             }
 
             if (msat_term_is_false(refiner_, val)) {
-              std::cout << "adding " << msat_to_smtlib2_term(msat_env_, timed_axiom) << std::endl;
+              logger(1) << "adding " << msat_to_smtlib2_term(msat_env_, timed_axiom) << endlog;
               violated_axioms.insert(timed_axiom);
               untimed_axioms_to_add.insert(ax);
             }
@@ -404,7 +404,7 @@ bool ProphIC3::fix_bmc()
                 break;
               }
 
-              //std::cout << "Checking timed axiom: " << msat_to_smtlib2_term(msat_env_, timed_axiom) << std::endl;
+              //logger(1) << "Checking timed axiom: " << msat_to_smtlib2_term(msat_env_, timed_axiom) << endlog;
 
               // had issues trying to evaluate the model on a constant true
               // which can sometimes occur depending on the options
@@ -422,9 +422,9 @@ bool ProphIC3::fix_bmc()
               }
               else if (msat_term_is_false(refiner_, val))
               {
-                // std::cout << "TIMED violated axiom ";
-                // std::cout << msat_to_smtlib2_term(msat_env_, timed_axiom) <<
-                //   std::endl;
+                // logger(1) << "TIMED violated axiom ";
+                // logger(1) << msat_to_smtlib2_term(msat_env_, timed_axiom) <<
+                //   endlog;
                 violated_axioms.insert(timed_axiom);
                 timed_axioms_to_refine.insert(timed_axiom);
                 ++lemma_cnt;
@@ -442,12 +442,12 @@ bool ProphIC3::fix_bmc()
         msat_model model = msat_get_model(refiner_);
         print_witness(model, current_k_, aae_);
         // TODO: Use real exceptions
-        std::cout << "It looks like there's a concrete counter-example (or some axioms are missing)" << std::endl;
+        logger(1) << "It looks like there's a concrete counter-example (or some axioms are missing)" << endlog;
         msat_destroy_model(model);
         return false;
       }
       else if (!found_untimed_axioms) {
-        std::cout << "Found " << violated_axioms.size() << " violated TIMED axioms!" << std::endl;
+        logger(1) << "Found " << violated_axioms.size() << " violated TIMED axioms!" << endlog;
       }
 
       for (auto ax : violated_axioms) {
@@ -509,7 +509,7 @@ bool ProphIC3::fix_bmc()
         TermSet core(uc, uc+ucsz);
         msat_free(uc);
 
-        std::cout << "REFINER-UNSATCORE SIZE " << core.size() << std::endl;
+        logger(1) << "REFINER-UNSATCORE SIZE " << core.size() << endlog;
 
         for (size_t i = 0; i < label2axiom.size(); ++i) {
           msat_term a = label2axiom[i];
@@ -602,12 +602,12 @@ void ProphIC3::refine_abs_ts(TermSet & untimed_axioms)
 {
   int init_cnt = 0;
   for (auto ax : untimed_axioms) {
-    // std::cout << "Added to trans: " << msat_to_smtlib2_term(msat_env_, ax) << std::endl;
+    // logger(1) << "Added to trans: " << msat_to_smtlib2_term(msat_env_, ax) << endlog;
     abs_ts_.add_trans(ax);
 
     // if there's no next-state variables, add next version to trans
     if (!abs_ts_.contains_next(ax)) {
-      // std::cout << "Added to trans next: " << msat_to_smtlib2_term(msat_env_, abs_ts_.next(ax)) << std::endl;
+      // logger(1) << "Added to trans next: " << msat_to_smtlib2_term(msat_env_, abs_ts_.next(ax)) << endlog;
       abs_ts_.add_trans(abs_ts_.next(ax));
     }
 
@@ -617,8 +617,8 @@ void ProphIC3::refine_abs_ts(TermSet & untimed_axioms)
       init_cnt++;
     }
   }
-  std::cout << "Added " << untimed_axioms.size() << " axioms to trans." << std::endl;
-  std::cout << "Added " << init_cnt << " axioms to init." << std::endl;
+  logger(1) << "Added " << untimed_axioms.size() << " axioms to trans." << endlog;
+  logger(1) << "Added " << init_cnt << " axioms to init." << endlog;
 
   assert(abs_ts_.only_cur(abs_ts_.init()));
   assert(abs_ts_.only_cur(abs_ts_.prop()));
@@ -659,7 +659,7 @@ void ProphIC3::prophesize_abs_ts(TermSet & timed_axioms, bool add_axioms)
         abs_ts_.add_trans(abs_ts_.next(untimed_axiom));
       }
     }
-    std::cout << "Added " << timed_axioms.size() << " prophecy axioms to trans." << std::endl;
+    logger(1) << "Added " << timed_axioms.size() << " prophecy axioms to trans." << endlog;
   }
 
   assert(abs_ts_.only_cur(abs_ts_.init()));
@@ -753,10 +753,10 @@ TermMap ProphIC3::add_frozen_proph_vars(const ic3ia::TermMap & proph_targets)
 
 TermMap ProphIC3::add_history_vars(const std::unordered_map<msat_term, size_t> targets)
 {
-  std::cout << "Found " << targets.size() << " indices which need to be refined." << std::endl;
+  logger(1) << "Found " << targets.size() << " indices which need to be refined." << endlog;
   for (auto elem : targets)
   {
-    std::cout << "\t" << msat_to_smtlib2_term(msat_env_, un_.untime(elem.first)) << ":" << elem.second << std::endl;
+    logger(1) << "\t" << msat_to_smtlib2_term(msat_env_, un_.untime(elem.first)) << ":" << elem.second << endlog;
   }
 
   TermTypeMap & orig_types = aa_.orig_types();
@@ -777,10 +777,10 @@ TermMap ProphIC3::add_history_vars(const std::unordered_map<msat_term, size_t> t
     hist_vars_to_refine[elem.first] = v;
   }
 
-  std::cout << "Created the following history variables:" << std::endl;
+  logger(1) << "Created the following history variables:" << endlog;
   for (auto elem : hist_vars_to_refine)
   {
-    std::cout << "\t" << msat_to_smtlib2_term(msat_env_, elem.second) << std::endl;
+    logger(1) << "\t" << msat_to_smtlib2_term(msat_env_, elem.second) << endlog;
   }
 
   const TermMap & next_hist_vars = hr_.next_hist_vars();
@@ -817,32 +817,32 @@ void ProphIC3::print_witness(msat_model model,
   ArrayAbstractor &abstractor = aae_.get_abstractor();
   TermTypeMap &orig_types = abstractor.orig_types();
 
-  std::cout << "+++++++++++++++++++++ FAILED +++++++++++++++++++" << std::endl;
-  std::cout << "prop: " << msat_to_smtlib2_term(msat_env_, abs_ts_.prop())
-            << std::endl;
+  logger(1) << "+++++++++++++++++++++ FAILED +++++++++++++++++++" << endlog;
+  logger(1) << "prop: " << msat_to_smtlib2_term(msat_env_, abs_ts_.prop())
+            << endlog;
 
-  std::cout << std::endl;
-  std::cout << "++++++++++++++++++++++ Abstract TS +++++++++++++++++++++ "
-            << std::endl;
-  std::cout << "INIT:" << std::endl;
-  std::cout << msat_to_smtlib2_term(msat_env_, abs_ts_.init()) << std::endl;
-  std::cout << "TRANS:" << std::endl;
-  std::cout << msat_to_smtlib2_term(msat_env_, abs_ts_.trans()) << std::endl;
-  std::cout << "STORES:" << std::endl;
+  logger(1) << endlog;
+  logger(1) << "++++++++++++++++++++++ Abstract TS +++++++++++++++++++++ "
+            << endlog;
+  logger(1) << "INIT:" << endlog;
+  logger(1) << msat_to_smtlib2_term(msat_env_, abs_ts_.init()) << endlog;
+  logger(1) << "TRANS:" << endlog;
+  logger(1) << msat_to_smtlib2_term(msat_env_, abs_ts_.trans()) << endlog;
+  logger(1) << "STORES:" << endlog;
   for(auto s : abstractor.stores())
   {
-    std::cout << msat_to_smtlib2_term(msat_env_, s) << std::endl;
+    logger(1) << msat_to_smtlib2_term(msat_env_, s) << endlog;
   }
-  std::cout << "CONSTARRS:" << std::endl;
+  logger(1) << "CONSTARRS:" << endlog;
   for(auto ca : abstractor.const_arrs())
   {
-    std::cout << msat_to_smtlib2_term(msat_env_, ca) << std::endl;
+    logger(1) << msat_to_smtlib2_term(msat_env_, ca) << endlog;
   }
 
 
-  std::cout << std::endl;
-  std::cout << "+++++++++++++++++++++ UF values ++++++++++++++++++++"
-            << std::endl;
+  logger(1) << endlog;
+  logger(1) << "+++++++++++++++++++++ UF values ++++++++++++++++++++"
+            << endlog;
   for (auto elem : abstractor.read_ufs()) {
     msat_term arr = elem.first;
     msat_decl fun = elem.second;
@@ -882,39 +882,39 @@ void ProphIC3::print_witness(msat_model model,
         msat_term timed_arr = un_.at_time(arr, k);
         msat_term args[2] = {timed_arr, i};
         msat_term read = msat_make_uf(msat_env_, fun, args);
-        std::cout << msat_to_smtlib2_term(msat_env_, read) << " := ";
-        std::cout << msat_to_smtlib2_term(msat_env_,
+        logger(1) << msat_to_smtlib2_term(msat_env_, read) << " := ";
+        logger(1) << msat_to_smtlib2_term(msat_env_,
                                           msat_model_eval(model, read))
-                  << std::endl;
+                  << endlog;
       }
     }
   }
 
-  std::cout << std::endl;
+  logger(1) << endlog;
 
-  std::cout << "+++++++++++++++++++++ witness ++++++++++++++++++" << std::endl;
+  logger(1) << "+++++++++++++++++++++ witness ++++++++++++++++++" << endlog;
   msat_term timed_symbol;
   msat_term val;
   for (size_t i = 0; i <= reached_k; i++)
   {
-    std::cout << "=================== STATES ===================" << std::endl;
+    logger(1) << "=================== STATES ===================" << endlog;
     for (auto s : abs_ts_.statevars())
     {
       timed_symbol = un_.at_time(s, i);
       val = msat_model_eval(model, timed_symbol);
-      std::cout << msat_to_smtlib2_term(msat_env_, timed_symbol) << " := "
-                << msat_to_smtlib2_term(msat_env_, val) << std::endl;
+      logger(1) << msat_to_smtlib2_term(msat_env_, timed_symbol) << " := "
+                << msat_to_smtlib2_term(msat_env_, val) << endlog;
     }
-    std::cout << std::endl;
-    std::cout << "=================== INPUTS ===================" << std::endl;
+    logger(1) << endlog;
+    logger(1) << "=================== INPUTS ===================" << endlog;
     for (auto in : abs_ts_.inputvars())
     {
       timed_symbol = un_.at_time(in, i);
       val = msat_model_eval(model, timed_symbol);
-      std::cout << msat_to_smtlib2_term(msat_env_, timed_symbol) << " := "
-                << msat_to_smtlib2_term(msat_env_, val) << std::endl;
+      logger(1) << msat_to_smtlib2_term(msat_env_, timed_symbol) << " := "
+                << msat_to_smtlib2_term(msat_env_, val) << endlog;
     }
-    std::cout << std::endl;
+    logger(1) << endlog;
   }
 }
 
@@ -1105,7 +1105,7 @@ bool ProphIC3::reduce_timed_axioms(const ic3ia::TermSet & untimed_axioms,
       removed_cnt++;
     }
   }
-  std::cout << "Removed " << removed_cnt << " timed axioms sets." << std::endl;
+  logger(1) << "Removed " << removed_cnt << " timed axioms sets." << endlog;
   return true;
 }
 
@@ -1140,7 +1140,7 @@ bool ProphIC3::reduce_axioms(const TermSet & untimed_axioms,
     if (!abs_ts_.contains_next(a)) {
       aa = msat_make_and(reducer_, aa, un_.at_time(a, current_k_));
     }
-    //std::cout << msat_to_smtlib2_term(abs_ts_.get_env(), aa) << std::endl;
+    //logger(1) << msat_to_smtlib2_term(abs_ts_.get_env(), aa) << endlog;
     msat_assert_formula(reducer_, msat_make_iff(reducer_, l, aa));
   };
 
@@ -1163,7 +1163,7 @@ bool ProphIC3::reduce_axioms(const TermSet & untimed_axioms,
 
     return true;
   } else {
-    std::cout << "FAILED REDUCING" << std::endl;
+    logger(1) << "FAILED REDUCING" << endlog;
     return false;
   }
 }
@@ -1171,37 +1171,37 @@ bool ProphIC3::reduce_axioms(const TermSet & untimed_axioms,
 void ProphIC3::print_system(ic3ia::TransitionSystem & ts, std::string name) const
 {
   msat_env env = ts.get_env();
-  std::cout << "Printing Transition System: " << name << std::endl;
+  logger(1) << "Printing Transition System: " << name << endlog;
 
-  std::cout << "STATEVARS" << std::endl;
+  logger(1) << "STATEVARS" << endlog;
   for (auto sv : ts.statevars())
   {
-    std::cout << "\t" << msat_to_smtlib2_term(env, sv) << std::endl;
+    logger(1) << "\t" << msat_to_smtlib2_term(env, sv) << endlog;
   }
 
-  std::cout << "INPUTS" << std::endl;
+  logger(1) << "INPUTS" << endlog;
   for (auto i : ts.inputvars())
   {
-    std::cout << "\t" << msat_to_smtlib2_term(env, i) << std::endl;
+    logger(1) << "\t" << msat_to_smtlib2_term(env, i) << endlog;
   }
 
-  std::cout << std::endl;
-  std::cout << "INIT" << std::endl;
+  logger(1) << endlog;
+  logger(1) << "INIT" << endlog;
   for (auto c : conjunctive_partition(env, ts.init()))
   {
-    std::cout << "\t" << msat_to_smtlib2_term(env, c) << std::endl;
+    logger(1) << "\t" << msat_to_smtlib2_term(env, c) << endlog;
   }
 
-  std::cout << std::endl;
-  std::cout << "TRANS" << std::endl;
+  logger(1) << endlog;
+  logger(1) << "TRANS" << endlog;
   for (auto c : conjunctive_partition(env, ts.trans()))
   {
-    std::cout << "\t" << msat_to_smtlib2_term(env, c) << std::endl;
+    logger(1) << "\t" << msat_to_smtlib2_term(env, c) << endlog;
   }
 
-  std::cout << std::endl;
-  std::cout << "PROP" << std::endl;
-  std::cout << "\t" << msat_to_smtlib2_term(env, ts.prop()) << std::endl;
+  logger(1) << endlog;
+  logger(1) << "PROP" << endlog;
+  logger(1) << "\t" << msat_to_smtlib2_term(env, ts.prop()) << endlog;
 }
 
 }
