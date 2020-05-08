@@ -64,30 +64,8 @@ void ArrayAbstractor::do_abstraction()
   msat_term new_prop = abstract(conc_ts_.prop());
 
   // need to promote inputs that occur in new_init / new_prop to states
-  // this includes the created witnesses which don't explicitly appear
+  // this includes the created witnesses which are used as indices and should be states
   //   in init/prop but might be needed for refinements
-
-  // first -- promote witnesses
-  for (auto elem : witnesses_)
-  {
-    msat_term witness = elem.second;
-
-    // might have to unpack witness
-    // could be (ubv_to_int witness)
-    if (msat_term_is_int_from_ubv(msat_env_, witness))
-    {
-      witness = msat_term_get_arg(witness, 0);
-    }
-    assert(is_variable(msat_env_, witness));
-
-    msat_decl witness_decl = msat_term_get_decl(witness);
-    std::string witness_name(msat_decl_get_name(witness_decl));
-    msat_decl witness_declN = msat_declare_function(msat_env_,
-                                                    (witness_name + ".next").c_str(),
-                                                    msat_term_get_type(witness));
-    msat_term witnessN = msat_make_constant(msat_env_, witness_declN);
-    new_state_vars_[witness] = witnessN;
-  }
 
   // then promote any inputs appearing in init / prop to state variables
   TermSet free_vars;
@@ -110,6 +88,27 @@ void ArrayAbstractor::do_abstraction()
   }
 
   msat_term new_trans = abstract(conc_ts_.trans());
+
+  for (auto elem : witnesses_)
+  {
+    msat_term witness = elem.second;
+
+    // might have to unpack witness
+    // could be (ubv_to_int witness)
+    if (msat_term_is_int_from_ubv(msat_env_, witness))
+    {
+      witness = msat_term_get_arg(witness, 0);
+    }
+    assert(is_variable(msat_env_, witness));
+
+    msat_decl witness_decl = msat_term_get_decl(witness);
+    std::string witness_name(msat_decl_get_name(witness_decl));
+    msat_decl witness_declN = msat_declare_function(msat_env_,
+                                                    (witness_name + ".next").c_str(),
+                                                    msat_term_get_type(witness));
+    msat_term witnessN = msat_make_constant(msat_env_, witness_declN);
+    new_state_vars_[witness] = witnessN;
+  }
 
   // initialize for using curr / next
   // will reinitialize later if needed

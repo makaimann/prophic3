@@ -433,7 +433,7 @@ private:
  * formula
  */
 void get_predicates(msat_env env, msat_term t, TermSet &out,
-                    bool include_bool_vars=false);
+                    bool include_bool_vars=true);
 
 
 /**
