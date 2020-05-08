@@ -47,6 +47,8 @@ namespace ic3ia {
 class IC3: public Prover {
 public:
     IC3(TransitionSystem &ts, const Options &opts, LiveEncoder &l2s);
+
+    void set_search_bound_callback(SearchBoundCallback *cb);
     
     void set_initial_predicates(const TermList &preds);
     ///< sets the intial set of predicates to use for implicit abstraction
@@ -61,8 +63,8 @@ public:
     ///< holds (in this case, each element of the vector is a clause that is
     ///< part of the invariant)
 
-    void print_stats() const;
-    ///< print search statistics on stdout
+    void print_stats(std::ostream &out) const;
+    ///< print search statistics on out
 
     void add_imp_pred_var(msat_term v);
     ////< adds a variable that is important to track with implicit predicate
@@ -82,7 +84,6 @@ private:
     typedef std::vector<Frame> FrameList;
     ///< the trace F is a vector of frames
 
-  
     /**
      * A proof obligation is a pair <C,k> where C is a bad cube to block and k
      * is a position in the current trace. The pair represents the relative
@@ -367,6 +368,8 @@ private:
     TermSet imp_pred_vars_; ///< set of variables that are important to track in
                             ///the implicit abstraction
 
+    SearchBoundCallback *cb_; ///< user callback function
+    
     //------------------------------------------------------------------------
     // statistics
     //------------------------------------------------------------------------

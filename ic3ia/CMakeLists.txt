@@ -14,6 +14,7 @@ find_library(mathsat mathsat PATHS "${MSAT_LIB_DIR}")
 if(NOT mathsat)
     message(FATAL_ERROR "mathsat not found in ${MSAT_LIB_DIR}")
 endif()
+
 link_directories("${MSAT_LIB_DIR}")
 
 find_library(gmp gmp)
@@ -23,7 +24,6 @@ set(SRCS
     utils.cpp
     ia.cpp
     ic3.cpp
-    main.cpp
     solver.cpp
     ts.cpp
     unroll.cpp
@@ -31,13 +31,20 @@ set(SRCS
     bmc.cpp
     ltl.cpp
     proof.cpp
+    api.cpp
+    ic3ia.cpp
     )
 
 include_directories(. ${MSAT_INCLUDE_DIR})
 
 add_definitions(-std=c++11)
-add_executable(ic3ia ${SRCS})
-target_link_libraries(ic3ia mathsat gmpxx gmp -static)
+add_library(ic3ia ${SRCS})
+add_executable(ic3ia_main main.cpp)
+set_target_properties(ic3ia_main PROPERTIES OUTPUT_NAME ic3ia)
+target_link_libraries(ic3ia_main ic3ia mathsat gmpxx gmp -static)
+
+add_executable(horn2vmt horn2vmt.cpp)
+target_link_libraries(horn2vmt ic3ia mathsat gmpxx gmp -static)
 
 add_custom_target(proofchecker ALL
     COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PROJECT_SOURCE_DIR}/proofchecker.py" proofchecker.py

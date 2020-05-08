@@ -24,7 +24,7 @@
 
 namespace ic3ia {
 
-msat_config get_config(ModelGeneration model, bool interpolation)
+msat_config get_config(ModelGeneration model, bool interpolation, bool approx)
 {
     msat_config cfg = msat_create_config();
     if (MSAT_ERROR_CONFIG(cfg)) {
@@ -82,11 +82,11 @@ msat_config get_config(ModelGeneration model, bool interpolation)
         // interpolation for BV requires the lazy solver
         OPT_("theory.bv.bit_blast_mode", "0");
         OPT_("theory.bv.eager", "false");
-	// This option is a hack to handle interpolation failure in the
-	// case of QF_UFLIA
-	OPT_("theory.la.interpolation_laz_split_mixed_eq", "false");
+        // This option is a hack to handle interpolation failure in the
+        // case of QF_UFLIA
+        OPT_("theory.la.interpolation_laz_split_mixed_eq", "false");
     }
-
+    
     OPT_("model_generation", "false");
     OPT_("bool_model_generation", "false");
     switch (model) {
@@ -102,6 +102,13 @@ msat_config get_config(ModelGeneration model, bool interpolation)
         OPT_("model_generation", "true");
         break;
     }
+
+    if (approx) {
+        // turn off some expensive stuff when in approximate mode
+        OPT_("theory.la.laz_enabled", "false");
+        OPT_("theory.interface_eq_policy", "3");
+    }
+    
     return cfg;
 
   err:

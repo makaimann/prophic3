@@ -27,12 +27,21 @@
 
 namespace ic3ia {
 
+class SearchBoundCallback {
+public:
+    virtual ~SearchBoundCallback() {}
+    virtual bool operator()(int bound) = 0;
+};
+
+    
 /**
  * A generic Prover interface that verification algorithms must implement
  */
 class Prover {
 public:
     virtual ~Prover() {}
+
+    virtual void set_search_bound_callback(SearchBoundCallback *cb) {}
     
     virtual void set_initial_predicates(const TermList &preds) {}
     ///< sets the intial set of predicates to use for implicit abstraction
@@ -48,7 +57,7 @@ public:
     ///< holds (in this case, each element of the vector is a clause that is
     ///< part of the invariant)
 
-    virtual void print_stats() const {}
+    virtual void print_stats(std::ostream &out) const {}
     ///< print search statistics on stdout
 };
 

@@ -32,6 +32,7 @@
 #include <iostream>
 #include <chrono>
 #include <stdint.h>
+#include <random>
 
 
 // equality predicates and hash functions for msat_termS
@@ -62,6 +63,22 @@ struct hash<::msat_term> {
 
 
 namespace ic3ia {
+
+// replacement for std::shuffle, to ensure repeatabiliy. (The implementation
+// of std::shuffle is different across different standard libraries!)
+template <class T, class RNG>
+void shuffle(std::vector<T> &v, RNG &&g)
+{
+    if (v.empty()) {
+        return;
+    }
+    
+    for (size_t i = 1; i < v.size(); ++i) {
+        std::uniform_int_distribution<decltype(i)> d(0, i);
+        std::swap(v[i], v[d(g)]);
+    }
+}
+
 
 /**
  * Destructor class for msat_env
@@ -140,7 +157,7 @@ enum ModelGeneration {
     FULL_MODEL
 };
 msat_config get_config(ModelGeneration model=NO_MODEL,
-                       bool interpolation=false);
+                       bool interpolation=false, bool approx=false);
 
 
 /**
