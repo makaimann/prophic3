@@ -65,6 +65,9 @@ namespace prophic3
      */
     bool fix_bmc();
 
+    /* Fix the abstract counterexample returned by ic3ia */
+    bool refine_abstract_cex();
+
     /* Helper for fix_bmc */
     void refine_abs_ts(ic3ia::TermSet & untimed_axioms);
 
