@@ -338,7 +338,8 @@ void Rewriter::do_flatten_array_indices()
   }
 
   // create a state variable for each index
-  TermMap idx2stidx;
+  TermList input_indices;
+  TermList state_indices;
   msat_term definitions = msat_make_true(msat_env_);
   size_t num_state_indices = 0;
   std::string name;
@@ -360,7 +361,8 @@ void Rewriter::do_flatten_array_indices()
 
     // add it as state variable
     new_state_vars[stidx] = stidxN;
-    idx2stidx[idx] = stidx;
+    input_indices.push_back(idx);
+    state_indices.push_back(stidx);
 
     // add the top-level definition
     msat_term stidx_def = msat_make_eq(msat_env_,
@@ -379,42 +381,27 @@ void Rewriter::do_flatten_array_indices()
     }
   }
 
+  assert(input_indices.size() == state_indices.size());
+
 
   // flatten any indices that had inputs in them
   // and replace with a state variable
   TermList subst_keys;
   TermList subst_vals;
-  msat_term idx;
-  msat_term stidx;
   for (auto at : data.array_terms_with_input_indices)
   {
-    assert(msat_term_arity(at) > 1);
-
-    idx = msat_term_get_arg(at, 1);
-    stidx = idx2stidx.at(idx);
+    assert(msat_term_is_array_read(msat_env_, at) ||
+           msat_term_is_array_write(msat_env_, at));
 
     // add to substitution map
     // want to replace the index in the array with a state variable
     subst_keys.push_back(at);
-    if (msat_term_is_array_read(msat_env_, at))
-    {
-      subst_vals.push_back(msat_make_array_read(msat_env_,
-                                                msat_term_get_arg(at, 0),
-                                                stidx));
-    }
-    else if (msat_term_is_array_write(msat_env_, at))
-    {
-      subst_vals.push_back(msat_make_array_write(msat_env_,
-                                                 msat_term_get_arg(at, 0),
-                                                 stidx,
-                                                 msat_term_get_arg(at, 2)));
-    }
-    else
-    {
-      std::cout << "expecting an array read or write and got "
-                << msat_to_smtlib2_term(msat_env_, at) << std::endl;
-      throw std::exception();
-    }
+    // replace the input indices with the new state indices in the array
+    subst_vals.push_back(msat_apply_substitution(msat_env_,
+                                                 at,
+                                                 input_indices.size(),
+                                                 &(input_indices[0]),
+                                                 &(state_indices[0])));
   }
 
   assert(subst_keys.size() == subst_vals.size());
@@ -433,6 +420,7 @@ void Rewriter::do_flatten_array_indices()
                            new_trans,
                            rewritten_ts_.prop(),
                            rewritten_ts_.live_prop());
+
 }
 
 } // namespace prophic3
