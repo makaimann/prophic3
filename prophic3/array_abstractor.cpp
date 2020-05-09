@@ -354,6 +354,7 @@ msat_type ArrayAbstractor::abstract_array_type(msat_type t)
   if (msat_is_array_type(msat_env_, t, &arridxtype, &arrelemtype))
   {
     msat_type abs_type = msat_get_simple_type(msat_env_, ("abs_" + t_typestr).c_str());
+    abstract_array_types_.push_back(abs_type);
     type_map_[t_typestr] = abs_type;
 
     // create an equality function for this type of array

@@ -107,6 +107,8 @@ public:
     // creates an equality: if we're using abstract array equality, it will generate that
     msat_term make_eq(msat_env env, msat_term lhs, msat_term rhs) const;
 
+    std::vector<msat_type> & get_abstract_array_types() { return abstract_array_types_; };
+
   private:
 
     void do_abstraction();
@@ -178,6 +180,8 @@ public:
     ic3ia::TermSet finite_domain_lambdas_;
 
     ic3ia::TermSet prop_free_vars_;
+
+    std::vector<msat_type> abstract_array_types_;
 };
 
 } // namespace prophic3
