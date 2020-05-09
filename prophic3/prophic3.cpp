@@ -199,6 +199,7 @@ bool ProphIC3::check_witness()
                             unroller.at_time(eq, time));
     }
   }
+  msat_assert_formula(wcenv, query);
 
   bool res = (msat_solve(wcenv) == MSAT_SAT);
   msat_destroy_env(wcenv);
