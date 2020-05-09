@@ -117,6 +117,7 @@ msat_truth_value ProphIC3::prove()
   std::cout << "Created " << prop_indices_map.size();
   std::cout << " prophecy variables for the property" << std::endl;
 
+  int iter_cnt = 0;
   while (res != MSAT_TRUE)
   {
     std::cout << "Running IC3" << std::endl;
@@ -129,6 +130,17 @@ msat_truth_value ProphIC3::prove()
     for (auto v : frozen_proph_vars_) {
       ic3.add_imp_pred_var(v.first);
     }
+
+    if (!opts_.trace.empty())
+    {
+      ofstream f;
+      std::string filename = opts_.trace;
+      filename += "_abs_system_" + std::to_string(iter_cnt) + ".vmt";
+      f.open(filename);
+      abs_ts_.to_vmt(f);
+      f.close();
+    }
+    iter_cnt++;
 
     res = ic3.prove();
 
