@@ -50,85 +50,94 @@ bool check_witness(const Options &opts, TransitionSystem &ts,
 
 int main(int argc, const char **argv)
 {
-  Options opts = get_options(argc, argv);
+  try
+  {
+    Options opts = get_options(argc, argv);
 
-  msat_config cfg = msat_create_config();
-  msat_set_option(cfg, "allow_bool_function_args", "true");
-  msat_env env = msat_create_env(cfg);
-  EnvDeleter del_env(env);
-  msat_destroy_config(cfg);
+    msat_config cfg = msat_create_config();
+    msat_set_option(cfg, "allow_bool_function_args", "true");
+    msat_env env = msat_create_env(cfg);
+    EnvDeleter del_env(env);
+    msat_destroy_config(cfg);
 
-  TransitionSystem ts(env);
-  TransitionSystem product(env);
-  LTLEncoder ltl(opts, env);
-  TransitionSystem tableau(env);
-  TermList preds;
+    TransitionSystem ts(env);
+    TransitionSystem product(env);
+    LTLEncoder ltl(opts, env);
+    TransitionSystem tableau(env);
+    TermList preds;
 
-  if (!read_ts(opts, ts, ltl, tableau, product, preds)) {
-    std::cout << "ERROR reading input" << std::endl;
-    return 1;
-  }
+    if (!read_ts(opts, ts, ltl, tableau, product, preds)) {
+      std::cout << "ERROR reading input" << std::endl;
+      return 1;
+    }
 
-  if (!opts.trace.empty()) {
-    logger(1) << "dumping SMT traces to " << opts.trace << ".*.smt2"
-              << endlog;
-  }
+    if (!opts.trace.empty()) {
+      logger(1) << "dumping SMT traces to " << opts.trace << ".*.smt2"
+                << endlog;
+    }
 
-  LiveEncoder liveenc(product, opts);
+    LiveEncoder liveenc(product, opts);
 
-  // ArrayFlattener af(ts);
-  // TransitionSystem abs_ts = af.flatten_transition_system();
-  // ArrayAbstractor aa(abs_ts);
-  // abs_ts = aa.abstract_transition_system();
-  ProphIC3 prophic3(product, opts, liveenc, opts.verbosity);
+    // ArrayFlattener af(ts);
+    // TransitionSystem abs_ts = af.flatten_transition_system();
+    // ArrayAbstractor aa(abs_ts);
+    // abs_ts = aa.abstract_transition_system();
+    ProphIC3 prophic3(product, opts, liveenc, opts.verbosity);
 
-  // TODO: finish implementing prove and uncomment this
-  msat_truth_value res = prophic3.prove();
-  if (res == MSAT_FALSE) {
-    cout << "The property is false" << endl;
-    cout << "unsat" << endl; // similar to spacer
-  } else if (res == MSAT_TRUE) {
-    cout << "The property is true" << endl;
-    cout << "sat" << endl; // similar to spacer
-  } else {
-    cout << "Failed to prove or disprove the property..." << endl;
-    cout << "unknown" << endl; // similar to spacer
-  }
+    // TODO: finish implementing prove and uncomment this
+    msat_truth_value res = prophic3.prove();
 
-  if (opts.witness && res != MSAT_UNDEF) {
+    if (res == MSAT_FALSE) {
+      // cout << "The property is false" << endl;
+      cout << "unsat" << endl; // similar to spacer
+      return 1;
+    } else if (res == MSAT_TRUE) {
+      // cout << "The property is true" << endl;
+      cout << "sat" << endl; // similar to spacer
+      return 0;
+    } else {
+      // cout << "Failed to prove or disprove the property..." << endl;
+      cout << "unknown" << endl; // similar to spacer
+      return 2;
+    }
+
+    if (opts.witness && res != MSAT_UNDEF) {
       bool safe = (res == MSAT_TRUE);
       std::vector<TermList> wit;
       int loopback = prophic3.witness(wit);
       if (loopback == Prover::CEX_ERROR) {
-          std::cout << "ERROR computing witness" << std::endl;
+        std::cout << "ERROR computing witness" << std::endl;
       } else {
-          std::cout << (safe ? "invariant" : "counterexample") << "\n";
+        std::cout << (safe ? "invariant" : "counterexample") << "\n";
 
-          for (size_t i = 0; i < wit.size(); ++i) {
-              TermList &w = wit[i];
-              bool loophere = loopback >= 0 && size_t(loopback) == i;
-              std::cout << ";; " << (loophere ? "loopback " : "")
-                        << (safe ? "clause " : "step ") << i
-                        << "\n" << (safe ? "(or" : "(and") << "\n";
-              for (msat_term t : w) {
-                  std::cout << "  " << logterm(env, t) << "\n";
-              }
-              std::cout << ")\n";
+        for (size_t i = 0; i < wit.size(); ++i) {
+          TermList &w = wit[i];
+          bool loophere = loopback >= 0 && size_t(loopback) == i;
+          std::cout << ";; " << (loophere ? "loopback " : "")
+                    << (safe ? "clause " : "step ") << i
+                    << "\n" << (safe ? "(or" : "(and") << "\n";
+          for (msat_term t : w) {
+            std::cout << "  " << logterm(env, t) << "\n";
           }
-          std::cout.flush();
+          std::cout << ")\n";
+        }
+        std::cout.flush();
       }
       double witness_check_time;
 
       if (safe && opts.check_witness) {
-          TransitionSystem & abs_ts = prophic3.get_abs_ts();
-          TimeKeeper tk(witness_check_time);
-          if (!check_witness(opts, abs_ts, wit, ltl, tableau, liveenc)) {
-              std::cout << "ERROR: the witness is incorrect\n" << std::endl;
-          } else {
-              std::cout << "the witness is correct\n" << std::endl;
-          }
+        TransitionSystem & abs_ts = prophic3.get_abs_ts();
+        TimeKeeper tk(witness_check_time);
+        if (!check_witness(opts, abs_ts, wit, ltl, tableau, liveenc)) {
+          std::cout << "ERROR: the witness is incorrect\n" << std::endl;
+        } else {
+          std::cout << "the witness is correct\n" << std::endl;
+        }
       }
-  }
+    }
 
-  return 0;
+  } catch (std::exception &e) {
+    std::cerr << e.what() << std::endl;
+    return 3;
+  }
 }
