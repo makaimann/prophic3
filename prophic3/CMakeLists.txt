@@ -21,6 +21,7 @@ add_executable(prophic3
   "${IC3IA_HOME}/ltl.cpp"
   "${IC3IA_HOME}/live.cpp"
   "${IC3IA_HOME}/proof.cpp"
+  "${IC3IA_HOME}/kind.cpp"
   "${PROJECT_SOURCE_DIR}/utils.cpp"
   "${PROJECT_SOURCE_DIR}/rewriter.cpp"
   "${PROJECT_SOURCE_DIR}/array_abstractor.cpp"
