@@ -26,6 +26,7 @@ namespace prophic3
     msat_truth_value prove();
 
     int witness(std::vector<ic3ia::TermList> & out);
+    ic3ia::TransitionSystem & get_abs_ts() { return abs_ts_; };
 
   protected:
 
@@ -39,6 +40,8 @@ namespace prophic3
     const ic3ia::Options & opts_;
     ic3ia::LiveEncoder &l2s_;
     ic3ia::Unroller un_;
+
+    std::vector<ic3ia::TermList> witness_;
 
     msat_env refiner_;
     msat_env reducer_;

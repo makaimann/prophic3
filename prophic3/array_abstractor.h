@@ -152,6 +152,8 @@ public:
     // map from abstract array sorts to their equal UF
     // (unless using option -no-eq-uf)
     std::unordered_map<std::string, msat_decl> eq_ufs_;
+    // map from abstract array sorts to their witness UF
+    std::unordered_map<std::string, msat_decl> witness_ufs_;
     // TODO: Figure out if we still even need this
     // the original sort for terms
     TermTypeMap orig_types_;

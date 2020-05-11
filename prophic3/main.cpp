@@ -6,6 +6,7 @@
 #include "bmc.h"
 #include "ic3.h"
 #include "ltl.h"
+#include "proof.h"
 
 #include "array_abstractor.h"
 #include "rewriter.h"
@@ -17,11 +18,42 @@ using namespace std;
 using namespace ic3ia;
 using namespace prophic3;
 
+bool check_witness(const Options &opts, TransitionSystem &ts,
+                   const std::vector<TermList> &witness, LTLEncoder &ltl,
+                   TransitionSystem &tableau, LiveEncoder &liveenc)
+{
+    std::unique_ptr<ProofChecker> checker;
+    if (ts.live_prop()) {
+        checker.reset(new LTLProofChecker(opts, ts, ltl, tableau, liveenc));
+    } else {
+        checker.reset(new InvarProofChecker(opts, ts));
+    }
+    bool ok = checker->check(witness);
+    
+    if (ok && !opts.witness_check_script.empty()) {
+        FILE *f = fopen(opts.witness_check_script.c_str(), "w");
+        if (f) {
+            checker->print_proof_script(f);
+            fclose(f);
+            logger(1) << "witness check script generated in "
+                      << opts.witness_check_script << endlog;
+        } else {
+            logger(0) << "ERROR: could not open '" << opts.witness_check_script
+                      << "' for writing" << endlog;
+            ok = false;
+        }
+    }
+    
+    return ok;
+}
+
+
 int main(int argc, const char **argv)
 {
   Options opts = get_options(argc, argv);
 
   msat_config cfg = msat_create_config();
+  msat_set_option(cfg, "allow_bool_function_args", "true");
   msat_env env = msat_create_env(cfg);
   EnvDeleter del_env(env);
   msat_destroy_config(cfg);
@@ -61,6 +93,41 @@ int main(int argc, const char **argv)
   } else {
     cout << "Failed to prove or disprove the property..." << endl;
     cout << "unknown" << endl; // similar to spacer
+  }
+
+  if (opts.witness && res != MSAT_UNDEF) {
+      bool safe = (res == MSAT_TRUE);
+      std::vector<TermList> wit;
+      int loopback = prophic3.witness(wit);
+      if (loopback == Prover::CEX_ERROR) {
+          std::cout << "ERROR computing witness" << std::endl;
+      } else {
+          std::cout << (safe ? "invariant" : "counterexample") << "\n";
+
+          for (size_t i = 0; i < wit.size(); ++i) {
+              TermList &w = wit[i];
+              bool loophere = loopback >= 0 && size_t(loopback) == i;
+              std::cout << ";; " << (loophere ? "loopback " : "")
+                        << (safe ? "clause " : "step ") << i
+                        << "\n" << (safe ? "(or" : "(and") << "\n";
+              for (msat_term t : w) {
+                  std::cout << "  " << logterm(env, t) << "\n";
+              }
+              std::cout << ")\n";
+          }
+          std::cout.flush();
+      }
+      double witness_check_time;
+
+      if (safe && opts.check_witness) {
+          TransitionSystem & abs_ts = prophic3.get_abs_ts();
+          TimeKeeper tk(witness_check_time);
+          if (!check_witness(opts, abs_ts, wit, ltl, tableau, liveenc)) {
+              std::cout << "ERROR: the witness is incorrect\n" << std::endl;
+          } else {
+              std::cout << "the witness is correct\n" << std::endl;
+          }
+      }
   }
 
   return 0;

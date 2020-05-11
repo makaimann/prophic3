@@ -64,30 +64,7 @@ void ArrayAbstractor::do_abstraction()
   msat_term new_prop = abstract(conc_ts_.prop());
 
   // need to promote inputs that occur in new_init / new_prop to states
-  // this includes the created witnesses which don't explicitly appear
-  //   in init/prop but might be needed for refinements
-
-  // first -- promote witnesses
-  for (auto elem : witnesses_)
-  {
-    msat_term witness = elem.second;
-
-    // might have to unpack witness
-    // could be (ubv_to_int witness)
-    if (msat_term_is_int_from_ubv(msat_env_, witness))
-    {
-      witness = msat_term_get_arg(witness, 0);
-    }
-    assert(is_variable(msat_env_, witness));
-
-    msat_decl witness_decl = msat_term_get_decl(witness);
-    std::string witness_name(msat_decl_get_name(witness_decl));
-    msat_decl witness_declN = msat_declare_function(msat_env_,
-                                                    (witness_name + ".next").c_str(),
-                                                    msat_term_get_type(witness));
-    msat_term witnessN = msat_make_constant(msat_env_, witness_declN);
-    new_state_vars_[witness] = witnessN;
-  }
+  // in init/prop but might be needed for refinements
 
   // then promote any inputs appearing in init / prop to state variables
   TermSet free_vars;
@@ -361,10 +338,20 @@ msat_type ArrayAbstractor::abstract_array_type(msat_type t)
                                    abs_type};
     msat_type eq_funtype =
       msat_get_function_type(msat_env_, &eq_param_types[0], 2, msat_get_bool_type(msat_env_));
-    std::string eqname = "eq_" + std::to_string(eq_id_++);
+    std::string eqname = "eq_" + std::to_string(eq_id_);
     eq_ufs_[msat_type_repr(abs_type)] = msat_declare_function(msat_env_,
                                                               eqname.c_str(),
                                                               eq_funtype);
+
+    // create a witness function as well
+    msat_type witness_funtype =
+      msat_get_function_type(msat_env_, &eq_param_types[0], 2, msat_get_integer_type(msat_env_));
+    std::string witnessname = "witness_" + std::to_string(eq_id_);
+    witness_ufs_[msat_type_repr(abs_type)] = msat_declare_function(msat_env_,
+                                                                   witnessname.c_str(),
+                                                                   witness_funtype);
+    eq_id_++;
+
 
     // create read and write functions
     if (!use_multi_uf_)
@@ -528,16 +515,17 @@ msat_term ArrayAbstractor::abstract(msat_term term) {
           return MSAT_VISIT_PROCESS;
         }
 
-        std::string witness_name = "witness_" + std::to_string(super->witnesses_.size());
 
         msat_type idx_type;
         msat_is_array_type(e, msat_term_get_type(lhs), &idx_type, nullptr);
-        msat_decl decl_witness =
-            msat_declare_function(e, witness_name.c_str(), idx_type);
-        msat_term witness = msat_make_constant(e, decl_witness);
-        super->witnesses_[arr_eq] = idx_to_int(e, witness);
-        super->orig_types_[idx_to_int(e, witness)] = idx_type;
-        super->indices_.insert(idx_to_int(e, witness));
+        std::string abs_arr_typestr = msat_type_repr(msat_term_get_type(lhs_cache));
+        msat_decl witness_fun = super->witness_ufs_.at(abs_arr_typestr);
+        msat_term cached_args[2] = {lhs_cache, rhs_cache};
+        msat_term witness = msat_make_uf(e, witness_fun, &cached_args[0]);
+
+        super->witnesses_[arr_eq] = witness;
+        super->orig_types_[witness] = idx_type;
+        super->indices_.insert(witness);
         // TODO: figure out cleanest way to get next-state version of lemmas as well
         // e.g. equal(next(arr), next(arr2)) -> ...
       } else if (msat_term_is_array_read(e, t)) {

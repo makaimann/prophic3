@@ -271,4 +271,34 @@ bool TransitionSystem::contains_next(msat_term t) const {
   return data.has_next;
 }
 
+// added by Makai
+bool TransitionSystem::contains_inputs(msat_term t) const {
+  struct Data {
+    bool has_input;
+    const TermSet &inputvars;
+    Data(const TermSet &nv) : has_input(false), inputvars(nv){};
+  };
+  auto visit = [](msat_env e, msat_term t, int preorder,
+                  void *data) -> msat_visit_status {
+                 Data *d = static_cast<Data *>(data);
+                 // a variable is a term with no children and no built-in
+                 // interpretation
+                 if (preorder && msat_term_arity(t) == 0 &&
+                     msat_decl_get_tag(e, msat_term_get_decl(t)) == MSAT_TAG_UNKNOWN &&
+                     !msat_term_is_number(e, t)) {
+
+                   // check if it contains an input variable
+                   if (d->inputvars.find(t) != d->inputvars.end()) {
+                     d->has_input = true;
+                     return MSAT_VISIT_ABORT;
+                   }
+                 }
+                 return MSAT_VISIT_PROCESS;
+               };
+
+  Data data(inputvars_set_);
+  msat_visit_term(env_, t, visit, &data);
+  return data.has_input;
+}
+
 } // namespace ic3ia
