@@ -112,6 +112,8 @@ public:
     ///< notifies the refiner that p is a predicate used in the current
     ///< abstraction
 
+    size_t get_bound() const { return bound_; };
+
 private:
     void extract_predicates(msat_env env);
     void minimize_predicates(const std::vector<TermList> &cex, const TermSet *imp_vars=NULL);
@@ -149,6 +151,9 @@ private:
 
     TermList to_protect_;
     ///< helper for simplify()
+
+    size_t bound_;
+    ///< Added by Makai: gets populated with bound of counterexample
 };
 
 } // namespace ic3ia

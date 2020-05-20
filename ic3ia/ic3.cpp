@@ -188,6 +188,19 @@ void IC3::add_imp_pred_var(msat_term v)
     imp_pred_vars_.insert(v);
 }
 
+size_t IC3::get_bound() const
+{
+  if (ts_.live_prop())
+  {
+    std::cout << "bound not yet accessible for liveness properties" << std::endl;
+    throw std::exception();
+  }
+  else
+  {
+    return ref_.get_bound();
+  }
+}
+
 
 //-----------------------------------------------------------------------------
 // major methods

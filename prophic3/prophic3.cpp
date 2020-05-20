@@ -156,7 +156,7 @@ msat_truth_value ProphIC3::prove()
     {
       witness_.clear();
       ic3.witness(witness_);
-      current_k_ = witness_.size() - 1;
+      current_k_ = ic3.get_bound();
       logger(1) << "IC3 got counter-example at: " << current_k_ << endlog;
     }
     else if (res == MSAT_TRUE)
