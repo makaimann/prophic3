@@ -556,6 +556,12 @@ bool ProphIC3::fix_bmc()
       // add prophecy variables but not axioms
       // don't refine with untimed axioms search for them again
       prophesize_abs_ts(red_timed_axioms, false);
+      TermMap new_statevars;
+      for (auto sv : abs_ts_.statevars())
+      {
+        new_statevars[sv] = abs_ts_.next(sv);
+      }
+      abs_ts_.initialize(new_statevars, abs_ts_.init(), abs_ts_.trans(), abs_ts_.prop(), abs_ts_.live_prop());
       // don't update k, should come back and find more untimeable axioms at the same k
     }
     else {
