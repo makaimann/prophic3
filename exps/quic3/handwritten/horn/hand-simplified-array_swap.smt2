@@ -62,12 +62,9 @@
 (assert (forall (
          (main@%shadow.mem2.0_0 (Array Int Int))
          (main@%shadow.mem1.0_0 (Array Int Int))
-         (main@%tmp27.i_0 Int)
          (main@%tmp20.i_0 Int)
          (main@%shadow.mem.0_0 (Array Int Int))
-         (main@%tmp30.i_0 Int)
          (main@%shadow.mem3.0_0 (Array Int Int))
-         (main@%tmp35.i_0 Int)
          (main@%tmp28.i_0 Int)
          (main@%i.0.i_0 Int)
          (main@%_7_0 (Array Int Int))
@@ -96,26 +93,23 @@
                          (store main@%shadow.mem2.0_0
                                 (+ main@%tmp8.i_0 (* main@%i.0.i_0 1))
                                 main@%tmp20.i_0))
-                  (= main@%tmp27.i_0 (+ main@%tmp12.i_0 (* main@%i.0.i_0 1)))
-                  (or (<= main@%tmp12.i_0 0) (> main@%tmp27.i_0 0))
+                  (or (<= main@%tmp12.i_0 0) (> (+ main@%tmp12.i_0 (* main@%i.0.i_0 1)) 0))
                   (> main@%tmp12.i_0 0)
                   (= main@%_5_0
                       (store main@%shadow.mem1.0_0
-                            main@%tmp27.i_0
+                            (+ main@%tmp12.i_0 (* main@%i.0.i_0 1))
                             main@%tmp20.i_0))
-                  (= main@%tmp30.i_0 (+ main@%tmp10.i_0 (* main@%i.0.i_0 1)))
-                  (or (<= main@%tmp10.i_0 0) (> main@%tmp30.i_0 0))
+                  (or (<= main@%tmp10.i_0 0) (> (+ main@%tmp10.i_0 (* main@%i.0.i_0 1)) 0))
                   (> main@%tmp10.i_0 0)
                   (= main@%_6_0
                       (store main@%shadow.mem.0_0
-                            main@%tmp30.i_0
+                            (+ main@%tmp10.i_0 (* main@%i.0.i_0 1))
                             main@%tmp28.i_0))
-                  (= main@%tmp35.i_0 (+ main@%tmp14.i_0 (* main@%i.0.i_0 1)))
-                  (or (<= main@%tmp14.i_0 0) (> main@%tmp35.i_0 0))
+                  (or (<= main@%tmp14.i_0 0) (> (+ main@%tmp14.i_0 (* main@%i.0.i_0 1)) 0))
                   (> main@%tmp14.i_0 0)
                   (= main@%_7_0
                       (store main@%shadow.mem3.0_0
-                            main@%tmp35.i_0
+                            (+ main@%tmp14.i_0 (* main@%i.0.i_0 1))
                             main@%tmp28.i_0))
                   )))
     (=> a!5
@@ -164,12 +158,12 @@
                    main@%shadow.mem.0_0
                    main@%tmp2.i_0))))
 
+;; current
+
 (assert (forall (
          (main@%shadow.mem2.1_0 (Array Int Int))
-         (main@%tmp52.i_0 Int)
          (main@%tmp50.i_0 Int)
          (main@%shadow.mem.1_0 (Array Int Int))
-         (main@%tmp55.i_0 Int)
          (main@%tmp47.i_0 Int)
          (main@%i.1.i_0 Int)
          (main@%_8_0 (Array Int Int))
@@ -201,19 +195,17 @@
                   (> main@%tmp10.i_0 0)
                   (= main@%tmp50.i_0
                       (select main@%shadow.mem.1_0 (+ main@%tmp10.i_0 (* main@%i.1.i_0 1))))
-                  (= main@%tmp52.i_0 (+ main@%tmp8.i_0 (* main@%i.1.i_0 1)))
-                  (or (<= main@%tmp8.i_0 0) (> main@%tmp52.i_0 0))
+                  (or (<= main@%tmp8.i_0 0) (> (+ main@%tmp8.i_0 (* main@%i.1.i_0 1)) 0))
                   (> main@%tmp8.i_0 0)
                   (= main@%_8_0
                       (store main@%shadow.mem2.1_0
-                            main@%tmp52.i_0
+                            (+ main@%tmp8.i_0 (* main@%i.1.i_0 1))
                             main@%tmp50.i_0))
-                  (= main@%tmp55.i_0 (+ main@%tmp10.i_0 (* main@%i.1.i_0 1)))
-                  (or (<= main@%tmp10.i_0 0) (> main@%tmp55.i_0 0))
+                  (or (<= main@%tmp10.i_0 0) (> (+ main@%tmp10.i_0 (* main@%i.1.i_0 1)) 0))
                   (> main@%tmp10.i_0 0)
                   (= main@%_9_0
                       (store main@%shadow.mem.1_0
-                            main@%tmp55.i_0
+                            (+ main@%tmp10.i_0 (* main@%i.1.i_0 1))
                             main@%tmp47.i_0))
                   )))
     (=> a!5
@@ -227,8 +219,6 @@
                      main@%_8_0
                      main@%_9_0
                      main@%tmp2.i_0)))))
-
-;; current clause
 
 (assert (forall ((main@%i.1.i_0 Int)
          (main@%tmp2.i_0 Int)
