@@ -90,12 +90,24 @@ public:
   // kinds of axioms
 
   const ic3ia::TermSet &orig_indices() const { return orig_indices_set_; };
+
   const std::unordered_map<std::string, ic3ia::TermSet> &curr_indices() const {
     return curr_indices_;
   };
+
   const std::unordered_map<std::string, ic3ia::TermSet> &non_idx_terms() const {
     return non_idx_terms_;
   };
+
+  // TODO: think about caching this -- but we also want to update it
+  // periodically as new terms are added
+  /**
+   *  Enumerates terms obtained by adding two terms drawn from indices (except
+   * witnesses) and the general terms in the transition system from
+   * non_idx_terms
+   */
+  std::unordered_map<std::string, ic3ia::TermSet>
+  octagonal_addition_domain_terms() const;
 
   // Note: not differentiating between zero-step and one-step axioms
   //       just enumerating them all together

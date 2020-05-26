@@ -57,6 +57,38 @@ msat_term ArrayAxiomEnumerator::bound_lambda(msat_term lambda, size_t width)
       msat_make_leq(msat_env_, lambda, max));
 }
 
+// generate fallback terms to search over for prophecy targets
+unordered_map<string, TermSet>
+ArrayAxiomEnumerator::octagonal_addition_domain_terms() const {
+  unordered_map<string, TermSet> octagonal_domain;
+  // copy the map because we want to modify a copy
+  unordered_map<string, TermSet> args = non_idx_terms_;
+  // add indices to the map
+  for (auto elem : curr_indices_no_witnesses_) {
+    for (auto idx : elem.second) {
+      args[elem.first].insert(idx);
+    }
+  }
+
+  // compute the octagonal domain by performing all possible additions
+  for (auto elem : args) {
+    if (elem.first != "Int") {
+      std::cout << "octagonal abstract domain currently only implemented for "
+                   "integers, but got "
+                << elem.first << std::endl;
+      throw std::exception();
+    }
+
+    for (auto a1 : elem.second) {
+      for (auto a2 : elem.second) {
+        octagonal_domain[elem.first].insert(msat_make_plus(msat_env_, a1, a2));
+      }
+    }
+  }
+
+  return octagonal_domain;
+}
+
 // public facing axiom enumeration
 
 ic3ia::TermSet ArrayAxiomEnumerator::init_eq_axioms()
