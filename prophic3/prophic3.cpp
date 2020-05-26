@@ -409,6 +409,9 @@ bool ProphIC3::fix_bmc()
 
           // check for prophecy targets over indices
 
+          logger(1) << "checking for prophecy targets over indices at " << j
+                    << endlog;
+
           timed_axioms.clear();
           timed_axioms.push_back(
               aae_.equality_axioms_idx_time(curr_indices, j, un_, current_k_));
@@ -441,9 +444,12 @@ bool ProphIC3::fix_bmc()
           }
 
           // fallback -- check for prophecy over arbitrary terms
-          if (!found_timed_axioms_last_iter) {
-            logger(1) << "checking for prophecy targets over general terms"
-                      << endlog;
+          // Heuristic: don't check at last time step, seems unlikely to be
+          // needed there because it would be used in a select if need to refine
+          // at the time of the property violation
+          if (!found_timed_axioms_last_iter && j != current_k_) {
+            logger(1) << "checking for prophecy targets over general terms at "
+                      << j << endlog;
             timed_axioms.clear();
             timed_axioms.push_back(aae_.equality_axioms_idx_time(
                 non_idx_terms, j, un_, current_k_));
