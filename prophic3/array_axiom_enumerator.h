@@ -93,6 +93,9 @@ public:
   const std::unordered_map<std::string, ic3ia::TermSet> &curr_indices() const {
     return curr_indices_;
   };
+  const std::unordered_map<std::string, ic3ia::TermSet> &non_idx_terms() const {
+    return non_idx_terms_;
+  };
 
   // Note: not differentiating between zero-step and one-step axioms
   //       just enumerating them all together

@@ -393,6 +393,9 @@ bool ProphIC3::fix_bmc()
         const unordered_map<string, TermSet> &curr_indices =
             aae_.curr_indices();
 
+        const unordered_map<string, TermSet> &non_idx_terms =
+            aae_.non_idx_terms();
+
         // Heuristic: stop once you find timed axioms going backward from
         // property violation
         //            might be sufficient
@@ -403,6 +406,8 @@ bool ProphIC3::fix_bmc()
           if (found_timed_axioms_last_iter) {
             break;
           }
+
+          // check for prophecy targets over indices
 
           timed_axioms.clear();
           timed_axioms.push_back(
@@ -431,6 +436,42 @@ bool ProphIC3::fix_bmc()
                 timed_axioms_to_refine.insert(timed_ax);
                 ++lemma_cnt;
                 found_timed_axioms_last_iter = true;
+              }
+            }
+          }
+
+          // fallback -- check for prophecy over arbitrary terms
+          if (!found_timed_axioms_last_iter) {
+            logger(1) << "checking for prophecy targets over general terms"
+                      << endlog;
+            timed_axioms.clear();
+            timed_axioms.push_back(aae_.equality_axioms_idx_time(
+                non_idx_terms, j, un_, current_k_));
+            timed_axioms.push_back(
+                aae_.store_axioms_idx_time(non_idx_terms, j, un_, current_k_));
+            timed_axioms.push_back(aae_.const_array_axioms_idx_time(
+                non_idx_terms, j, un_, current_k_));
+
+            for (auto timed_axiom_set : timed_axioms) {
+              if (opts_.max_array_axioms > 0 &&
+                  lemma_cnt >= opts_.max_array_axioms) {
+                // exit loop if over allotted axiom limit
+                break;
+              }
+
+              for (auto timed_ax : timed_axiom_set) {
+                if (opts_.max_array_axioms > 0 &&
+                    lemma_cnt >= opts_.max_array_axioms) {
+                  // exit loop if over allotted axiom limit
+                  break;
+                }
+
+                if (is_axiom_violated(timed_ax)) {
+                  violated_axioms.insert(timed_ax);
+                  timed_axioms_to_refine.insert(timed_ax);
+                  ++lemma_cnt;
+                  found_timed_axioms_last_iter = true;
+                }
               }
             }
           }
