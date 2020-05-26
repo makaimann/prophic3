@@ -313,11 +313,6 @@ bool ProphIC3::fix_bmc()
       untimed_axiom_sets.push_back(aae_.trans_eq_axioms());
     }
 
-    vector<vector<TermSet>> timed_axioms;
-    timed_axioms.push_back(aae_.equality_axioms_all_idx_times(un_, current_k_));
-    timed_axioms.push_back(aae_.store_axioms_all_idx_times(un_, current_k_));
-    timed_axioms.push_back(aae_.const_array_axioms_all_idx_times(un_, current_k_));
-
     while(broken)
     {
       int lemma_cnt = 0;
@@ -389,28 +384,40 @@ bool ProphIC3::fix_bmc()
 
       if (!found_untimed_axioms)
       {
-        for(auto axiom_vec : timed_axioms)
-        {
-          if (opts_.max_array_axioms > 0 &&
-              lemma_cnt >= opts_.max_array_axioms) {
-            break;
-          }
+        // TODO: exit after adding timed axioms at a particular j
+        //       don't need to enumerate all of them
+        // TODO: within j for loop, also check over non_idx_terms
+        //       will find prophecy even if not an index
+        // TODO: use pointers or something to avoid copying the TermSets into
+        // the vector
+        vector<TermSet> timed_axioms;
+        const unordered_map<string, TermSet> &curr_indices =
+            aae_.curr_indices();
+        // check timed axioms backwards from property violation
+        for (int j = current_k_; j > 0; j--) {
+          timed_axioms.clear();
+          timed_axioms.push_back(
+              aae_.equality_axioms_idx_time(curr_indices, j, un_, current_k_));
+          timed_axioms.push_back(
+              aae_.store_axioms_idx_time(curr_indices, j, un_, current_k_));
+          timed_axioms.push_back(aae_.const_array_axioms_idx_time(
+              curr_indices, j, un_, current_k_));
 
-          for (size_t i = 0; i < axiom_vec.size(); ++i)
-          {
+          for (auto timed_axiom_set : timed_axioms) {
             if (opts_.max_array_axioms > 0 &&
                 lemma_cnt >= opts_.max_array_axioms) {
+              // exit loop if over allotted axiom limit
               break;
             }
 
-            for (auto timed_axiom : axiom_vec[i])
-            {
+            for (auto timed_ax : timed_axiom_set) {
               if (opts_.max_array_axioms > 0 &&
                   lemma_cnt >= opts_.max_array_axioms) {
+                // exit loop if over allotted axiom limit
                 break;
               }
 
-              if (is_axiom_violated(timed_axiom)) {
+              if (is_axiom_violated(timed_ax)) {
                 violated_axioms.insert(timed_axiom);
                 timed_axioms_to_refine.insert(timed_axiom);
                 ++lemma_cnt;

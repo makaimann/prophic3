@@ -65,7 +65,10 @@ public:
   // structs for each type of equality) then have methods to enumerate different
   // kinds of axioms
 
-  ic3ia::TermSet orig_indices() const { return orig_indices_set_; };
+  const ic3ia::TermSet &orig_indices() const { return orig_indices_set_; };
+  const std::unordered_map<std::string, ic3ia::TermSet> &curr_indices() const {
+    return curr_indices_;
+  };
 
   // Note: not differentiating between zero-step and one-step axioms
   //       just enumerating them all together
@@ -81,23 +84,35 @@ public:
    */
   ic3ia::TermSet lambda_alldiff_axioms();
 
-  /** Enumerate equality axioms over indices at all times
+  /** Enumerate equality axioms over indices at j
+   *  indices - the index sets to enumerate axiom over
+   *  j - the time step of the indices (they haven't been unrolled yet)
    *  un - the unroller to use for timing
    *  k - the maximum time-step (inclusive)
    */
-  std::vector<ic3ia::TermSet> equality_axioms_all_idx_times(ic3ia::Unroller &un, size_t k);
+  ic3ia::TermSet equality_axioms_idx_time(
+      const std::unordered_map<std::string, ic3ia::TermSet> &indices, size_t j,
+      ic3ia::Unroller &un, size_t k);
 
-  /** Enumerate store axioms over indices at all times
+  /** Enumerate store axioms over indices at j
+   *  indices - the index sets to enumerate axiom over
+   *  j - the time step of the indices (they haven't been unrolled yet)
    *  un - the unroller to use for timing
    *  k - the maximum time-step (inclusive)
    */
-  std::vector<ic3ia::TermSet> store_axioms_all_idx_times(ic3ia::Unroller &un, size_t k);
+  ic3ia::TermSet store_axioms_idx_time(
+      const std::unordered_map<std::string, ic3ia::TermSet> &indices, size_t j,
+      ic3ia::Unroller &un, size_t k);
 
-  /** Enumerate const array axioms over indices at all times
+  /** Enumerate const array axioms over indices j
+   *  indices - the index sets to enumerate axiom over
+   *  j - the time step of the indices (they haven't been unrolled yet)
    *  un - the unroller to use for timing
    *  k - the maximum time-step (inclusive)
    */
-  std::vector<ic3ia::TermSet> const_array_axioms_all_idx_times(ic3ia::Unroller &un, size_t k);
+  ic3ia::TermSet const_array_axioms_idx_time(
+      const std::unordered_map<std::string, ic3ia::TermSet> &indices, size_t j,
+      ic3ia::Unroller &un, size_t k);
 
   /* Adds an index to the index set (mostly used for adding prophecy vars) */
   void add_index(msat_type _type, msat_term i);
