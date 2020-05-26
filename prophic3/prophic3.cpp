@@ -275,8 +275,9 @@ bool ProphIC3::fix_bmc()
 
   TermList labels;
   TermList label2axiom;
-  do
-  {
+  // Heuristic: fix bmc up until it goes two steps without adding new axioms
+  size_t num_steps_no_axioms = 0;
+  while (num_steps_no_axioms < 2) {
     axioms_added = false;
     labels.clear();
     label2axiom.clear();
@@ -452,10 +453,22 @@ bool ProphIC3::fix_bmc()
       }
 
       violated_axioms.clear();
-    }
+    } // end of while(broken) loop
 
     axioms_added = untimed_axioms_to_add.size();
     axioms_added |= timed_axioms_to_refine.size();
+
+    if (!axioms_added) {
+      num_steps_no_axioms++;
+      // didn't need any new axioms so we can just continue to the next
+      // iteration
+      current_k_++;
+      continue;
+    } else {
+      // reset num_steps_no_axioms to zero
+      // supposed to be *consecutive* steps
+      num_steps_no_axioms = 0;
+    }
 
     // refine the transition system
 
@@ -548,8 +561,6 @@ bool ProphIC3::fix_bmc()
       red_untimed_axioms = untimed_axioms_to_add;
     }
 
-    cont = axioms_added || (current_k_ == 0);
-
     /************************************* Fix the transition system ************************************/
     if (red_timed_axioms.size()) {
       // add prophecy variables but not axioms
@@ -562,11 +573,15 @@ bool ProphIC3::fix_bmc()
       }
       abs_ts_.initialize(new_statevars, abs_ts_.init(), abs_ts_.trans(), abs_ts_.prop(), abs_ts_.live_prop());
       // don't update k, should come back and find more untimeable axioms at the same k
+
+      // NOTE: Just adding timed refinements and re-finding untimed axioms
+      //       Has to do with ideas about monotonicity of history variables
+      //       It's also just easier than doing the required substitutions...
     }
     else {
       refine_abs_ts(red_untimed_axioms);
-      // only update k if we're continuing
-      current_k_ += cont ? 1 : 0;
+      // increase k
+      current_k_++;
     }
 
     untimed_axioms_to_add.clear();
@@ -575,12 +590,8 @@ bool ProphIC3::fix_bmc()
     // reset the flags
     found_untimed_axioms = false;
     found_timed_axioms = false;
+  }
 
-  } while(cont);
-
-  // TODO: Just add timed refinements and re-find untimed axioms
-  //       Has to do with ideas about monotonicity of history variables
-  //       It's also just easier than doing the required substitutions...
   // TODO: separate timed and untimed axioms finding into helper methods
 
   return true;
