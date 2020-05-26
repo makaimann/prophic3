@@ -70,7 +70,10 @@ ArrayAxiomEnumerator::octagonal_addition_domain_terms() const {
     }
   }
 
+  TermTypeMap &orig_types = abstractor_.orig_types();
+
   // compute the octagonal domain by performing all possible additions
+  msat_term t;
   for (auto elem : args) {
     if (elem.first != "Int") {
       std::cout << "octagonal abstract domain currently only implemented for "
@@ -81,7 +84,10 @@ ArrayAxiomEnumerator::octagonal_addition_domain_terms() const {
 
     for (auto a1 : elem.second) {
       for (auto a2 : elem.second) {
-        octagonal_domain[elem.first].insert(msat_make_plus(msat_env_, a1, a2));
+        t = msat_make_plus(msat_env_, a1, a2);
+        octagonal_domain[elem.first].insert(t);
+        // HACK: assuming none of these were changed
+        orig_types[t] = msat_term_get_type(t);
       }
     }
   }
@@ -711,14 +717,12 @@ void ArrayAxiomEnumerator::collect_terms(msat_term term) {
 
     // remove next state variables from the sets
     // will unroll states at each time anyway, don't want to duplicate
-    for (auto idx : elem.second) {
-      if (ts_.is_nextstatevar(idx)) {
-        non_idx_terms_.at(elem.first).erase(idx);
-      }
-      else
-      {
+    for (auto t : elem.second) {
+      if (ts_.is_nextstatevar(t)) {
+        non_idx_terms_.at(elem.first).erase(t);
+      } else {
         // HACK: assuming none of these were changed
-        orig_types[idx] = msat_term_get_type(idx);
+        orig_types[t] = msat_term_get_type(t);
       }
     }
   }
