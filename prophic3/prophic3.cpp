@@ -304,7 +304,6 @@ bool ProphIC3::fix_bmc()
     }
 
 
-    msat_term timed_axiom;
     // note: init_eq_axioms should come first (see comment about max_k below)
     std::vector<TermSet> untimed_axiom_sets = {
         aae_.init_eq_axioms(), aae_.const_array_axioms(), aae_.prop_eq_axioms(),
@@ -347,7 +346,7 @@ bool ProphIC3::fix_bmc()
               continue;
             }
 
-            timed_axiom = un_.at_time(ax, k);
+            msat_term timed_axiom = un_.at_time(ax, k);
             if (is_axiom_violated(timed_axiom)) {
               violated_axioms.insert(timed_axiom);
               untimed_axioms_to_add.insert(ax);
@@ -371,7 +370,7 @@ bool ProphIC3::fix_bmc()
         {
           for(size_t k = 0; k <= current_k_; k++)
           {
-            timed_axiom = un_.at_time(ax, k);
+            msat_term timed_axiom = un_.at_time(ax, k);
             if (is_axiom_violated(timed_axiom)) {
               violated_axioms.insert(timed_axiom);
               untimed_axioms_to_add.insert(ax);
@@ -394,7 +393,7 @@ bool ProphIC3::fix_bmc()
         const unordered_map<string, TermSet> &curr_indices =
             aae_.curr_indices();
         // check timed axioms backwards from property violation
-        for (int j = current_k_; j > 0; j--) {
+        for (int j = current_k_; j >= 0; j--) {
           timed_axioms.clear();
           timed_axioms.push_back(
               aae_.equality_axioms_idx_time(curr_indices, j, un_, current_k_));
@@ -418,8 +417,8 @@ bool ProphIC3::fix_bmc()
               }
 
               if (is_axiom_violated(timed_ax)) {
-                violated_axioms.insert(timed_axiom);
-                timed_axioms_to_refine.insert(timed_axiom);
+                violated_axioms.insert(timed_ax);
+                timed_axioms_to_refine.insert(timed_ax);
                 ++lemma_cnt;
               }
             }
@@ -454,7 +453,8 @@ bool ProphIC3::fix_bmc()
       }
 
       if (opts_.unsatcore_array_refiner) {
-        broken = msat_solve_with_assumptions(refiner_, &labels[0], labels.size());
+        broken = (msat_solve_with_assumptions(refiner_, &labels[0],
+                                              labels.size()) == MSAT_SAT);
       } else {
         broken = msat_solve(refiner_) == MSAT_SAT;
       }
