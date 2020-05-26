@@ -902,7 +902,14 @@ TermMap ProphIC3::add_history_vars(const std::unordered_map<msat_term, size_t> t
     untimed_target = un_.untime(elem.first);
     msat_term v = hr_.hist_var(untimed_target, elem.second, all_created_hist_vars);
     // update type maps -- need to keep track of this for proph var indices
-    _type = orig_types.at(untimed_target);
+    try {
+      _type = orig_types.at(untimed_target);
+    } catch (std::out_of_range e) {
+      // HACK: sometimes rewriting causes the original type to be lost for the
+      // octagonal domain for now just work around it and assume they're
+      // integers
+      _type = msat_term_get_type(untimed_target);
+    }
     orig_types[v] = _type;
     hist_vars_to_refine[elem.first] = v;
   }
