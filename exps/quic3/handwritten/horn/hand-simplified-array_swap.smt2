@@ -18,10 +18,10 @@
               Int
               (Array Int Int)
               Int
-              Int
               (Array Int Int)
               Int
               (Array Int Int)
+              Int
               (Array Int Int)
               Int)
              Bool)
@@ -33,249 +33,282 @@
 (assert main@entry)
 
 (assert (forall (
-         (main@%tmp8.i_0 Int)
-         (main@%shadow.mem2.0_1 (Array Int Int))
-         (main@%tmp12.i_0 Int)
-         (main@%shadow.mem1.0_1 (Array Int Int))
-         (main@%tmp10.i_0 Int)
-         (main@%shadow.mem.0_1 (Array Int Int))
-         (main@%tmp14.i_0 Int)
-         (main@%shadow.mem3.0_1 (Array Int Int))
-         (main@%tmp2.i_0 Int))
-  (=> (and (> main@%tmp2.i_0 0)
-           (> main@%tmp8.i_0 0)
-           (> main@%tmp10.i_0 0)
-           (> main@%tmp12.i_0 0)
-           (> main@%tmp14.i_0 0)
+         (addr2 Int)
+         (mem2 (Array Int Int))
+         (addr1 Int)
+         (mem1 (Array Int Int))
+         (addr0 Int)
+         (mem0 (Array Int Int))
+         (addr3 Int)
+         (mem3 (Array Int Int))
+         (N Int))
+  (=> (and (> N 0)
+           (> addr2 0)
+           (> addr0 0)
+           (> addr1 0)
+           (> addr3 0)
            )
-      (main@bb15.i main@%tmp8.i_0
+      (main@bb15.i addr2
                    0
-                   main@%shadow.mem2.0_1
-                   main@%tmp12.i_0
-                   main@%shadow.mem1.0_1
-                   main@%tmp10.i_0
-                   main@%shadow.mem.0_1
-                   main@%tmp14.i_0
-                   main@%shadow.mem3.0_1
-                   main@%tmp2.i_0))))
+                   mem2
+                   addr1
+                   mem1
+                   addr0
+                   mem0
+                   addr3
+                   mem3
+                   N))))
 
 (assert (forall (
-         (main@%shadow.mem2.0_0 (Array Int Int))
-         (main@%shadow.mem1.0_0 (Array Int Int))
-         (main@%tmp20.i_0 Int)
-         (main@%shadow.mem.0_0 (Array Int Int))
-         (main@%shadow.mem3.0_0 (Array Int Int))
-         (main@%tmp28.i_0 Int)
-         (main@%i.0.i_0 Int)
-         (main@%_7_0 (Array Int Int))
-         (main@%_4_0 (Array Int Int))
-         (main@%_5_0 (Array Int Int))
-         (main@%_6_0 (Array Int Int))
-         (main@%tmp8.i_0 Int)
-         (main@%tmp12.i_0 Int)
-         (main@%tmp10.i_0 Int)
-         (main@%tmp14.i_0 Int)
-         (main@%tmp2.i_0 Int))
-  (let ((a!5 (and (main@bb15.i main@%tmp8.i_0
-                               main@%i.0.i_0
-                               main@%shadow.mem2.0_0
-                               main@%tmp12.i_0
-                               main@%shadow.mem1.0_0
-                               main@%tmp10.i_0
-                               main@%shadow.mem.0_0
-                               main@%tmp14.i_0
-                               main@%shadow.mem3.0_0
-                               main@%tmp2.i_0)
-                  (< main@%i.0.i_0 main@%tmp2.i_0)
-                  (or (<= main@%tmp8.i_0 0) (> (+ main@%tmp8.i_0 (* main@%i.0.i_0 1)) 0))
-                  (> main@%tmp8.i_0 0)
-                  (= main@%_4_0
-                         (store main@%shadow.mem2.0_0
-                                (+ main@%tmp8.i_0 (* main@%i.0.i_0 1))
-                                main@%tmp20.i_0))
-                  (or (<= main@%tmp12.i_0 0) (> (+ main@%tmp12.i_0 (* main@%i.0.i_0 1)) 0))
-                  (> main@%tmp12.i_0 0)
-                  (= main@%_5_0
-                      (store main@%shadow.mem1.0_0
-                            (+ main@%tmp12.i_0 (* main@%i.0.i_0 1))
-                            main@%tmp20.i_0))
-                  (or (<= main@%tmp10.i_0 0) (> (+ main@%tmp10.i_0 (* main@%i.0.i_0 1)) 0))
-                  (> main@%tmp10.i_0 0)
-                  (= main@%_6_0
-                      (store main@%shadow.mem.0_0
-                            (+ main@%tmp10.i_0 (* main@%i.0.i_0 1))
-                            main@%tmp28.i_0))
-                  (or (<= main@%tmp14.i_0 0) (> (+ main@%tmp14.i_0 (* main@%i.0.i_0 1)) 0))
-                  (> main@%tmp14.i_0 0)
-                  (= main@%_7_0
-                      (store main@%shadow.mem3.0_0
-                            (+ main@%tmp14.i_0 (* main@%i.0.i_0 1))
-                            main@%tmp28.i_0))
+         (mem2 (Array Int Int))
+         (mem1 (Array Int Int))
+         (nondet_val1 Int)
+         (mem0 (Array Int Int))
+         (mem3 (Array Int Int))
+         (nondet_val2 Int)
+         (i Int)
+         (addr2 Int)
+         (addr1 Int)
+         (addr0 Int)
+         (addr3 Int)
+         (N Int))
+  (let ((a!5 (and (main@bb15.i addr2
+                               i
+                               mem2
+                               addr1
+                               mem1
+                               addr0
+                               mem0
+                               addr3
+                               mem3
+                               N)
+                  (< i N)
+                  (or (<= addr2 0) (> (+ addr2 (* i 1)) 0))
+                  (> addr2 0)
+                  (or (<= addr1 0) (> (+ addr1 (* i 1)) 0))
+                  (> addr1 0)
+                  (or (<= addr0 0) (> (+ addr0 (* i 1)) 0))
+                  (> addr0 0)
+                  (or (<= addr3 0) (> (+ addr3 (* i 1)) 0))
+                  (> addr3 0)
                   )))
     (=> a!5
-        (main@bb15.i main@%tmp8.i_0
-                     (+ main@%i.0.i_0 1)
-                     main@%_4_0
-                     main@%tmp12.i_0
-                     main@%_5_0
-                     main@%tmp10.i_0
-                     main@%_6_0
-                     main@%tmp14.i_0
-                     main@%_7_0
-                     main@%tmp2.i_0)))))
+        (main@bb15.i addr2
+                     (+ i 1)
+                     (store mem2
+                         (+ addr2 (* i 1))
+                          nondet_val1)
+                     addr1
+                     (store mem1
+                          (+ addr1 (* i 1))
+                          nondet_val1)
+                     addr0
+                    (store mem0
+                          (+ addr0 (* i 1))
+                          nondet_val2)
+                     addr3
+                    (store mem3
+                          (+ addr3 (* i 1))
+                          nondet_val2)
+                     N)))))
 
-(assert (forall ((main@%i.0.i_0 Int)
-         (main@%shadow.mem2.0_0 (Array Int Int))
-         (main@%shadow.mem.0_0 (Array Int Int))
-         (main@%i.1.i_0 Int)
-         (main@%tmp8.i_0 Int)
-         (main@%tmp12.i_0 Int)
-         (main@%shadow.mem1.0_0 (Array Int Int))
-         (main@%tmp10.i_0 Int)
-         (main@%tmp14.i_0 Int)
-         (main@%shadow.mem3.0_0 (Array Int Int))
-         (main@%tmp2.i_0 Int))
-  (=> (and (main@bb15.i main@%tmp8.i_0
-                        main@%i.0.i_0
-                        main@%shadow.mem2.0_0
-                        main@%tmp12.i_0
-                        main@%shadow.mem1.0_0
-                        main@%tmp10.i_0
-                        main@%shadow.mem.0_0
-                        main@%tmp14.i_0
-                        main@%shadow.mem3.0_0
-                        main@%tmp2.i_0)
-           (not (< main@%i.0.i_0 main@%tmp2.i_0))
+(assert (forall ((i Int)
+         (mem2 (Array Int Int))
+         (mem0 (Array Int Int))
+         (addr2 Int)
+         (addr1 Int)
+         (mem1 (Array Int Int))
+         (addr0 Int)
+         (addr3 Int)
+         (mem3 (Array Int Int))
+         (N Int))
+  (=> (and (main@bb15.i addr2
+                        i
+                        mem2
+                        addr1
+                        mem1
+                        addr0
+                        mem0
+                        addr3
+                        mem3
+                        N)
+           (not (< i N))
            )
-      (main@bb40.i main@%tmp8.i_0
-                   main@%tmp12.i_0
-                   main@%shadow.mem1.0_0
-                   main@%tmp10.i_0
-                   main@%tmp14.i_0
-                   main@%shadow.mem3.0_0
-                   0
-                   main@%shadow.mem2.0_0
-                   main@%shadow.mem.0_0
-                   main@%tmp2.i_0))))
 
-;; current
+      (main@bb40.i addr2
+                    0
+                    mem2
+                    addr1
+                    mem1
+                    addr0
+                    mem0
+                    addr3
+                    mem3
+                    N)
+                   )))
 
 (assert (forall (
-         (main@%shadow.mem2.1_0 (Array Int Int))
-         (main@%tmp50.i_0 Int)
-         (main@%shadow.mem.1_0 (Array Int Int))
-         (main@%tmp47.i_0 Int)
-         (main@%i.1.i_0 Int)
-         (main@%_8_0 (Array Int Int))
-         (main@%_9_0 (Array Int Int))
-         (main@%tmp8.i_0 Int)
-         (main@%tmp12.i_0 Int)
-         (main@%shadow.mem1.0_0 (Array Int Int))
-         (main@%tmp10.i_0 Int)
-         (main@%tmp14.i_0 Int)
-         (main@%shadow.mem3.0_0 (Array Int Int))
-         (main@%tmp2.i_0 Int))
-  (let ((a!5 (and (main@bb40.i main@%tmp8.i_0
-                               main@%tmp12.i_0
-                               main@%shadow.mem1.0_0
-                               main@%tmp10.i_0
-                               main@%tmp14.i_0
-                               main@%shadow.mem3.0_0
-                               main@%i.1.i_0
-                               main@%shadow.mem2.1_0
-                               main@%shadow.mem.1_0
-                               main@%tmp2.i_0)
-                  (< main@%i.1.i_0 main@%tmp2.i_0)
-                  (or (<= main@%tmp8.i_0 0) (> (+ main@%tmp8.i_0 (* main@%i.1.i_0 1)) 0))
-                  (> main@%tmp8.i_0 0)
-                  (=> true
-                      (= main@%tmp47.i_0
-                         (select main@%shadow.mem2.1_0 (+ main@%tmp8.i_0 (* main@%i.1.i_0 1)))))
-                  (or (<= main@%tmp10.i_0 0) (> (+ main@%tmp10.i_0 (* main@%i.1.i_0 1)) 0))
-                  (> main@%tmp10.i_0 0)
-                  (= main@%tmp50.i_0
-                      (select main@%shadow.mem.1_0 (+ main@%tmp10.i_0 (* main@%i.1.i_0 1))))
-                  (or (<= main@%tmp8.i_0 0) (> (+ main@%tmp8.i_0 (* main@%i.1.i_0 1)) 0))
-                  (> main@%tmp8.i_0 0)
-                  (= main@%_8_0
-                      (store main@%shadow.mem2.1_0
-                            (+ main@%tmp8.i_0 (* main@%i.1.i_0 1))
-                            main@%tmp50.i_0))
-                  (or (<= main@%tmp10.i_0 0) (> (+ main@%tmp10.i_0 (* main@%i.1.i_0 1)) 0))
-                  (> main@%tmp10.i_0 0)
-                  (= main@%_9_0
-                      (store main@%shadow.mem.1_0
-                            (+ main@%tmp10.i_0 (* main@%i.1.i_0 1))
-                            main@%tmp47.i_0))
+         (mem2 (Array Int Int))
+         (mem0 (Array Int Int))
+         (i Int)
+         (addr2 Int)
+         (addr1 Int)
+         (mem1 (Array Int Int))
+         (addr0 Int)
+         (addr3 Int)
+         (mem3 (Array Int Int))
+         (N Int))
+  (let ((a!5 (and
+
+      (main@bb40.i addr2
+                    i
+                    mem2
+                    addr1
+                    mem1
+                    addr0
+                    mem0
+                    addr3
+                    mem3
+                    N)
+
+                  (< i N)
+                  (or (<= addr2 0) (> (+ addr2 (* i 1)) 0))
+                  (> addr2 0)
+                  (or (<= addr0 0) (> (+ addr0 (* i 1)) 0))
+                  (> addr0 0)
+                  (or (<= addr2 0) (> (+ addr2 (* i 1)) 0))
+                  (> addr2 0)
+                  (or (<= addr0 0) (> (+ addr0 (* i 1)) 0))
+                  (> addr0 0)
                   )))
     (=> a!5
-        (main@bb40.i main@%tmp8.i_0
-                     main@%tmp12.i_0
-                     main@%shadow.mem1.0_0
-                     main@%tmp10.i_0
-                     main@%tmp14.i_0
-                     main@%shadow.mem3.0_0
-                     (+ main@%i.1.i_0 1)
-                     main@%_8_0
-                     main@%_9_0
-                     main@%tmp2.i_0)))))
+      (main@bb40.i addr2
+                    (+ i 1)
+                     (store mem2
+                        (+ addr2 (* i 1))
+                        (select mem0 (+ addr0 (* i 1))))
+                    addr1
+                    mem1
+                    addr0
+                    (store mem0
+                        (+ addr0 (* i 1))
+                        (select mem2 (+ addr2 (* i 1))))
+                    addr3
+                    mem3
+                    N)
+                     ))))
 
-(assert (forall ((main@%i.1.i_0 Int)
-         (main@%tmp2.i_0 Int)
-         (main@%tmp8.i_0 Int)
-         (main@%shadow.mem2.1_0 (Array Int Int))
-         (main@%tmp14.i_0 Int)
-         (main@%shadow.mem3.0_0 (Array Int Int))
-         (main@%tmp10.i_0 Int)
-         (main@%shadow.mem.1_0 (Array Int Int))
-         (main@%tmp60.i_0 Int)
-         (main@%tmp12.i_0 Int)
-         (main@%shadow.mem1.0_0 (Array Int Int))
+
+(assert (forall ((i Int)
+         (main@bb40.i_0 Bool)
+         (main@%tmp43.i_0 Bool)
+         (N Int)
+         (main@%tmp62.i_0 Bool)
+         (main@%tmp66.i_0 Bool)
+         (main@%tmp66..i_0 Bool)
+         (addr2 Int)
+         (mem2 (Array Int Int))
+         (target2 Int)
+         (addr3 Int)
+         (mem3 (Array Int Int))
+         (target3 Int)
+         (sel_res_mem2 Int)
+         (sel_res_mem3 Int)
+         (addr0 Int)
+         (mem0 (Array Int Int))
+         (target0 Int)
+         (x Int)
+         (addr1 Int)
+         (mem1 (Array Int Int))
+         (target1 Int)
+         (sel_res_mem0 Int)
+         (sel_res_mem1 Int)
+         (main@%tmp88.i_0 Bool)
+         (main@bb79.i_0 Bool)
+         (main@bb59.i_0 Bool)
          (|tuple(main@bb59.i_0, main@bb89.i_0)| Bool)
-         )
-  (let ((a!6 (and (main@bb40.i main@%tmp8.i_0
-                               main@%tmp12.i_0
-                               main@%shadow.mem1.0_0
-                               main@%tmp10.i_0
-                               main@%tmp14.i_0
-                               main@%shadow.mem3.0_0
-                               main@%i.1.i_0
-                               main@%shadow.mem2.1_0
-                               main@%shadow.mem.1_0
-                               main@%tmp2.i_0)
-                  (not (< main@%i.1.i_0 main@%tmp2.i_0))
-                  (> main@%tmp60.i_0 (- 1))
-                  (< main@%tmp60.i_0 main@%tmp2.i_0)
-                  (or (<= main@%tmp8.i_0 0) (> (+ main@%tmp8.i_0 (* main@%tmp60.i_0 1)) 0))
-                  (> main@%tmp8.i_0 0)
-                  (or (<= main@%tmp14.i_0 0) (> (+ main@%tmp14.i_0 (* main@%tmp60.i_0 1)) 0))
-                  (> main@%tmp14.i_0 0)
-                  (= (select main@%shadow.mem2.1_0 (+ main@%tmp8.i_0 (* main@%tmp60.i_0 1))) (select main@%shadow.mem3.0_0 (+ main@%tmp14.i_0 (* main@%tmp60.i_0 1))))
-                  ;; c2
-                  ;; (=> main@bb79.i_0 main@bb59.i_0)
-                  (or (<= main@%tmp10.i_0 0) (> (+ main@%tmp10.i_0 (* main@%tmp60.i_0 1)) 0))
-                  (> main@%tmp10.i_0 0)
-                  (or (<= main@%tmp12.i_0 0) (> (+ main@%tmp12.i_0 (* main@%tmp60.i_0 1)) 0))
-                  (> main@%tmp12.i_0 0)
-                  (not (= (select main@%shadow.mem.1_0 (+ main@%tmp10.i_0 (* main@%tmp60.i_0 1))) (select main@%shadow.mem1.0_0 (+ main@%tmp12.i_0 (* main@%tmp60.i_0 1)))))
-                  ;; c0
-                  ;; (or main@bb79.i_0
-                  ;;     (and main@bb59.i_0
-                  ;;           |tuple(main@bb59.i_0, main@bb89.i_0)|))
-                  ;; split c0 into two clauses
-                  ;; c1
-                  ;; (or main@bb79.i_0 main@bb59.i_0)
-                  ;; after simplification
-                  ;; (or main@bb79.i_0 true)
-                  ;; results in main@bb79.i_0
-                  ;; resolve c1 and c2 to get
-                  ;; main@bb59.i_0
-                  (=> |tuple(main@bb59.i_0, main@bb89.i_0)|
-                      false)
-                  )))
-    (=> a!6 main@verifier.error.split))))
+         (main@%tmp78.i_0 Bool)
+         (main@bb89.i_0 Bool)
+         (main@verifier.error_0 Bool)
+         (main@verifier.error.split_0 Bool))
+  (let ((a!1 (=> main@bb59.i_0 (= main@%tmp62.i_0 (> x (- 1)))))
+        (a!2 (=> main@bb59.i_0
+                 (= target2 (+ addr2 (* x 1)))))
+        (a!3 (=> main@bb59.i_0
+                 (= target3 (+ addr3 (* x 1)))))
+        (a!4 (=> main@bb79.i_0
+                 (= target0 (+ addr0 (* x 1)))))
+        (a!5 (=> main@bb79.i_0
+                 (= target1 (+ addr1 (* x 1))))))
+  (let ((a!6 (and
 
-
-
+                  (main@bb40.i addr2
+                                i
+                                mem2
+                                addr1
+                                mem1
+                                addr0
+                                mem0
+                                addr3
+                                mem3
+                                N)
+                  true
+                  (= main@%tmp43.i_0 (< i N))
+                  (=> main@bb59.i_0 (and main@bb59.i_0 main@bb40.i_0))
+                  (=> (and main@bb59.i_0 main@bb40.i_0) (not main@%tmp43.i_0))
+                  a!1
+                  (=> main@bb59.i_0
+                      (= main@%tmp66.i_0 (< x N)))
+                  (=> main@bb59.i_0
+                      (= main@%tmp66..i_0 (and main@%tmp62.i_0 main@%tmp66.i_0)))
+                  (=> main@bb59.i_0 main@%tmp66..i_0)
+                  a!2
+                  (=> main@bb59.i_0
+                      (or (<= addr2 0) (> target2 0)))
+                  (=> main@bb59.i_0 (> addr2 0))
+                  (=> main@bb59.i_0
+                      (= sel_res_mem2
+                         (select mem2 target2)))
+                  a!3
+                  (=> main@bb59.i_0
+                      (or (<= addr3 0) (> target3 0)))
+                  (=> main@bb59.i_0 (> addr3 0))
+                  (=> main@bb59.i_0
+                      (= sel_res_mem3
+                         (select mem3 target3)))
+                  (=> main@bb59.i_0
+                      (= main@%tmp78.i_0 (= sel_res_mem2 sel_res_mem3)))
+                  (=> main@bb79.i_0 (and main@bb79.i_0 main@bb59.i_0))
+                  (=> (and main@bb79.i_0 main@bb59.i_0) main@%tmp78.i_0)
+                  a!4
+                  (=> main@bb79.i_0
+                      (or (<= addr0 0) (> target0 0)))
+                  (=> main@bb79.i_0 (> addr0 0))
+                  (=> main@bb79.i_0
+                      (= sel_res_mem0
+                         (select mem0 target0)))
+                  a!5
+                  (=> main@bb79.i_0
+                      (or (<= addr1 0) (> target1 0)))
+                  (=> main@bb79.i_0 (> addr1 0))
+                  (=> main@bb79.i_0
+                      (= sel_res_mem1
+                         (select mem1 target1)))
+                  (=> main@bb79.i_0
+                      (= main@%tmp88.i_0 (= sel_res_mem0 sel_res_mem1)))
+                  (=> main@bb79.i_0 (not main@%tmp88.i_0))
+                  (=> |tuple(main@bb59.i_0, main@bb89.i_0)| main@bb59.i_0)
+                  (=> main@bb89.i_0
+                      (or (and main@bb89.i_0 main@bb79.i_0)
+                          (and main@bb59.i_0
+                               |tuple(main@bb59.i_0, main@bb89.i_0)|)))
+                  (=> (and main@bb59.i_0 |tuple(main@bb59.i_0, main@bb89.i_0)|)
+                      (not main@%tmp78.i_0))
+                  (=> main@verifier.error_0
+                      (and main@verifier.error_0 main@bb89.i_0))
+                  (=> main@verifier.error.split_0
+                      (and main@verifier.error.split_0 main@verifier.error_0))
+                  main@verifier.error.split_0)))
+    (=> a!6 main@verifier.error.split)))))
 (assert (not main@verifier.error.split))
 (check-sat)
