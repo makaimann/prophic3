@@ -392,8 +392,18 @@ bool ProphIC3::fix_bmc()
         vector<TermSet> timed_axioms;
         const unordered_map<string, TermSet> &curr_indices =
             aae_.curr_indices();
+
+        // Heuristic: stop once you find timed axioms going backward from
+        // property violation
+        //            might be sufficient
+        bool found_timed_axioms_last_iter = false;
+
         // check timed axioms backwards from property violation
         for (int j = current_k_; j >= 0; j--) {
+          if (found_timed_axioms_last_iter) {
+            break;
+          }
+
           timed_axioms.clear();
           timed_axioms.push_back(
               aae_.equality_axioms_idx_time(curr_indices, j, un_, current_k_));
@@ -420,6 +430,7 @@ bool ProphIC3::fix_bmc()
                 violated_axioms.insert(timed_ax);
                 timed_axioms_to_refine.insert(timed_ax);
                 ++lemma_cnt;
+                found_timed_axioms_last_iter = true;
               }
             }
           }
