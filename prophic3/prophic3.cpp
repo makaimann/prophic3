@@ -304,14 +304,12 @@ bool ProphIC3::fix_bmc()
 
 
     msat_term timed_axiom;
-    msat_term val;
     // note: init_eq_axioms should come first (see comment about max_k below)
-    std::vector<TermSet> axiom_sets = { aae_.init_eq_axioms(),
-                                        aae_.const_array_axioms(),
-                                        aae_.prop_eq_axioms(),
-                                        aae_.store_axioms() };
+    std::vector<TermSet> untimed_axiom_sets = {
+        aae_.init_eq_axioms(), aae_.const_array_axioms(), aae_.prop_eq_axioms(),
+        aae_.store_axioms()};
     if (current_k_ > 0) {
-      axiom_sets.push_back(aae_.trans_eq_axioms());
+      untimed_axiom_sets.push_back(aae_.trans_eq_axioms());
     }
 
     vector<vector<TermSet>> timed_axioms;
@@ -323,7 +321,7 @@ bool ProphIC3::fix_bmc()
     {
       int lemma_cnt = 0;
 
-      for (size_t i = 0; i < axiom_sets.size(); ++i) {
+      for (size_t i = 0; i < untimed_axiom_sets.size(); ++i) {
         int max_k;
         if (i == 0) {
           // for init_eq_axioms, only check at time 0
@@ -340,7 +338,7 @@ bool ProphIC3::fix_bmc()
             break;
           }
 
-          for (auto ax : axiom_sets[i]) {
+          for (auto ax : untimed_axiom_sets[i]) {
             if (opts_.max_array_axioms > 0 &&
                 lemma_cnt >= opts_.max_array_axioms) {
               break;
@@ -354,34 +352,12 @@ bool ProphIC3::fix_bmc()
             }
 
             timed_axiom = un_.at_time(ax, k);
-            // TODO: See if it's faster to just overwrite or to check the cache
-            // first
-            untime_cache[timed_axiom] = ax;
-
-            // had issues trying to evaluate the model on a constant true
-            // which can sometimes occur depending on the options
-            if (msat_term_is_true(refiner_, timed_axiom))
-            {
-              continue;
-            }
-
-            val = msat_get_model_value(refiner_, timed_axiom);
-            if (MSAT_ERROR_TERM(val))
-            {
-              std::cerr << "Got error term when evaluating model on "
-                        << msat_to_smtlib2_term(refiner_, timed_axiom) << std::endl;
-              throw std::exception();
-            }
-            else if (msat_term_is_false(refiner_, val)) {
-              // logger(1) << "violated axiom ";
-              // logger(1) << msat_to_smtlib2_term(msat_env_, timed_axiom) <<
-              // std::endl;
+            if (is_axiom_violated(timed_axiom)) {
               violated_axioms.insert(timed_axiom);
               untimed_axioms_to_add.insert(ax);
               ++lemma_cnt;
             }
           }
-
         }
       }
 
@@ -390,8 +366,7 @@ bool ProphIC3::fix_bmc()
       logger(1) << "Found " << violated_axioms.size() << " violated untime-able axioms!"
                 << endlog;
 
-      // if there weren't any regular timed axioms or
-      // history refinements possible,
+      // if there weren't any regular untimeable axioms
       // try the lambda refinement (this is untime-able)
       if (!found_untimed_axioms)
       {
@@ -401,27 +376,10 @@ bool ProphIC3::fix_bmc()
           for(size_t k = 0; k <= current_k_; k++)
           {
             timed_axiom = un_.at_time(ax, k);
-            untime_cache[timed_axiom] = ax;
-
-            // had issues trying to evaluate the model on a constant true
-            // which can sometimes occur depending on the options
-            if (msat_term_is_true(refiner_, timed_axiom))
-            {
-              continue;
-            }
-
-            val = msat_get_model_value(refiner_, timed_axiom);
-            if (MSAT_ERROR_TERM(val))
-            {
-              std::cerr << "Got error term when evaluating model on "
-                        << msat_to_smtlib2_term(refiner_, timed_axiom) << std::endl;
-              throw std::exception();
-            }
-
-            if (msat_term_is_false(refiner_, val)) {
-              logger(1) << "adding " << msat_to_smtlib2_term(msat_env_, timed_axiom) << endlog;
+            if (is_axiom_violated(timed_axiom)) {
               violated_axioms.insert(timed_axiom);
               untimed_axioms_to_add.insert(ax);
+              lemma_cnt++;
             }
           }
         }
@@ -451,34 +409,13 @@ bool ProphIC3::fix_bmc()
                 break;
               }
 
-              //logger(1) << "Checking timed axiom: " << msat_to_smtlib2_term(msat_env_, timed_axiom) << endlog;
-
-              // had issues trying to evaluate the model on a constant true
-              // which can sometimes occur depending on the options
-              if (msat_term_is_true(refiner_, timed_axiom))
-              {
-                continue;
-              }
-
-              val = msat_get_model_value(refiner_, timed_axiom);
-              if (MSAT_ERROR_TERM(val))
-              {
-                std::cerr << "Got error term when evaluating model on "
-                          << msat_to_smtlib2_term(refiner_, timed_axiom) << std::endl;
-                throw std::exception();
-              }
-              else if (msat_term_is_false(refiner_, val))
-              {
-                // logger(1) << "TIMED violated axiom ";
-                // logger(1) << msat_to_smtlib2_term(msat_env_, timed_axiom) <<
-                //   endlog;
+              if (is_axiom_violated(timed_axiom)) {
                 violated_axioms.insert(timed_axiom);
                 timed_axioms_to_refine.insert(timed_axiom);
                 ++lemma_cnt;
               }
             }
           }
-
         }
 
         found_timed_axioms = violated_axioms.size();
@@ -647,6 +584,27 @@ bool ProphIC3::fix_bmc()
   // TODO: separate timed and untimed axioms finding into helper methods
 
   return true;
+}
+
+bool ProphIC3::is_axiom_violated(msat_term axiom_to_check) const {
+  // had issues trying to evaluate the model on a constant true
+  // which can sometimes occur depending on the options
+  if (msat_term_is_true(refiner_, axiom_to_check)) {
+    return false;
+  }
+
+  msat_term val = msat_get_model_value(refiner_, axiom_to_check);
+  if (MSAT_ERROR_TERM(val)) {
+    std::cerr << "Got error term when evaluating model on "
+              << msat_to_smtlib2_term(refiner_, axiom_to_check) << std::endl;
+    throw std::exception();
+  }
+  bool res = msat_term_is_false(refiner_, val);
+  if (res) {
+    logger(2) << "violated axiom: "
+              << msat_to_smtlib2_term(msat_env_, axiom_to_check) << endlog;
+  }
+  return res;
 }
 
 void ProphIC3::refine_abs_ts(TermSet & untimed_axioms)
