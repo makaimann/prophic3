@@ -669,6 +669,8 @@ void ArrayAxiomEnumerator::collect_terms(msat_term term) {
   Data data(typestrs, non_idx_terms_);
   msat_visit_term(msat_env_, term, visit, &data);
 
+  TermTypeMap & orig_types = abstractor_.orig_types();
+
   for (auto elem : non_idx_terms_) {
     // remove indices from the sets
     for (auto idx : all_indices_.at(elem.first)) {
@@ -680,6 +682,11 @@ void ArrayAxiomEnumerator::collect_terms(msat_term term) {
     for (auto idx : elem.second) {
       if (ts_.is_nextstatevar(idx)) {
         non_idx_terms_.at(elem.first).erase(idx);
+      }
+      else
+      {
+        // HACK: assuming none of these were changed
+        orig_types[idx] = msat_term_get_type(idx);
       }
     }
   }
