@@ -40,6 +40,7 @@ public:
       if (!ts.contains_next(idx))
       {
         curr_indices_[typestr].insert(idx);
+        curr_indices_no_witnesses_[typestr].insert(idx);
       }
       orig_indices_[typestr].insert(idx);
       orig_indices_set_.insert(idx);
@@ -52,6 +53,13 @@ public:
       if (state_indices_.find(elem.first) == state_indices_.end())
       {
         state_indices_[elem.first] = ic3ia::TermSet();
+      }
+    }
+
+    // remove witnesses from curr_indices_no_witnesses_
+    for (auto witelem : abstractor_.witnesses()) {
+      for (auto cielem : curr_indices_no_witnesses_) {
+        curr_indices_no_witnesses_[cielem.first].erase(witelem.second);
       }
     }
 
@@ -151,6 +159,7 @@ private:
   ic3ia::TermSet orig_indices_set_;
   std::unordered_map<std::string, ic3ia::TermSet> state_indices_;
   std::unordered_map<std::string, ic3ia::TermSet> curr_indices_;
+  std::unordered_map<std::string, ic3ia::TermSet> curr_indices_no_witnesses_;
   std::unordered_map<std::string, ic3ia::TermSet> all_indices_;
   // terms that are not used as indices but will be enumerated
   // as indices as a fallback to find prophecy variables
