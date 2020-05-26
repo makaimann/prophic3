@@ -635,4 +635,54 @@ void ArrayAxiomEnumerator::collect_equalities(msat_term term, ic3ia::TermSet & s
   msat_visit_term(msat_env_, term, visit, &data);
 }
 
+void ArrayAxiomEnumerator::collect_terms(msat_term term) {
+  // assume all_indices_ is already populated
+  // used to remove indices from these terms
+  assert(all_indices_.size());
+
+  unordered_set<string> typestrs;
+  for (auto elem : all_indices_) {
+    typestrs.insert(elem.first);
+  }
+
+  struct Data {
+    const unordered_set<string> &typestrs;
+    unordered_map<string, TermSet> &terms;
+    Data(const unordered_set<string> &ts, unordered_map<string, TermSet> &t)
+        : typestrs(ts), terms(t) {}
+  };
+
+  auto visit = [](msat_env e, msat_term t, int preorder,
+                  void *data) -> msat_visit_status {
+    Data *d = static_cast<Data *>(data);
+    if (!preorder) {
+      return MSAT_VISIT_SKIP;
+    } else {
+      string typestr = msat_type_repr(msat_term_get_type(t));
+      if (d->typestrs.find(typestr) != d->typestrs.end()) {
+        d->terms[typestr].insert(t);
+      }
+    }
+    return MSAT_VISIT_PROCESS;
+  };
+
+  Data data(typestrs, non_idx_terms_);
+  msat_visit_term(msat_env_, term, visit, &data);
+
+  for (auto elem : non_idx_terms_) {
+    // remove indices from the sets
+    for (auto idx : all_indices_.at(elem.first)) {
+      non_idx_terms_.at(elem.first).erase(idx);
+    }
+
+    // remove next state variables from the sets
+    // will unroll states at each time anyway, don't want to duplicate
+    for (auto idx : elem.second) {
+      if (ts_.is_nextstatevar(idx)) {
+        non_idx_terms_.at(elem.first).erase(idx);
+      }
+    }
+  }
+}
+
 } // namespace prophic3

@@ -59,6 +59,22 @@ public:
     collect_equalities(ts.init(), init_equalities_);
     collect_equalities(ts.trans(), trans_equalities_);
     collect_equalities(ts.prop(), prop_equalities_);
+
+    // Find terms that match index types -- for fallback search for prophecy
+    // vars
+    collect_terms(ts.init());
+    collect_terms(ts.trans());
+    collect_terms(ts.prop());
+
+    ic3ia::logger(2) << "Found the following terms for prophecy candidates"
+                     << ic3ia::endlog;
+    for (auto elem : non_idx_terms_) {
+      ic3ia::logger(2) << elem.first << ic3ia::endlog;
+      for (auto t : elem.second) {
+        ic3ia::logger(2) << "\t" << msat_to_smtlib2_term(msat_env_, t)
+                         << ic3ia::endlog;
+      }
+    }
   }
 
   // TODO: adapt the private methods for the new representation (not using
@@ -136,6 +152,9 @@ private:
   std::unordered_map<std::string, ic3ia::TermSet> state_indices_;
   std::unordered_map<std::string, ic3ia::TermSet> curr_indices_;
   std::unordered_map<std::string, ic3ia::TermSet> all_indices_;
+  // terms that are not used as indices but will be enumerated
+  // as indices as a fallback to find prophecy variables
+  std::unordered_map<std::string, ic3ia::TermSet> non_idx_terms_;
   // equality ufs present in init
   ic3ia::TermSet init_equalities_;
   // equality ufs present in trans
@@ -202,6 +221,10 @@ private:
   /* Collect all array equality UFs from the given term and add to set s */
   void collect_equalities(msat_term term, ic3ia::TermSet & s);
 
+  /* Collect all the terms that match a type from the index set
+   * assumes all_indices_ is already populated
+   */
+  void collect_terms(msat_term term);
 };
   } // namespace prophic3
 
