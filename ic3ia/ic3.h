@@ -70,6 +70,8 @@ public:
     ////< adds a variable that is important to track with implicit predicate
     ////< abstraction
 
+    size_t get_bound() const;
+
 private:
     //------------------------------------------------------------------------
     // internal data structures

@@ -42,6 +42,68 @@ TermList conjunctive_partition(msat_env e, msat_term top)
   return partition;
 }
 
+TermList disjunctive_partition(msat_env e, msat_term top)
+{
+  TermSet visited;
+  TermList to_process({top});
+  TermList partition;
+
+  msat_term t;
+  while(to_process.size())
+  {
+    t = to_process.back();
+    to_process.pop_back();
+    if (visited.find(t) == visited.end())
+    {
+      if (msat_term_is_or(e, t))
+      {
+        for (size_t i = 0; i < msat_term_arity(t); i++)
+        {
+          to_process.push_back(msat_term_get_arg(t, i));
+        }
+      }
+      else
+      {
+        partition.push_back(t);
+      }
+    }
+  }
+  return partition;
+}
+
+void pretty_print(msat_env e, msat_term t, std::string indentation="")
+{
+  bool is_or = msat_term_is_or(e, t);
+  bool is_and = msat_term_is_and(e, t);
+  if (!is_or && !is_and)
+  {
+    // base case
+    std::cout << indentation << msat_to_smtlib2_term(e, t) << std::endl;
+    return;
+  }
+
+  if (is_or)
+  {
+    std::cout << indentation << "(or" << std::endl;
+    for (auto d : disjunctive_partition(e, t))
+    {
+      pretty_print(e, d, indentation + "  ");
+    }
+  }
+  else
+  {
+    assert(is_and);
+    std::cout << indentation << "(and" << std::endl;
+    for (auto c : conjunctive_partition(e, t))
+    {
+      pretty_print(e, c, indentation + "  ");
+    }
+  }
+
+  std::cout << indentation << ")" << std::endl;
+
+}
+
 ProphIC3::ProphIC3(const ic3ia::TransitionSystem &ts, const ic3ia::Options &opts,
                    ic3ia::LiveEncoder &l2s, unsigned int verbosity)
   : msat_env_(ts.get_env()),
@@ -156,7 +218,7 @@ msat_truth_value ProphIC3::prove()
     {
       witness_.clear();
       ic3.witness(witness_);
-      current_k_ = witness_.size() - 1;
+      current_k_ = ic3.get_bound();
       logger(1) << "IC3 got counter-example at: " << current_k_ << endlog;
     }
     else if (res == MSAT_TRUE)
@@ -556,6 +618,12 @@ bool ProphIC3::fix_bmc()
       // add prophecy variables but not axioms
       // don't refine with untimed axioms search for them again
       prophesize_abs_ts(red_timed_axioms, false);
+      TermMap new_statevars;
+      for (auto sv : abs_ts_.statevars())
+      {
+        new_statevars[sv] = abs_ts_.next(sv);
+      }
+      abs_ts_.initialize(new_statevars, abs_ts_.init(), abs_ts_.trans(), abs_ts_.prop(), abs_ts_.live_prop());
       // don't update k, should come back and find more untimeable axioms at the same k
     }
     else {

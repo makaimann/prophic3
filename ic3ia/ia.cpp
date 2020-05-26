@@ -125,7 +125,8 @@ Refiner::Refiner(const TransitionSystem &ts, const Options &opts,
     ts_(ts),
     abs_(abs),
     un_(ts),
-    predminimizer_(ts, opts, abs, un_)
+    predminimizer_(ts, opts, abs, un_),
+    bound_(0)
 {
     minpreds_ = opts.minpreds;
     incref_ = opts.inc_ref;
@@ -248,7 +249,12 @@ bool Refiner::counterexample(std::vector<TermList> &cex)
                 return msat_make_equal(solver_, a, b);
             }
         };
-    
+    if (groups_.size() == 0)
+    {
+      std::cout << "Failed to generate counterexample: groups_ is empty" << std::endl;
+      throw std::exception();
+    }
+    bound_ = groups_.size() - 1;
     for (size_t i = 0; i < groups_.size(); ++i) {
         cex.push_back(TermList());
         TermList &state = cex.back();
