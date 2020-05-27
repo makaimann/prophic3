@@ -255,7 +255,6 @@ ic3ia::TermSet ArrayAxiomEnumerator::lambda_alldiff_axioms()
 TermSet ArrayAxiomEnumerator::equality_axioms_idx_time(
     const unordered_map<string, TermSet> &indices, size_t j, Unroller &un,
     size_t k) {
-  const ic3ia::TermMap &witnesses = abstractor_.witnesses();
 
   TermSet axioms;
   // map from typestr to unrolled indices
@@ -284,14 +283,15 @@ TermSet ArrayAxiomEnumerator::equality_axioms_idx_time(
         lambda_j = un.at_time(lambda_j, j);
       }
 
-      msat_term witness = witnesses.at(e);
-
       for (size_t i = 0; i < k; i++) {
         msat_term e_i = un.at_time(e, i);
-        msat_term witness_i = un.at_time(witness, i);
-        enumerate_eq_uf_axioms(axioms, read0, read1, idx_type, e_i, witness_i,
-                               timed_indices.at(msat_type_repr(idx_type)),
-                               lambda_j);
+
+        // don't enumerate witness axioms because those are just over the
+        // witness index not parameterized by an index e.g. using
+        // enumerate_equality_axioms instead of enumerate_eq_uf_axioms
+        enumerate_equality_axioms(axioms, read0, read1, idx_type, e_i,
+                                  timed_indices.at(msat_type_repr(idx_type)),
+                                  lambda_j);
       }
     }
   }
@@ -562,6 +562,15 @@ void ArrayAxiomEnumerator::enumerate_eq_uf_axioms(
     msat_term eq_uf, msat_term witness, ic3ia::TermSet &indices,
     msat_term lambda) {
 
+  enumerate_equality_axioms(axioms, read0, read1, orig_idx_type, eq_uf, indices,
+                            lambda);
+
+  eq_witness_axiom(axioms, read0, read1, eq_uf, witness);
+}
+
+void ArrayAxiomEnumerator::enumerate_equality_axioms(
+    TermSet &axioms, msat_decl read0, msat_decl read1, msat_type orig_idx_type,
+    msat_term eq_uf, TermSet &indices, msat_term lambda) {
   // temporary variable to be used throughout function
   msat_term ax;
 
@@ -629,21 +638,36 @@ void ArrayAxiomEnumerator::enumerate_eq_uf_axioms(
     // only handling bv and int for now
     assert(msat_is_integer_type(msat_env_, orig_idx_type));
   }
+}
 
+void ArrayAxiomEnumerator::eq_witness_axiom(TermSet &axioms, msat_decl read0,
+                                            msat_decl read1, msat_term eq_uf,
+                                            msat_term witness) {
+  // temporary variable to be used throughout function
+  msat_term ax;
+
+  msat_term arr0 = msat_term_get_arg(eq_uf, 0);
+  msat_term arr1 = msat_term_get_arg(eq_uf, 1);
+
+  msat_term args0[2];
+  msat_term args1[2];
+
+  args0[0] = arr0;
+  args1[0] = arr1;
   // add skolemized witness axiom for equality
   //       skolemized from (forall i. a[i] = b[i]) -> a = b
   //       e.g. a[witness] = b[witness] -> a = b
   args0[1] = witness;
   args1[1] = witness;
-  eq_reads = msat_make_equal(msat_env_, msat_make_uf(msat_env_, read0, &args0[0]),
-                             msat_make_uf(msat_env_, read1, &args1[0]));
+  msat_term eq_reads =
+      msat_make_equal(msat_env_, msat_make_uf(msat_env_, read0, &args0[0]),
+                      msat_make_uf(msat_env_, read1, &args1[0]));
   ax = implies(eq_reads, eq_uf);
   axioms.insert(ax);
   axioms_to_index_[ax] = witness;
 }
 
-void ArrayAxiomEnumerator::collect_equalities(msat_term term, ic3ia::TermSet & s)
-{
+void ArrayAxiomEnumerator::collect_equalities(msat_term term, TermSet &s) {
   struct Data
   {
     const TermMap & witnesses;
