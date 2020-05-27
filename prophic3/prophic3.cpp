@@ -621,10 +621,16 @@ bool ProphIC3::fix_bmc()
           msat_term l = labels[i];
           if (core.find(l) == core.end()) {
             untimed_axioms_to_add.erase(a);
-            // HACK let the reduce_timed_axioms procedure handle these
-            //      it will work harder to minimize the number of
-            //      introduced auxiliary variables
-            // timed_axioms_to_refine.erase(a);
+            // TODO evaluate this more: should we remove timed axioms also
+            // originally had reduce_timed_axioms handling it entirely and
+            // didn't remove it here to avoid removing important (short delay)
+            // timed axioms however, with the general term fallback procedure
+            // that searches for prophecy targets over other terms, we generate
+            // way too many axioms also, we're being careful to enumerate short
+            // delay timed axioms first so it's less likely those will be
+            // removed (because we're not even enumerating longer ones unless
+            // necessary
+            timed_axioms_to_refine.erase(a);
           }
         }
       }
