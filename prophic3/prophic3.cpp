@@ -178,38 +178,66 @@ msat_truth_value ProphIC3::prove()
 
   // HACK manually adding axioms for hand-simplified-array_swap.vmt
   // create history variable for x
-  msat_term x = msat_from_string(msat_env_, "x");
+  TermSet hist_targets;
+  hist_targets.insert(msat_from_string(msat_env_, "x"));
+  hist_targets.insert(msat_from_string(msat_env_, "addr0_3"));
+  hist_targets.insert(msat_from_string(msat_env_, "addr1_3"));
+  hist_targets.insert(msat_from_string(msat_env_, "addr2_3"));
+  hist_targets.insert(msat_from_string(msat_env_, "addr3_3"));
+
   TermSet all_hist_vars;
-  msat_term hist_x = hr_.hist_var(x, 1, all_hist_vars);
   msat_term new_trans = abs_ts_.trans();
   TermMap new_statevars;
   for (auto sv : abs_ts_.statevars())
   {
     new_statevars[sv] = abs_ts_.next(sv);
   }
-  new_statevars[hist_x] = hr_.next_hist_vars().at(hist_x);
-  new_trans = msat_make_and(msat_env_,
-                            new_trans,
-                            hr_.hist_trans().at(hist_x));
 
-  msat_type inttype = msat_term_get_type(x);
-  msat_decl prophx_decl = msat_declare_function(msat_env_,
-                                                "prophx",
-                                                inttype);
-  msat_term prophx = msat_make_constant(msat_env_, prophx_decl);
-  msat_decl next_prophx_decl = msat_declare_function(msat_env_,
-                                                     "prophx.next",
-                                                     inttype);
-  msat_term next_prophx = msat_make_constant(msat_env_, next_prophx_decl);
-  new_statevars[prophx] = next_prophx;
-  // make frozen
-  new_trans = msat_make_and(msat_env_,
-                            new_trans,
-                            msat_make_eq(msat_env_, next_prophx, prophx));
+  TermSet proph_targets;
+  for (auto ht : hist_targets)
+  {
+    if (MSAT_ERROR_TERM(ht))
+    {
+      std::cout << "got error term in hist targets" << std::endl;
+      throw std::exception();
+    }
+    msat_term hist = hr_.hist_var(ht, 1, all_hist_vars);
+    new_statevars[hist] = hr_.next_hist_vars().at(hist);
+    new_trans = msat_make_and(msat_env_,
+                              new_trans,
+                              hr_.hist_trans().at(hist));
+    proph_targets.insert(hist);
+  }
+
+  msat_type inttype = msat_get_integer_type(msat_env_);
+  msat_term antecedent = msat_make_true(msat_env_);
+  string name;
+  for (auto pt : proph_targets)
+  {
+    name = std::string("proph_") + msat_term_repr(pt);
+    msat_decl proph_decl = msat_declare_function(msat_env_,
+                                                 name.c_str(),
+                                                 inttype);
+    msat_term proph = msat_make_constant(msat_env_, proph_decl);
+    msat_decl next_proph_decl = msat_declare_function(msat_env_,
+                                                      (name + ".next").c_str(),
+                                                      inttype);
+    msat_term next_proph = msat_make_constant(msat_env_, next_proph_decl);
+    new_statevars[proph] = next_proph;
+    // make frozen
+    new_trans = msat_make_and(msat_env_,
+                              new_trans,
+                              msat_make_eq(msat_env_, next_proph, proph));
+
+    antecedent = msat_make_and(msat_env_,
+                               antecedent,
+                               msat_make_eq(msat_env_, proph, pt));
+  }
+
   msat_term new_prop = abs_ts_.prop();
   new_prop = msat_make_or(msat_env_,
                           msat_make_not(msat_env_,
-                                        msat_make_eq(msat_env_, prophx, hist_x)),
+                                        antecedent),
                           new_prop);
 
   abs_ts_.initialize(new_statevars, abs_ts_.init(),
@@ -221,10 +249,10 @@ msat_truth_value ProphIC3::prove()
 
   // reset indices
   TermSet manual_indices;
-  manual_indices.insert(msat_from_string(msat_env_, "(+ addr0_3 prophx)"));
-  manual_indices.insert(msat_from_string(msat_env_, "(+ addr1_3 prophx)"));
-  manual_indices.insert(msat_from_string(msat_env_, "(+ addr2_3 prophx)"));
-  manual_indices.insert(msat_from_string(msat_env_, "(+ addr3_3 prophx)"));
+  manual_indices.insert(msat_from_string(msat_env_, "(+ proph_hist_addr0_3_1 proph_hist_x_1)"));
+  manual_indices.insert(msat_from_string(msat_env_, "(+ proph_hist_addr1_3_1 proph_hist_x_1)"));
+  manual_indices.insert(msat_from_string(msat_env_, "(+ proph_hist_addr2_3_1 proph_hist_x_1)"));
+  manual_indices.insert(msat_from_string(msat_env_, "(+ proph_hist_addr3_3_1 proph_hist_x_1)"));
 
   for (auto idx : manual_indices)
   {
@@ -236,7 +264,6 @@ msat_truth_value ProphIC3::prove()
   }
 
   aae_.reset_indices(manual_indices);
-
 
   logger(1) << "Created " << prop_indices_map.size();
   logger(1) << " prophecy variables for the property" << endlog;
