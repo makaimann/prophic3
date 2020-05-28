@@ -18,10 +18,10 @@
               Int
               (Array Int Int)
               Int
-              Int
               (Array Int Int)
               Int
               (Array Int Int)
+              Int
               (Array Int Int)
               Int)
              Bool)
@@ -134,16 +134,18 @@
                         N)
            (not (< i N))
            )
+
       (main@bb40.i addr2
-                   addr1
-                   mem1
-                   addr0
-                   addr3
-                   mem3
-                   0
-                   mem2
-                   mem0
-                   N))))
+                    0
+                    mem2
+                    addr1
+                    mem1
+                    addr0
+                    mem0
+                    addr3
+                    mem3
+                    N)
+                   )))
 
 (assert (forall (
          (mem2 (Array Int Int))
@@ -156,16 +158,19 @@
          (addr3 Int)
          (mem3 (Array Int Int))
          (N Int))
-  (let ((a!5 (and (main@bb40.i addr2
-                               addr1
-                               mem1
-                               addr0
-                               addr3
-                               mem3
-                               i
-                               mem2
-                               mem0
-                               N)
+  (let ((a!5 (and
+
+      (main@bb40.i addr2
+                    i
+                    mem2
+                    addr1
+                    mem1
+                    addr0
+                    mem0
+                    addr3
+                    mem3
+                    N)
+
                   (< i N)
                   (or (<= addr2 0) (> (+ addr2 (* i 1)) 0))
                   (> addr2 0)
@@ -177,20 +182,21 @@
                   (> addr0 0)
                   )))
     (=> a!5
-        (main@bb40.i addr2
-                     addr1
-                     mem1
-                     addr0
-                     addr3
-                     mem3
-                     (+ i 1)
+      (main@bb40.i addr2
+                    (+ i 1)
                      (store mem2
                         (+ addr2 (* i 1))
                         (select mem0 (+ addr0 (* i 1))))
-                     (store mem0
+                    addr1
+                    mem1
+                    addr0
+                    (store mem0
                         (+ addr0 (* i 1))
                         (select mem2 (+ addr2 (* i 1))))
-                     N)))))
+                    addr3
+                    mem3
+                    N)
+                     ))))
 
 
 (assert (forall ((i Int)
@@ -234,16 +240,18 @@
                  (= target0 (+ addr0 (* x 1)))))
         (a!5 (=> main@bb79.i_0
                  (= target1 (+ addr1 (* x 1))))))
-  (let ((a!6 (and (main@bb40.i addr2
-                               addr1
-                               mem1
-                               addr0
-                               addr3
-                               mem3
-                               i
-                               mem2
-                               mem0
-                               N)
+  (let ((a!6 (and
+
+                  (main@bb40.i addr2
+                                i
+                                mem2
+                                addr1
+                                mem1
+                                addr0
+                                mem0
+                                addr3
+                                mem3
+                                N)
                   true
                   (= main@%tmp43.i_0 (< i N))
                   (=> main@bb59.i_0 (and main@bb59.i_0 main@bb40.i_0))
