@@ -85,16 +85,15 @@ int main(int argc, const char **argv)
     }
 
     // modify the TransitionSystem
-    HistoryRefiner hr(*solver.ts);
+    HistoryRefiner hr(*solver.product);
     TermMap new_statevars;
 
     // combine inputs and states
-    TermList vars = solver.ts->inputvars();
-    for (auto v : solver.ts->statevars())
-    {
+    TermList vars = solver.product->inputvars();
+    for (auto v : solver.product->statevars()) {
       vars.push_back(v);
       // add existing state variables to statevar map
-      new_statevars[v] = solver.ts->next(v);
+      new_statevars[v] = solver.product->next(v);
     }
 
     // create history variables
@@ -108,7 +107,7 @@ int main(int argc, const char **argv)
       }
     }
 
-    msat_term new_trans = solver.ts->trans();
+    msat_term new_trans = solver.product->trans();
     const TermMap & next_hist_vars = hr.next_hist_vars();
     const TermMap & hist_trans = hr.hist_trans();
     // update the system
@@ -117,9 +116,9 @@ int main(int argc, const char **argv)
       new_statevars[v] = next_hist_vars.at(v);
       new_trans = msat_make_and(solver.env, new_trans, hist_trans.at(v));
     }
-    solver.ts->initialize(new_statevars, solver.ts->init(),
-                          new_trans, solver.ts->prop(),
-                          solver.ts->live_prop());
+    solver.product->initialize(new_statevars, solver.product->init(), new_trans,
+                               solver.product->prop(),
+                               solver.product->live_prop());
 
     // now we're going to prophecize all of these variables
     TermList targets = vars;
@@ -158,31 +157,31 @@ int main(int argc, const char **argv)
                                  msat_make_eq(solver.env, proph, t));
     }
 
-    msat_term new_prop = msat_make_or(
-        solver.env, msat_make_not(solver.env, antecedent), solver.ts->prop());
+    msat_term new_prop =
+        msat_make_or(solver.env, msat_make_not(solver.env, antecedent),
+                     solver.product->prop());
 
-    solver.ts->initialize(new_statevars, solver.ts->init(), new_trans, new_prop,
-                          solver.ts->live_prop());
+    solver.product->initialize(new_statevars, solver.product->init(), new_trans,
+                               new_prop, solver.product->live_prop());
 
     if (Logger::get().get_verbosity() > 0)
     {
       std::cout << "============================ Printing Transition System ========================" << std::endl;
       std::cout << "STATEVARS" << std::endl;
-      for (auto sv : solver.ts->statevars())
-      {
+      for (auto sv : solver.product->statevars()) {
         std::cout << "\t" << msat_to_smtlib2_term(solver.env, sv) << std::endl;
       }
       std::cout << "INPUTVARS" << std::endl;
-      for (auto in : solver.ts->inputvars())
-      {
+      for (auto in : solver.product->inputvars()) {
         std::cout << "\t" << msat_to_smtlib2_term(solver.env, in) << std::endl;
       }
       std::cout << "INIT" << std::endl;
-      std::cout << format_term(solver.env, solver.ts->init()) << std::endl;
+      std::cout << format_term(solver.env, solver.product->init()) << std::endl;
       std::cout << "TRANS" << std::endl;
-      std::cout << format_term(solver.env, solver.ts->trans()) << std::endl;
+      std::cout << format_term(solver.env, solver.product->trans())
+                << std::endl;
       std::cout << "PROP" << std::endl;
-      std::cout << format_term(solver.env, solver.ts->prop()) << std::endl;
+      std::cout << format_term(solver.env, solver.product->prop()) << std::endl;
       std::cout << "========================== End of Printed Transition System ====================" << std::endl;
     }
 
