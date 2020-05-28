@@ -1,5 +1,7 @@
 #include "history_refiner.h"
 
+#include "ic3ia-proph-utils.h"
+
 #include "api.h"
 #include "mathsat.h"
 #include <iostream>
