@@ -82,6 +82,43 @@ int main(int argc, const char **argv)
         msat_free(annots);
     }
 
+    // modify the TransitionSystem
+    HistoryRefiner hr(*solver.ts);
+    TermMap new_statevars;
+
+    // combine inputs and states
+    TermList vars = solver.ts->inputvars();
+    for (auto v : solver.ts->statevars())
+    {
+      vars.push_back(v);
+      // add existing state variables to statevar map
+      new_statevars[v] = solver.ts->next(v);
+    }
+
+    // create history variables
+    TermSet all_created_hist_vars;
+    for (auto v : vars)
+    {
+      std::cout << "creating history variables for " << msat_to_smtlib2_term(solver.env, v) << std::endl;
+      for (size_t i = 1; i < 3; i++)
+      {
+        hr.hist_var(v, i, all_created_hist_vars);
+      }
+    }
+
+    msat_term new_trans = solver.ts->trans();
+    const TermMap & next_hist_vars = hr.next_hist_vars();
+    const TermMap & hist_trans = hr.hist_trans();
+    // update the system
+    for (auto v : all_created_hist_vars)
+    {
+      new_statevars[v] = next_hist_vars.at(v);
+      new_trans = msat_make_and(solver.env, new_trans, hist_trans.at(v));
+    }
+    solver.ts->initialize(new_statevars, solver.ts->init(),
+                          new_trans, solver.ts->prop(),
+                          solver.ts->live_prop());
+
     if (!opts.trace.empty()) {
         logger(1) << "dumping SMT traces to " << opts.trace << ".*.smt2"
                   << endlog;
