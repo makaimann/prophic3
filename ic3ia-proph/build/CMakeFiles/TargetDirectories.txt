@@ -1,0 +1,3 @@
+/home/makaim/repos/prophic3/ic3ia-proph/build/CMakeFiles/rebuild_cache.dir
+/home/makaim/repos/prophic3/ic3ia-proph/build/CMakeFiles/ic3ia-proph.dir
+/home/makaim/repos/prophic3/ic3ia-proph/build/CMakeFiles/edit_cache.dir
