@@ -121,10 +121,13 @@ int main(int argc, const char **argv)
                                solver.product->live_prop());
 
     // now we're going to prophecize all of these variables
-    TermList targets = vars;
+    TermList initial_targets = vars;
     for (auto v : all_created_hist_vars) {
-      targets.push_back(v);
+      initial_targets.push_back(v);
     }
+
+    // do any hacky filtering here
+    TermList targets = initial_targets;
 
     size_t num_proph = 0;
     msat_term antecedent = msat_make_true(solver.env);
