@@ -496,6 +496,8 @@ bool ProphIC3::fix_bmc()
       if (!found_untimed_axioms)
       {
         // HACK this version should not have any timed axioms for hand-simplified-array_swap.vmt
+        msat_model model = msat_get_model(refiner_);
+        print_witness(model, current_k_, aae_);
         std::cout << "Didn't find any untime-able axioms!" << std::endl;
         throw std::exception();
         for(auto axiom_vec : timed_axioms)
