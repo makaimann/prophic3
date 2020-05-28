@@ -121,6 +121,49 @@ int main(int argc, const char **argv)
                           new_trans, solver.ts->prop(),
                           solver.ts->live_prop());
 
+    // now we're going to prophecize all of these variables
+    TermList targets = vars;
+    for (auto v : all_created_hist_vars) {
+      targets.push_back(v);
+    }
+
+    size_t num_proph = 0;
+    msat_term antecedent = msat_make_true(solver.env);
+    std::string name;
+    msat_type t_type;
+    msat_decl proph_decl;
+    msat_decl prophN_decl;
+    msat_term proph;
+    msat_term prophN;
+    for (auto t : targets) {
+      t_type = msat_term_get_type(t);
+      name = "proph" + std::to_string(num_proph);
+      num_proph++;
+      proph_decl = msat_declare_function(solver.env, name.c_str(), t_type);
+      proph = msat_make_constant(solver.env, proph_decl);
+
+      prophN_decl =
+          msat_declare_function(solver.env, (name + ".next").c_str(), t_type);
+      prophN = msat_make_constant(solver.env, prophN_decl);
+
+      // add to state vars
+      new_statevars[proph] = prophN;
+
+      // make it a frozen variable
+      new_trans = msat_make_and(solver.env, new_trans,
+                                msat_make_eq(solver.env, prophN, proph));
+
+      // add equality to antecedent
+      antecedent = msat_make_and(solver.env, antecedent,
+                                 msat_make_eq(solver.env, proph, t));
+    }
+
+    msat_term new_prop = msat_make_or(
+        solver.env, msat_make_not(solver.env, antecedent), solver.ts->prop());
+
+    solver.ts->initialize(new_statevars, solver.ts->init(), new_trans, new_prop,
+                          solver.ts->live_prop());
+
     if (Logger::get().get_verbosity() > 0)
     {
       std::cout << "============================ Printing Transition System ========================" << std::endl;
