@@ -42,6 +42,8 @@ def main():
             return 'Int'
         elif msat_is_rational_type(env, ttp):
             return 'Real'
+        elif msat_is_array_type(env, ttp):
+            return '(Array Int Int)'
         else:
             ok, w = msat_is_bv_type(env, ttp)
             if ok:
