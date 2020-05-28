@@ -51,9 +51,6 @@ bool check_witness(const Options &opts, TransitionSystem &ts,
 
 int main(int argc, const char **argv)
 {
-  // 3 is an error
-  int ret_status = 3;
-  Prover *the_prover = NULL;
   try
   {
     Options opts = get_options(argc, argv);
@@ -88,92 +85,80 @@ int main(int argc, const char **argv)
     LiveEncoder liveenc(product, opts);
 
     msat_truth_value res = MSAT_UNDEF;
-    // final_ts is only different for prophic3 which returns the refined
-    // abstract system
-    TransitionSystem *final_ts = &product;
     if (opts.bmc) {
-      Bmc *bmc = new Bmc(product, opts);
-      the_prover = bmc;
+      Bmc bmc(product, opts);
       if (opts.bmc_max_k > 0) {
-        if (!bmc->check_until(opts.bmc_max_k)) {
+        if (!bmc.check_until(opts.bmc_max_k)) {
           res = MSAT_FALSE;
         }
       } else {
-        res = bmc->prove();
+        res = bmc.prove();
       }
     } else if (opts.kind) {
-      Kind *kind = new Kind(product, opts);
-      the_prover = kind;
+      Kind kind(product, opts);
       if (opts.bmc_max_k > 0) {
-        res = kind->check_until(opts.bmc_max_k);
+        res = kind.check_until(opts.bmc_max_k);
       } else {
-        res = kind->prove();
+        res = kind.prove();
       }
     }
     else
     {
-      ProphIC3 *prophic3 = new ProphIC3(product, opts, liveenc, opts.verbosity);
-      res = prophic3->prove();
-      the_prover = prophic3;
-      final_ts = &(prophic3->get_abs_ts());
-    }
-
-    if (opts.witness && res != MSAT_UNDEF) {
-      bool safe = (res == MSAT_TRUE);
-      std::vector<TermList> wit;
-      int loopback = the_prover->witness(wit);
-      if (loopback == Prover::CEX_ERROR) {
-        std::cout << "ERROR computing witness" << std::endl;
-      } else {
-        std::cout << (safe ? "invariant" : "counterexample") << "\n";
-
-        for (size_t i = 0; i < wit.size(); ++i) {
-          TermList &w = wit[i];
-          bool loophere = loopback >= 0 && size_t(loopback) == i;
-          std::cout << ";; " << (loophere ? "loopback " : "")
-                    << (safe ? "clause " : "step ") << i << "\n"
-                    << (safe ? "(or" : "(and") << "\n";
-          for (msat_term t : w) {
-            std::cout << "  " << logterm(env, t) << "\n";
-          }
-          std::cout << ")\n";
-        }
-        std::cout.flush();
-      }
-      double witness_check_time;
-
-      if (safe && opts.check_witness) {
-        TimeKeeper tk(witness_check_time);
-        if (!check_witness(opts, *final_ts, wit, ltl, tableau, liveenc)) {
-          std::cout << "ERROR: the witness is incorrect\n" << std::endl;
-        } else {
-          std::cout << "the witness is correct\n" << std::endl;
-        }
-      }
+      ProphIC3 prophic3(product, opts, liveenc, opts.verbosity);
+      res = prophic3.prove();
     }
 
     if (res == MSAT_FALSE) {
       // cout << "The property is false" << endl;
       cout << "unsat" << endl; // similar to spacer
-      ret_status = 1;
+      return 1;
     } else if (res == MSAT_TRUE) {
       // cout << "The property is true" << endl;
       cout << "sat" << endl; // similar to spacer
-      ret_status = 0;
+      return 0;
     } else {
       // cout << "Failed to prove or disprove the property..." << endl;
       cout << "unknown" << endl; // similar to spacer
-      ret_status = 2;
+      return 2;
     }
 
+    // if (opts.witness && res != MSAT_UNDEF) {
+    //   bool safe = (res == MSAT_TRUE);
+    //   std::vector<TermList> wit;
+    //   int loopback = prophic3.witness(wit);
+    //   if (loopback == Prover::CEX_ERROR) {
+    //     std::cout << "ERROR computing witness" << std::endl;
+    //   } else {
+    //     std::cout << (safe ? "invariant" : "counterexample") << "\n";
+
+    //     for (size_t i = 0; i < wit.size(); ++i) {
+    //       TermList &w = wit[i];
+    //       bool loophere = loopback >= 0 && size_t(loopback) == i;
+    //       std::cout << ";; " << (loophere ? "loopback " : "")
+    //                 << (safe ? "clause " : "step ") << i
+    //                 << "\n" << (safe ? "(or" : "(and") << "\n";
+    //       for (msat_term t : w) {
+    //         std::cout << "  " << logterm(env, t) << "\n";
+    //       }
+    //       std::cout << ")\n";
+    //     }
+    //     std::cout.flush();
+    //   }
+    //   double witness_check_time;
+
+    //   if (safe && opts.check_witness) {
+    //     TransitionSystem & abs_ts = prophic3.get_abs_ts();
+    //     TimeKeeper tk(witness_check_time);
+    //     if (!check_witness(opts, abs_ts, wit, ltl, tableau, liveenc)) {
+    //       std::cout << "ERROR: the witness is incorrect\n" << std::endl;
+    //     } else {
+    //       std::cout << "the witness is correct\n" << std::endl;
+    //     }
+    //   }
+    // }
 
   } catch (std::exception &e) {
     std::cerr << e.what() << std::endl;
-    ret_status = 3;
+    return 3;
   }
-
-  if (the_prover) {
-    delete the_prover;
-  }
-  return ret_status;
 }
