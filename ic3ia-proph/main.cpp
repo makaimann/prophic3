@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <iomanip>
+#include <fstream>
 
 using namespace ic3ia;
 using namespace prophic3;
@@ -186,6 +187,16 @@ int main(int argc, const char **argv)
       std::cout << "PROP" << std::endl;
       std::cout << format_term(solver.env, solver.product->prop()) << std::endl;
       std::cout << "========================== End of Printed Transition System ====================" << std::endl;
+    }
+
+    if (!opts.trace.empty())
+    {
+      std::ofstream f;
+      std::string filename = opts.trace;
+      filename += "_proph_system.vmt";
+      f.open(filename);
+      solver.product->to_vmt(f);
+      f.close();
     }
 
 
