@@ -121,6 +121,29 @@ int main(int argc, const char **argv)
                           new_trans, solver.ts->prop(),
                           solver.ts->live_prop());
 
+    if (Logger::get().get_verbosity() > 0)
+    {
+      std::cout << "============================ Printing Transition System ========================" << std::endl;
+      std::cout << "STATEVARS" << std::endl;
+      for (auto sv : solver.ts->statevars())
+      {
+        std::cout << "\t" << msat_to_smtlib2_term(solver.env, sv) << std::endl;
+      }
+      std::cout << "INPUTVARS" << std::endl;
+      for (auto in : solver.ts->inputvars())
+      {
+        std::cout << "\t" << msat_to_smtlib2_term(solver.env, in) << std::endl;
+      }
+      std::cout << "INIT" << std::endl;
+      std::cout << format_term(solver.env, solver.ts->init()) << std::endl;
+      std::cout << "TRANS" << std::endl;
+      std::cout << format_term(solver.env, solver.ts->trans()) << std::endl;
+      std::cout << "PROP" << std::endl;
+      std::cout << format_term(solver.env, solver.ts->prop()) << std::endl;
+      std::cout << "========================== End of Printed Transition System ====================" << std::endl;
+    }
+
+
     if (!opts.trace.empty()) {
         logger(1) << "dumping SMT traces to " << opts.trace << ".*.smt2"
                   << endlog;
