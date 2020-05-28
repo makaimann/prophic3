@@ -109,7 +109,7 @@ ProphIC3::ProphIC3(const ic3ia::TransitionSystem &ts, const ic3ia::Options &opts
   : msat_env_(ts.get_env()),
     conc_ts_(ts),
     rw_(conc_ts_),
-    aa_(rw_.rewrite_transition_system(), opts.use_uf_for_arr_eq, opts.multi_uf),
+    aa_(conc_ts_, opts.use_uf_for_arr_eq, opts.multi_uf),
     abs_ts_(aa_.abstract_transition_system()),
     aae_(abs_ts_, aa_),
     hr_(abs_ts_),
@@ -176,6 +176,68 @@ msat_truth_value ProphIC3::prove()
   }
   add_frozen_proph_vars(prop_indices_map);
 
+  // HACK manually adding axioms for hand-simplified-array_swap.vmt
+  // create history variable for x
+  msat_term x = msat_from_string(msat_env_, "x");
+  TermSet all_hist_vars;
+  msat_term hist_x = hr_.hist_var(x, 1, all_hist_vars);
+  msat_term new_trans = abs_ts_.trans();
+  TermMap new_statevars;
+  for (auto sv : abs_ts_.statevars())
+  {
+    new_statevars[sv] = abs_ts_.next(sv);
+  }
+  new_statevars[hist_x] = hr_.next_hist_vars().at(hist_x);
+  new_trans = msat_make_and(msat_env_,
+                            new_trans,
+                            hr_.hist_trans().at(hist_x));
+
+  msat_type inttype = msat_term_get_type(x);
+  msat_decl prophx_decl = msat_declare_function(msat_env_,
+                                                "prophx",
+                                                inttype);
+  msat_term prophx = msat_make_constant(msat_env_, prophx_decl);
+  msat_decl next_prophx_decl = msat_declare_function(msat_env_,
+                                                     "prophx.next",
+                                                     inttype);
+  msat_term next_prophx = msat_make_constant(msat_env_, next_prophx_decl);
+  new_statevars[prophx] = next_prophx;
+  // make frozen
+  new_trans = msat_make_and(msat_env_,
+                            new_trans,
+                            msat_make_eq(msat_env_, next_prophx, prophx));
+  msat_term new_prop = abs_ts_.prop();
+  new_prop = msat_make_or(msat_env_,
+                          msat_make_not(msat_env_,
+                                        msat_make_eq(msat_env_, prophx, hist_x)),
+                          new_prop);
+
+  abs_ts_.initialize(new_statevars, abs_ts_.init(),
+                     new_trans, new_prop,
+                     abs_ts_.live_prop());
+
+  pretty_print(msat_env_, new_trans);
+  pretty_print(msat_env_, new_prop);
+
+  // reset indices
+  TermSet manual_indices;
+  manual_indices.insert(msat_from_string(msat_env_, "(+ addr0_3 prophx)"));
+  manual_indices.insert(msat_from_string(msat_env_, "(+ addr1_3 prophx)"));
+  manual_indices.insert(msat_from_string(msat_env_, "(+ addr2_3 prophx)"));
+  manual_indices.insert(msat_from_string(msat_env_, "(+ addr3_3 prophx)"));
+
+  for (auto idx : manual_indices)
+  {
+    if (MSAT_ERROR_TERM(idx))
+    {
+      std::cout << "got error term in manual_indices" << std::endl;
+      throw std::exception();
+    }
+  }
+
+  aae_.reset_indices(manual_indices);
+
+
   logger(1) << "Created " << prop_indices_map.size();
   logger(1) << " prophecy variables for the property" << endlog;
 
@@ -183,12 +245,15 @@ msat_truth_value ProphIC3::prove()
   while (res != MSAT_TRUE)
   {
     logger(1) << "Fixing BMC" << endlog;
-    if(!fix_bmc())
+    while(current_k_ < 10)
     {
-      // got a real counter-example
-      return MSAT_FALSE;
+      if(!fix_bmc())
+      {
+        // got a real counter-example
+        return MSAT_FALSE;
+      }
+      current_k_++;
     }
-
     if (!opts_.trace.empty())
     {
       ofstream f;
@@ -374,8 +439,8 @@ bool ProphIC3::fix_bmc()
             }
             else if (msat_term_is_false(refiner_, val)) {
               // logger(1) << "violated axiom ";
-              // logger(1) << msat_to_smtlib2_term(msat_env_, timed_axiom) <<
-              // std::endl;
+              // logger(1) << msat_to_smtlib2_term(msat_env_, timed_axiom) << endlog;
+
               violated_axioms.insert(timed_axiom);
               untimed_axioms_to_add.insert(ax);
               ++lemma_cnt;
@@ -430,6 +495,9 @@ bool ProphIC3::fix_bmc()
 
       if (!found_untimed_axioms)
       {
+        // HACK this version should not have any timed axioms for hand-simplified-array_swap.vmt
+        std::cout << "Didn't find any untime-able axioms!" << std::endl;
+        throw std::exception();
         for(auto axiom_vec : timed_axioms)
         {
           if (opts_.max_array_axioms > 0 &&
@@ -653,17 +721,18 @@ void ProphIC3::refine_abs_ts(TermSet & untimed_axioms)
 {
   int init_cnt = 0;
   for (auto ax : untimed_axioms) {
-    // logger(1) << "Added to trans: " << msat_to_smtlib2_term(msat_env_, ax) << endlog;
+    logger(1) << "Added to trans: " << msat_to_smtlib2_term(msat_env_, ax) << endlog;
     abs_ts_.add_trans(ax);
 
     // if there's no next-state variables, add next version to trans
     if (!abs_ts_.contains_next(ax)) {
-      // logger(1) << "Added to trans next: " << msat_to_smtlib2_term(msat_env_, abs_ts_.next(ax)) << endlog;
+      logger(1) << "Added to trans next: " << msat_to_smtlib2_term(msat_env_, abs_ts_.next(ax)) << endlog;
       abs_ts_.add_trans(abs_ts_.next(ax));
     }
 
     if (abs_ts_.only_cur(ax) && (current_k_ == 0))
     {
+      logger(1) << "Added to init: " << msat_to_smtlib2_term(msat_env_, ax) << endlog;
       abs_ts_.add_init(ax);
       init_cnt++;
     }

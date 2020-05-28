@@ -61,6 +61,55 @@ public:
     collect_equalities(ts.prop(), prop_equalities_);
   }
 
+  void reset_indices(const ic3ia::TermSet & indices)
+  {
+    TermTypeMap & orig_types = abstractor_.orig_types();
+    curr_indices_.clear();
+    orig_indices_.clear();
+    orig_indices_set_.clear();
+    all_indices_.clear();
+    state_indices_.clear();
+
+    // sort the indices
+    // convenient to store them grouped by current and all for 1-step and 2-step
+    // lemmas
+    std::string typestr;
+    msat_term base_idx; // gets assigned the actual var if it's wrapped in ubv_to_int
+    for (auto idx : indices) {
+      std::cout << "adding index: " << msat_to_smtlib2_term(msat_env_, idx) << std::endl;
+      msat_type _type = msat_term_get_type(idx);
+      typestr = msat_type_repr(_type);
+
+      // HACK keep original type over current and next state version
+      orig_types[ts_.cur(idx)] = _type;
+      orig_types[ts_.next(idx)] = _type;
+
+      // save state variable indices
+      if (ts_.only_cur(idx))
+      {
+        state_indices_[typestr].insert(idx);
+        all_indices_[typestr].insert(ts_.next(idx));
+      }
+
+      if (!ts_.contains_next(idx))
+      {
+        curr_indices_[typestr].insert(idx);
+      }
+      orig_indices_[typestr].insert(idx);
+      orig_indices_set_.insert(idx);
+      all_indices_[typestr].insert(idx);
+    }
+
+    // provide empty sets for types with no state indices
+    for (auto elem : all_indices_)
+    {
+      if (state_indices_.find(elem.first) == state_indices_.end())
+      {
+        state_indices_[elem.first] = ic3ia::TermSet();
+      }
+    }
+  }
+
   // TODO: adapt the private methods for the new representation (not using
   // structs for each type of equality) then have methods to enumerate different
   // kinds of axioms

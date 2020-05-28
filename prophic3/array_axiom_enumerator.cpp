@@ -487,7 +487,6 @@ void ArrayAxiomEnumerator::enumerate_store_equalities(TermSet &axioms, msat_decl
                                                       msat_term store_eq, msat_type orig_idx_type,
                                                       TermSet &indices, msat_term lambda) {
 
-
   msat_term arr_res  = msat_term_get_arg(store_eq, 0);
   msat_term store_uf = msat_term_get_arg(store_eq, 1);
 
