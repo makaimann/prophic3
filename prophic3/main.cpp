@@ -19,6 +19,8 @@ using namespace std;
 using namespace ic3ia;
 using namespace prophic3;
 
+Prover *the_prover = NULL;
+
 bool check_witness(const Options &opts, TransitionSystem &ts,
                    const std::vector<TermList> &witness, LTLEncoder &ltl,
                    TransitionSystem &tableau, LiveEncoder &liveenc)
@@ -53,7 +55,6 @@ int main(int argc, const char **argv)
 {
   // 3 is an error
   int ret_status = 3;
-  Prover *the_prover = NULL;
   try
   {
     Options opts = get_options(argc, argv);
@@ -172,8 +173,5 @@ int main(int argc, const char **argv)
     ret_status = 3;
   }
 
-  if (the_prover) {
-    delete the_prover;
-  }
   return ret_status;
 }
