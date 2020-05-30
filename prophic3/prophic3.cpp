@@ -546,7 +546,7 @@ bool ProphIC3::fix_bmc()
       }
 
       for (auto ax : violated_axioms) {
-        if (opts_.unsatcore_array_refiner && opts_.axiom_reduction) {
+        if (opts_.unsatcore_array_refiner) {
           msat_term l = lbl(ax);
           labels.push_back(l);
           label2axiom.push_back(ax);
@@ -608,36 +608,38 @@ bool ProphIC3::fix_bmc()
     TermSet red_untimed_axioms;
     TermSet red_timed_axioms;
 
-    if (opts_.axiom_reduction)
-    {
-      if (opts_.unsatcore_array_refiner) {
-        size_t ucsz = 0;
-        msat_term *uc = msat_get_unsat_assumptions(refiner_, &ucsz);
-        assert(uc);
-        TermSet core(uc, uc+ucsz);
-        msat_free(uc);
+    // NOTE: unsat core refiner is distinct from additional axiom reduction
+    //       by default both are on, but the second round of axiom reduction
+    //       (see below) can be disabled without disabling the unsat core trick
+    if (opts_.unsatcore_array_refiner) {
+      size_t ucsz = 0;
+      msat_term *uc = msat_get_unsat_assumptions(refiner_, &ucsz);
+      assert(uc);
+      TermSet core(uc, uc + ucsz);
+      msat_free(uc);
 
-        logger(1) << "REFINER-UNSATCORE SIZE " << core.size() << endlog;
+      logger(1) << "REFINER-UNSATCORE SIZE " << core.size() << endlog;
 
-        for (size_t i = 0; i < label2axiom.size(); ++i) {
-          msat_term a = label2axiom[i];
-          msat_term l = labels[i];
-          if (core.find(l) == core.end()) {
-            untimed_axioms_to_add.erase(a);
-            // TODO evaluate this more: should we remove timed axioms also
-            // originally had reduce_timed_axioms handling it entirely and
-            // didn't remove it here to avoid removing important (short delay)
-            // timed axioms however, with the general term fallback procedure
-            // that searches for prophecy targets over other terms, we generate
-            // way too many axioms also, we're being careful to enumerate short
-            // delay timed axioms first so it's less likely those will be
-            // removed (because we're not even enumerating longer ones unless
-            // necessary
-            timed_axioms_to_refine.erase(a);
-          }
+      for (size_t i = 0; i < label2axiom.size(); ++i) {
+        msat_term a = label2axiom[i];
+        msat_term l = labels[i];
+        if (core.find(l) == core.end()) {
+          untimed_axioms_to_add.erase(a);
+          // TODO evaluate this more: should we remove timed axioms also
+          // originally had reduce_timed_axioms handling it entirely and
+          // didn't remove it here to avoid removing important (short delay)
+          // timed axioms however, with the general term fallback procedure
+          // that searches for prophecy targets over other terms, we generate
+          // way too many axioms also, we're being careful to enumerate short
+          // delay timed axioms first so it's less likely those will be
+          // removed (because we're not even enumerating longer ones unless
+          // necessary
+          timed_axioms_to_refine.erase(a);
         }
       }
+    }
 
+    if (opts_.axiom_reduction) {
       if (timed_axioms_to_refine.size())
       {
         logger(1) << "reducing TIMED axioms" << endlog;
@@ -672,9 +674,7 @@ bool ProphIC3::fix_bmc()
         bool ok = reduce_axioms(untimed_axioms_to_add, red_untimed_axioms);
         assert(ok);
       }
-    }
-    else
-    {
+    } else {
       // not reducing axioms
       red_timed_axioms = timed_axioms_to_refine;
       red_untimed_axioms = untimed_axioms_to_add;
