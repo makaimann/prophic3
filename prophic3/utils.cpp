@@ -256,6 +256,8 @@ Options get_options(int argc, const char **argv)
           ret.state_promotion = true;
         } else if (a == "-abs-bmc-only") {
           ret.abs_bmc_only = true;
+        } else if (a == "-enum-grammar-search") {
+          ret.enum_grammar_search = true;
         } else if (a == "-h" || a == "-help" || a == "--help") {
           std::cout << "USAGE: " << argv[0] << " [OPTIONS] FILENAME.vmt"
                     << "\n\n   -v N : set verbosity level"
@@ -310,6 +312,11 @@ Options get_options(int argc, const char **argv)
                        "axioms at all"
                     << "\n   -state-promotion: allow promoting inputs to "
                        "states for predicate hints"
+                    << "\n   -abs-bmc-only: just keep refining BMC and never "
+                       "go to IC3 "
+                    << "\n   -enum-grammar-search: look for prophecy targets "
+                       "over a grammar "
+                       "instead of just indices."
                     << std::endl;
           exit(0);
           break;

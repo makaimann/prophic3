@@ -441,92 +441,95 @@ bool ProphIC3::fix_bmc()
             }
           }
 
-          // these fallback procedures help solve some more complicated
-          // benchmarks where the index set is not a sufficient search space
-          // for prophecy variables
-          // however it slows things down -- disabling for now
+          if (opts_.enum_grammar_search) {
+            // these fallback procedures help solve some more complicated
+            // benchmarks where the index set is not a sufficient search space
+            // for prophecy variables
+            // however it slows things down -- disabling for now
 
-          // // fallback -- check for prophecy over arbitrary terms
-          // // Heuristic: don't check at last time step, seems unlikely to be
-          // // needed there because it would be used in a select if need to
-          // // refine  at the time of the property violation
-          // if (!found_timed_axioms_last_iter && j != current_k_) {
-          //   logger(1) << "checking for prophecy targets over general terms at"
-          //             << j << endlog;
-          //   timed_axioms.clear();
-          //   timed_axioms.push_back(aae_.equality_axioms_idx_time(
-          //       non_idx_terms, j, un_, current_k_));
-          //   timed_axioms.push_back(
-          //       aae_.store_axioms_idx_time(non_idx_terms, j, un_, current_k_));
-          //   timed_axioms.push_back(aae_.const_array_axioms_idx_time(
-          //       non_idx_terms, j, un_, current_k_));
+            // fallback -- check for prophecy over arbitrary terms
+            // Heuristic: don't check at last time step, seems unlikely to be
+            // needed there because it would be used in a select if need to
+            // refine  at the time of the property violation
+            if (!found_timed_axioms_last_iter && j != current_k_) {
+              logger(1)
+                  << "checking for prophecy targets over general terms at " << j
+                  << endlog;
+              timed_axioms.clear();
+              timed_axioms.push_back(aae_.equality_axioms_idx_time(
+                  non_idx_terms, j, un_, current_k_));
+              timed_axioms.push_back(aae_.store_axioms_idx_time(
+                  non_idx_terms, j, un_, current_k_));
+              timed_axioms.push_back(aae_.const_array_axioms_idx_time(
+                  non_idx_terms, j, un_, current_k_));
 
-          //   for (auto timed_axiom_set : timed_axioms) {
-          //     if (opts_.max_array_axioms > 0 &&
-          //         lemma_cnt >= opts_.max_array_axioms) {
-          //       // exit loop if over allotted axiom limit
-          //       break;
-          //     }
+              for (auto timed_axiom_set : timed_axioms) {
+                if (opts_.max_array_axioms > 0 &&
+                    lemma_cnt >= opts_.max_array_axioms) {
+                  // exit loop if over allotted axiom limit
+                  break;
+                }
 
-          //     for (auto timed_ax : timed_axiom_set) {
-          //       if (opts_.max_array_axioms > 0 &&
-          //           lemma_cnt >= opts_.max_array_axioms) {
-          //         // exit loop if over allotted axiom limit
-          //         break;
-          //       }
+                for (auto timed_ax : timed_axiom_set) {
+                  if (opts_.max_array_axioms > 0 &&
+                      lemma_cnt >= opts_.max_array_axioms) {
+                    // exit loop if over allotted axiom limit
+                    break;
+                  }
 
-          //       if (is_axiom_violated(timed_ax)) {
-          //         violated_axioms.insert(timed_ax);
-          //         timed_axioms_to_refine.insert(timed_ax);
-          //         ++lemma_cnt;
-          //         found_timed_axioms_last_iter = true;
-          //       }
-          //     }
-          //   }
-          // }
+                  if (is_axiom_violated(timed_ax)) {
+                    violated_axioms.insert(timed_ax);
+                    timed_axioms_to_refine.insert(timed_ax);
+                    ++lemma_cnt;
+                    found_timed_axioms_last_iter = true;
+                  }
+                }
+              }
+            }
 
-          // // fallback -- check for prophecy over the octagonal addition domain
-          // // Heuristic: don't check at last time step, seems unlikely to be
-          // // needed there because it would be used in a select if need to
-          // // refine at the time of the property violation
-          // if (!found_timed_axioms_last_iter && j != current_k_) {
-          //   logger(1) << "checking for prophecy targets over an octagonal "
-          //                "abstract domain with addition at "
-          //             << j << endlog;
-          //   unordered_map<string, TermSet> octagonal_addition_domain =
-          //       aae_.octagonal_addition_domain_terms();
+            // fallback -- check for prophecy over the octagonal addition domain
+            // Heuristic: don't check at last time step, seems unlikely to be
+            // needed there because it would be used in a select if need to
+            // refine at the time of the property violation
+            if (!found_timed_axioms_last_iter && j != current_k_) {
+              logger(1) << "checking for prophecy targets over an octagonal "
+                           "abstract domain with addition at "
+                        << j << endlog;
+              unordered_map<string, TermSet> octagonal_addition_domain =
+                  aae_.octagonal_addition_domain_terms();
 
-          //   timed_axioms.clear();
-          //   timed_axioms.push_back(aae_.equality_axioms_idx_time(
-          //       octagonal_addition_domain, j, un_, current_k_));
-          //   timed_axioms.push_back(aae_.store_axioms_idx_time(
-          //       octagonal_addition_domain, j, un_, current_k_));
-          //   timed_axioms.push_back(aae_.const_array_axioms_idx_time(
-          //       octagonal_addition_domain, j, un_, current_k_));
+              timed_axioms.clear();
+              timed_axioms.push_back(aae_.equality_axioms_idx_time(
+                  octagonal_addition_domain, j, un_, current_k_));
+              timed_axioms.push_back(aae_.store_axioms_idx_time(
+                  octagonal_addition_domain, j, un_, current_k_));
+              timed_axioms.push_back(aae_.const_array_axioms_idx_time(
+                  octagonal_addition_domain, j, un_, current_k_));
 
-          //   for (auto timed_axiom_set : timed_axioms) {
-          //     if (opts_.max_array_axioms > 0 &&
-          //         lemma_cnt >= opts_.max_array_axioms) {
-          //       // exit loop if over allotted axiom limit
-          //       break;
-          //     }
+              for (auto timed_axiom_set : timed_axioms) {
+                if (opts_.max_array_axioms > 0 &&
+                    lemma_cnt >= opts_.max_array_axioms) {
+                  // exit loop if over allotted axiom limit
+                  break;
+                }
 
-          //     for (auto timed_ax : timed_axiom_set) {
-          //       if (opts_.max_array_axioms > 0 &&
-          //           lemma_cnt >= opts_.max_array_axioms) {
-          //         // exit loop if over allotted axiom limit
-          //         break;
-          //       }
+                for (auto timed_ax : timed_axiom_set) {
+                  if (opts_.max_array_axioms > 0 &&
+                      lemma_cnt >= opts_.max_array_axioms) {
+                    // exit loop if over allotted axiom limit
+                    break;
+                  }
 
-          //       if (is_axiom_violated(timed_ax)) {
-          //         violated_axioms.insert(timed_ax);
-          //         timed_axioms_to_refine.insert(timed_ax);
-          //         ++lemma_cnt;
-          //         found_timed_axioms_last_iter = true;
-          //       }
-          //     }
-          //   }
-          // }
+                  if (is_axiom_violated(timed_ax)) {
+                    violated_axioms.insert(timed_ax);
+                    timed_axioms_to_refine.insert(timed_ax);
+                    ++lemma_cnt;
+                    found_timed_axioms_last_iter = true;
+                  }
+                }
+              }
+            }
+          }
         }
 
         found_timed_axioms = violated_axioms.size();
