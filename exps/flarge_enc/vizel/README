@@ -1,0 +1,78 @@
+Two benchmarks could not be translated:
+
+array_find_first_nonull.c
+/seahorn/build/run/bin/clang -c -emit-llvm -D__SEAHORN__ -O1 -Xclang -disable-llvm-optzns -fgnu89-inline -m32 -I./build/run/include -o /tmp/sea-wxPEmp/array_find_first_nonull.bc ./flarge_enc/vizel/c/array_find_first_nonull.c
+In file included from ./flarge_enc/vizel/c/array_find_first_nonull.c:6:
+In file included from /usr/include/stdio.h:27:
+/usr/include/features.h:367:12: fatal error: 'sys/cdefs.h' file not found
+#  include <sys/cdefs.h>
+           ^~~~~~~~~~~~~
+	   1 error generated.
+
+
+and
+
+
+array_mul_init_true-unreach-call.c
+/seahorn/build/run/bin/clang -c -emit-llvm -D__SEAHORN__ -O1 -Xclang -disable-llvm-optzns -fgnu89-inline -m32 -I./build/run/include -o /tmp/sea-RFbd3B/array_mul_init_true-unreach-call.bc ./flarge_enc/vizel/c/array_mul_init_true-unreach-call.c
+./flarge_enc/vizel/c/array_mul_init_true-unreach-call.c:26:12: error: use of undeclared identifier 'SIZE'
+    char a[SIZE];
+               ^
+	       ./flarge_enc/vizel/c/array_mul_init_true-unreach-call.c:27:12: error: use of undeclared identifier 'SIZE'
+	           char b[SIZE];
+		              ^
+			      ./flarge_enc/vizel/c/array_mul_init_true-unreach-call.c:31:22: error: use of undeclared identifier 'SIZE'
+			          for (i  = 0; i < SIZE ; i++) {
+				                       ^
+						       ./flarge_enc/vizel/c/array_mul_init_true-unreach-call.c:36:18: error: use of undeclared identifier 'SIZE'
+						           for (i=0; i< SIZE; i++) {
+							                    ^
+									    ./flarge_enc/vizel/c/array_mul_init_true-unreach-call.c:37:12: warning: implicit declaration of function '__VERIFIER_nondet_short' is invalid in C99 [-Wimplicit-function-declaration]
+									            if(__VERIFIER_nondet_short()) {
+										               ^
+											       ./flarge_enc/vizel/c/array_mul_init_true-unreach-call.c:44:18: error: use of undeclared identifier 'SIZE'
+											           for (i=0; i< SIZE; i++) {
+												                    ^
+
+
+The latter one has other issues. If we fix it by declaring size and the VERIFIER function, it gives different results depending on whether it's translated to CHC with options
+--horn-format=smt2 --horn-step=large
+
+vs.
+
+--horn-format=pure-smt2 --horn-step=large
+
+
+Other warnings in translation to CHC:
+array_2d_init_const.bc
+array_assert_loop_dep_false-unreach-call.bc
+array_find.bc
+array_init_const_int.bc
+array_init_even_const.bc
+array_init_linear_func.bc
+array_monotonic_true-unreach-call_1.bc
+array_shadowinit_true-unreach-call.bc
+array_simple_sort_prop.bc
+array_sum_const.bc
+sanfoundry_24_true-unreach-call.bc
+WARNING: ShadowMem: function `main' never returns
+Warning: Assumes not unified. No return found in `main`
+WARNING: no assertion was found so either program does not have assertions or frontend discharged them.
+standard_compare_true-unreach-call_ground.bc
+standard_copy.bc
+standard_copy1_false-unreach-call_ground.bc
+Warning: found 1 possible reads of undefined values
+standard_copy_3_N_nd_assert_loop.bc
+standard_copy_4_N_nd_assert_loop.bc
+standard_copy_5_N_nd_assert_loop.bc
+standard_copy_N_det_assert_loop.bc
+standard_copy_N_det_assert_nd.bc
+standard_copy_N_nd_assert_loop.bc
+standard_copy_N_nd_assert_nd.bc
+standard_init_N_nd_assert_loop.bc
+standard_sort_N_nd_assert_loop_1.bc
+Warning: found 1 possible reads of undefined values
+standard_two_index_01_true-unreach-call.bc
+standard_two_index_03_true-unreach-call.bc
+str_copy.bc
+Warning: found 1 possible reads of undefined values
