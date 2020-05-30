@@ -1,0 +1,7 @@
+These benchmarks were generated using SeaHorn to translate C programs with the following options:
+--horn-format=pure-smt2 --horn-step=flarge --horn-sem-lvl=mem -horn-unify-assumes -horn-global-constraints -horn-array-global-constraints -horn-sea-dsa
+
+Additionally, I needed to manually edit array_mul_init-true-unreach-call.c to declare the SIZE. However, there still seems to be an issue.
+Translating with --horn-format=smt2 vs --horn-format=pure-smt2 gives different results when solving with z3 and neither seems right (because z3 can solve both).
+
+Needs to be looked into more. Consider trying it with addition instead of multiplication to see if it makes a difference.
