@@ -76,3 +76,10 @@ standard_two_index_01_true-unreach-call.bc
 standard_two_index_03_true-unreach-call.bc
 str_copy.bc
 Warning: found 1 possible reads of undefined values
+
+
+
+Error translating to VMT:
+sanfoundry_24_true-unreach-call.smt2
+terminate called after throwing an instance of 'std::length_error'
+  what():  vector::_M_fill_insert
