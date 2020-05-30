@@ -66,6 +66,7 @@ struct Options {
     bool axiom_reduction;
     bool kind;
     bool state_promotion;
+    bool abs_bmc_only;
 
     Options()
     {
@@ -107,6 +108,7 @@ struct Options {
         axiom_reduction = true;
         kind = false;
         state_promotion=false;
+        abs_bmc_only = false;
     }
 };
 

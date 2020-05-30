@@ -200,38 +200,40 @@ msat_truth_value ProphIC3::prove()
     }
     iter_cnt++;
 
-    logger(1) << "Fixed BMC up to " << current_k_ << endlog;
-    logger(1) << "Running IC3" << endlog;
-    IC3 ic3(abs_ts_, opts_, l2s_);
-    ic3.set_initial_predicates(preds_);
-    // tell ic3 about imporant variables (prophecy variables)
-    for (auto v : prop_free_vars) {
-      ic3.add_imp_pred_var(v);
-    }
-    for (auto v : frozen_proph_vars_) {
-      ic3.add_imp_pred_var(v.first);
-    }
+    if (opts_.abs_bmc_only) {
+      // just continue with bmc in this configuration
+      res = MSAT_UNDEF;
+      current_k_++;
+    } else {
+      logger(1) << "Fixed BMC up to " << current_k_ << endlog;
+      logger(1) << "Running IC3" << endlog;
+      IC3 ic3(abs_ts_, opts_, l2s_);
+      ic3.set_initial_predicates(preds_);
+      // tell ic3 about imporant variables (prophecy variables)
+      for (auto v : prop_free_vars) {
+        ic3.add_imp_pred_var(v);
+      }
+      for (auto v : frozen_proph_vars_) {
+        ic3.add_imp_pred_var(v.first);
+      }
 
-    res = ic3.prove();
+      res = ic3.prove();
 
-    if (res == MSAT_FALSE)
-    {
-      witness_.clear();
-      ic3.witness(witness_);
-      current_k_ = ic3.get_bound();
-      logger(1) << "IC3 got counter-example at: " << current_k_ << endlog;
-    }
-    else if (res == MSAT_TRUE)
-    {
-      witness_.clear();
-      // get witness proof
-      ic3.witness(witness_);
-    }
+      if (res == MSAT_FALSE) {
+        witness_.clear();
+        ic3.witness(witness_);
+        current_k_ = ic3.get_bound();
+        logger(1) << "IC3 got counter-example at: " << current_k_ << endlog;
+      } else if (res == MSAT_TRUE) {
+        witness_.clear();
+        // get witness proof
+        ic3.witness(witness_);
+      }
 
-    if (res == MSAT_UNDEF)
-    {
-      logger(1) << "IC3 returned undefined..." << endlog;
-      throw std::exception();
+      if (res == MSAT_UNDEF) {
+        logger(1) << "IC3 returned undefined..." << endlog;
+        throw std::exception();
+      }
     }
   }
 
