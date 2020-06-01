@@ -1,0 +1,4 @@
+sanfoundry02-mod.smt2: translated by SeaHorn -- the VMT version if it doesn't depend on any array axioms which seems bizarre and wrong
+but it's been very hard to identify the problem. If I insert a bug in the CHC, then IC3IA also catches it (so far)
+
+This modified version has some of the assignments to selects commented out, and Z3 still can't find a bug. I'm not sure what exactly that means, but it's a start
