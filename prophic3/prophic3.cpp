@@ -1,5 +1,6 @@
 #include "assert.h"
 #include <fstream>
+#include <sstream>
 
 #include "prophic3.h"
 
@@ -71,37 +72,38 @@ TermList disjunctive_partition(msat_env e, msat_term top)
   return partition;
 }
 
-void pretty_print(msat_env e, msat_term t, std::string indentation="")
-{
+std::string format_term(msat_env e, msat_term t, std::string indentation = "") {
+  ostringstream ostr;
   bool is_or = msat_term_is_or(e, t);
   bool is_and = msat_term_is_and(e, t);
   if (!is_or && !is_and)
   {
     // base case
-    std::cout << indentation << msat_to_smtlib2_term(e, t) << std::endl;
-    return;
+    ostr << indentation << msat_to_smtlib2_term(e, t) << std::endl;
+    return ostr.str();
   }
 
   if (is_or)
   {
-    std::cout << indentation << "(or" << std::endl;
+    ostr << indentation << "(or" << std::endl;
     for (auto d : disjunctive_partition(e, t))
     {
-      pretty_print(e, d, indentation + "  ");
+      ostr << format_term(e, d, indentation + "  ");
     }
   }
   else
   {
     assert(is_and);
-    std::cout << indentation << "(and" << std::endl;
+    ostr << indentation << "(and" << std::endl;
     for (auto c : conjunctive_partition(e, t))
     {
-      pretty_print(e, c, indentation + "  ");
+      ostr << format_term(e, c, indentation + "  ");
     }
   }
 
-  std::cout << indentation << ")" << std::endl;
+  ostr << indentation << ")" << std::endl;
 
+  return ostr.str();
 }
 
 ProphIC3::ProphIC3(const ic3ia::TransitionSystem &ts, const ic3ia::Options &opts,
@@ -178,6 +180,30 @@ msat_truth_value ProphIC3::prove()
 
   logger(1) << "Created " << prop_indices_map.size();
   logger(1) << " prophecy variables for the property" << endlog;
+
+  logger(2) << "++++++++++++++++++ Abstract System +++++++++++++++++++"
+            << endlog;
+
+  logger(2) << "STATES" << endlog;
+  for (auto sv : abs_ts_.statevars()) {
+    logger(2) << "\t" << msat_to_smtlib2_term(msat_env_, sv) << endlog;
+  }
+  logger(2) << "INPUTS" << endlog;
+  for (auto in : abs_ts_.inputvars()) {
+    logger(2) << "\t" << msat_to_smtlib2_term(msat_env_, in) << endlog;
+  }
+
+  logger(2) << "INIT" << endlog;
+  logger(2) << format_term(msat_env_, abs_ts_.init()) << endlog;
+
+  logger(2) << "TRANS" << endlog;
+  logger(2) << format_term(msat_env_, abs_ts_.trans()) << endlog;
+
+  logger(2) << "PROP" << endlog;
+  logger(2) << format_term(msat_env_, abs_ts_.prop()) << endlog;
+
+  logger(2) << "++++++++++++++++++ +++++++++++++++ +++++++++++++++++++"
+            << endlog;
 
   int iter_cnt = 0;
   while (res != MSAT_TRUE)
