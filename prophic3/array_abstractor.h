@@ -41,7 +41,12 @@ public:
     }
 
     // getters
-    const ic3ia::TermMap &cache() const { return cache_; };
+    // TODO: remove this and replace with abstract/concrete functions
+    const ic3ia::TermMap &abstraction_cache() const {
+      return abstraction_cache_;
+    };
+    msat_term abstract(msat_term conc_term);
+    msat_term concrete(msat_term abs_term);
     const ic3ia::TermSet &indices() const { return indices_; };
     const ic3ia::TermMap &witnesses() const { return witnesses_; };
     const ic3ia::TermSet &prop_free_vars() const { return prop_free_vars_; }
@@ -120,10 +125,12 @@ public:
     msat_type abstract_array_type(msat_type t);
 
     /* abstracts a term */
-    msat_term abstract(msat_term term);
+    msat_term construct_abstract_term(msat_term term);
 
     /* creates lambda indices for each sort */
     void create_lambdas();
+
+    msat_term substitute(msat_term term, ic3ia::TermMap subst_map);
 
     msat_env msat_env_;
 
@@ -137,12 +144,15 @@ public:
 
     ic3ia::TransitionSystem abs_ts_;
 
+    // abstraction cache: maps concrete terms to abstraction
+    ic3ia::TermMap abstraction_cache_;
+    // concrete cache: maps abstract terms to concrete terms
+    ic3ia::TermMap concrete_cache_;
+
     unsigned int eq_id_{0};
     unsigned int lambda_id_{0};
     unsigned int num_arr_vars_{0};
 
-    // the abstraction cache
-    ic3ia::TermMap cache_;
     // set of array indices
     ic3ia::TermSet indices_;
     // map from equality UF to a witness for disequality

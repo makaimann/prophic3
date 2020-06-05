@@ -161,7 +161,6 @@ ic3ia::TermSet ArrayAxiomEnumerator::prop_eq_axioms()
 ic3ia::TermSet ArrayAxiomEnumerator::const_array_axioms()
 {
   ic3ia::TermSet axioms;
-  const ic3ia::TermMap & cache = abstractor_.cache();
   const ic3ia::TermSet & const_arrs = abstractor_.const_arrs();
 
   msat_type idx_type;
@@ -173,14 +172,12 @@ ic3ia::TermSet ArrayAxiomEnumerator::const_array_axioms()
     {
       throw "Expecting an array type";
     }
-    abs_ca = cache.at(ca);
+    abs_ca = abstractor_.abstract(ca);
     read = abstractor_.get_read(abs_ca);
     val = msat_term_get_arg(ca, 0);
     // the value could be an array itself -- look up abstraction
-    if (cache.find(val) != cache.end())
-    {
-      val = cache.at(val);
-    }
+    // if it's not, nothing will happen
+    val = abstractor_.abstract(val);
     enumerate_const_array_axioms(
         axioms,
         read,
@@ -195,7 +192,6 @@ ic3ia::TermSet ArrayAxiomEnumerator::const_array_axioms()
 ic3ia::TermSet ArrayAxiomEnumerator::store_axioms()
 {
   ic3ia::TermSet axioms;
-  const ic3ia::TermMap & cache = abstractor_.cache();
   const ic3ia::TermSet & stores = abstractor_.stores();
   msat_term arr0;
   msat_term store;
@@ -221,7 +217,6 @@ ic3ia::TermSet ArrayAxiomEnumerator::store_axioms()
     msat_type idx_type = abstractor_.get_orig_type(idx);
     read0 = abstractor_.get_read(arr0);
     read1 = abstractor_.get_read(arr1);
-    // convert to abstract arrays with cache
     enumerate_store_equalities( axioms, read0, read1,
                                 e, idx_type,
                                 all_indices_.at(msat_type_repr(idx_type)),
@@ -312,7 +307,6 @@ TermSet ArrayAxiomEnumerator::store_axioms_idx_time(
     }
   }
 
-  const TermMap &cache = abstractor_.cache();
   const TermSet &stores = abstractor_.stores();
 
   msat_term arr0;
@@ -376,7 +370,6 @@ TermSet ArrayAxiomEnumerator::const_array_axioms_idx_time(
     }
   }
 
-  const ic3ia::TermMap &cache = abstractor_.cache();
   const ic3ia::TermSet &const_arrs = abstractor_.const_arrs();
 
   msat_type idx_type;
@@ -392,13 +385,11 @@ TermSet ArrayAxiomEnumerator::const_array_axioms_idx_time(
       throw "Expected array type";
     }
     typestr = msat_type_repr(idx_type);
-    abs_ca = cache.at(ca);
+    abs_ca = abstractor_.abstract(ca);
     val = msat_term_get_arg(ca, 0);
     // the value could be an array itself -- look up abstraction
-    if (cache.find(val) != cache.end())
-    {
-      val = cache.at(val);
-    }
+    // if it's not, nothing will happen
+    val = abstractor_.abstract(val);
     read = abstractor_.get_read(abs_ca);
 
     msat_term lambda_j = get_finite_domain_lambda(abs_ca);
