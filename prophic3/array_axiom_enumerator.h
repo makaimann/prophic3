@@ -19,41 +19,30 @@ public:
     // sort the indices
     // convenient to store them grouped by current and all for 1-step and 2-step
     // lemmas
-    std::string typestr;
     msat_term base_idx; // gets assigned the actual var if it's wrapped in ubv_to_int
     for (auto idx : abstractor_.indices()) {
-      typestr = msat_type_repr(abstractor_.get_orig_type(idx));
 
       // save state variable indices
       if (ts.only_cur(idx))
       {
-        state_indices_[typestr].insert(idx);
-        all_indices_[typestr].insert(ts.next(idx));
+        state_indices_.insert(idx);
+        all_indices_.insert(ts.next(idx));
       }
 
       if (!ts.contains_next(idx))
       {
-        curr_indices_[typestr].insert(idx);
-        curr_indices_no_witnesses_[typestr].insert(idx);
+        curr_indices_.insert(idx);
+        curr_indices_no_witnesses_.insert(idx);
       }
-      orig_indices_[typestr].insert(idx);
+      orig_indices_.insert(idx);
       orig_indices_set_.insert(idx);
-      all_indices_[typestr].insert(idx);
-    }
-
-    // provide empty sets for types with no state indices
-    for (auto elem : all_indices_)
-    {
-      if (state_indices_.find(elem.first) == state_indices_.end())
-      {
-        state_indices_[elem.first] = ic3ia::TermSet();
-      }
+      all_indices_.insert(idx);
     }
 
     // remove witnesses from curr_indices_no_witnesses_
     for (auto witelem : abstractor_.witnesses()) {
       for (auto cielem : curr_indices_no_witnesses_) {
-        curr_indices_no_witnesses_[cielem.first].erase(witelem.second);
+        curr_indices_no_witnesses_.erase(witelem.second);
       }
     }
 
@@ -62,20 +51,16 @@ public:
     collect_equalities(ts.trans(), trans_equalities_);
     collect_equalities(ts.prop(), prop_equalities_);
 
-    // Find terms that match index types -- for fallback search for prophecy
-    // vars
-    collect_terms(ts.init());
-    collect_terms(ts.trans());
-    collect_terms(ts.prop());
+    // Find integer terms -- for fallback grammar search
+    collect_int_terms(ts.init());
+    collect_int_terms(ts.trans());
+    collect_int_terms(ts.prop());
 
     ic3ia::logger(2) << "Found the following terms for prophecy candidates"
                      << ic3ia::endlog;
-    for (auto elem : non_idx_terms_) {
-      ic3ia::logger(2) << elem.first << ic3ia::endlog;
-      for (auto t : elem.second) {
-        ic3ia::logger(2) << "\t" << msat_to_smtlib2_term(msat_env_, t)
-                         << ic3ia::endlog;
-      }
+    for (auto t : non_idx_int_terms_) {
+      ic3ia::logger(2) << "\t" << msat_to_smtlib2_term(msat_env_, t)
+                       << ic3ia::endlog;
     }
   }
 
@@ -85,12 +70,10 @@ public:
 
   const ic3ia::TermSet &orig_indices() const { return orig_indices_set_; };
 
-  const std::unordered_map<std::string, ic3ia::TermSet> &curr_indices() const {
-    return curr_indices_;
-  };
+  const ic3ia::TermSet &curr_indices() const { return curr_indices_; };
 
-  const std::unordered_map<std::string, ic3ia::TermSet> &non_idx_terms() const {
-    return non_idx_terms_;
+  const ic3ia::TermSet &non_idx_int_terms() const {
+    return non_idx_int_terms_;
   };
 
   // TODO: think about caching this -- but we also want to update it
@@ -98,10 +81,9 @@ public:
   /**
    *  Enumerates terms obtained by adding two terms drawn from indices (except
    * witnesses) and the general terms in the transition system from
-   * non_idx_terms
+   * non_idx_int_terms
    */
-  std::unordered_map<std::string, ic3ia::TermSet>
-  octagonal_addition_domain_terms() const;
+  ic3ia::TermSet octagonal_addition_domain_terms() const;
 
   // Note: not differentiating between zero-step and one-step axioms
   //       just enumerating them all together
@@ -123,9 +105,9 @@ public:
    *  un - the unroller to use for timing
    *  k - the maximum time-step (inclusive)
    */
-  ic3ia::TermSet equality_axioms_idx_time(
-      const std::unordered_map<std::string, ic3ia::TermSet> &indices, size_t j,
-      ic3ia::Unroller &un, size_t k);
+  ic3ia::TermSet equality_axioms_idx_time(const ic3ia::TermSet &indices,
+                                          size_t j, ic3ia::Unroller &un,
+                                          size_t k);
 
   /** Enumerate store axioms over indices at j
    *  indices - the index sets to enumerate axiom over
@@ -133,9 +115,8 @@ public:
    *  un - the unroller to use for timing
    *  k - the maximum time-step (inclusive)
    */
-  ic3ia::TermSet store_axioms_idx_time(
-      const std::unordered_map<std::string, ic3ia::TermSet> &indices, size_t j,
-      ic3ia::Unroller &un, size_t k);
+  ic3ia::TermSet store_axioms_idx_time(const ic3ia::TermSet &indices, size_t j,
+                                       ic3ia::Unroller &un, size_t k);
 
   /** Enumerate const array axioms over indices j
    *  indices - the index sets to enumerate axiom over
@@ -143,9 +124,9 @@ public:
    *  un - the unroller to use for timing
    *  k - the maximum time-step (inclusive)
    */
-  ic3ia::TermSet const_array_axioms_idx_time(
-      const std::unordered_map<std::string, ic3ia::TermSet> &indices, size_t j,
-      ic3ia::Unroller &un, size_t k);
+  ic3ia::TermSet const_array_axioms_idx_time(const ic3ia::TermSet &indices,
+                                             size_t j, ic3ia::Unroller &un,
+                                             size_t k);
 
   /* Adds an index to the index set (mostly used for adding prophecy vars) */
   void add_index(msat_type _type, msat_term i);
@@ -158,21 +139,21 @@ public:
 
   // debugging
   ArrayAbstractor &get_abstractor() { return abstractor_; };
-  std::unordered_map<std::string, ic3ia::TermSet> &all_indices() { return all_indices_; };
+  const ic3ia::TermSet &all_indices() { return all_indices_; };
 
 private:
   const ic3ia::TransitionSystem &ts_;
   ArrayAbstractor &abstractor_;
   msat_env msat_env_;
-  std::unordered_map<std::string, ic3ia::TermSet> orig_indices_;
+  ic3ia::TermSet orig_indices_;
   ic3ia::TermSet orig_indices_set_;
-  std::unordered_map<std::string, ic3ia::TermSet> state_indices_;
-  std::unordered_map<std::string, ic3ia::TermSet> curr_indices_;
-  std::unordered_map<std::string, ic3ia::TermSet> curr_indices_no_witnesses_;
-  std::unordered_map<std::string, ic3ia::TermSet> all_indices_;
+  ic3ia::TermSet state_indices_;
+  ic3ia::TermSet curr_indices_;
+  ic3ia::TermSet curr_indices_no_witnesses_;
+  ic3ia::TermSet all_indices_;
   // terms that are not used as indices but will be enumerated
   // as indices as a fallback to find prophecy variables
-  std::unordered_map<std::string, ic3ia::TermSet> non_idx_terms_;
+  ic3ia::TermSet non_idx_int_terms_;
   // equality ufs present in init
   ic3ia::TermSet init_equalities_;
   // equality ufs present in trans
@@ -248,10 +229,8 @@ private:
   /* Collect all array equality UFs from the given term and add to set s */
   void collect_equalities(msat_term term, ic3ia::TermSet & s);
 
-  /* Collect all the terms that match a type from the index set
-   * assumes all_indices_ is already populated
-   */
-  void collect_terms(msat_term term);
+  /* Collect all the integer terms */
+  void collect_int_terms(msat_term term);
 };
   } // namespace prophic3
 

@@ -408,11 +408,8 @@ bool ProphIC3::fix_bmc()
         // TODO: use pointers or something to avoid copying the TermSets into
         // the vector
         vector<TermSet> timed_axioms;
-        const unordered_map<string, TermSet> &curr_indices =
-            aae_.curr_indices();
-
-        const unordered_map<string, TermSet> &non_idx_terms =
-            aae_.non_idx_terms();
+        const TermSet &curr_indices = aae_.curr_indices();
+        const TermSet &non_idx_int_terms = aae_.non_idx_int_terms();
 
         // Heuristic: stop once you find timed axioms going backward from
         // property violation
@@ -477,11 +474,11 @@ bool ProphIC3::fix_bmc()
                   << endlog;
               timed_axioms.clear();
               timed_axioms.push_back(aae_.equality_axioms_idx_time(
-                  non_idx_terms, j, un_, current_k_));
+                  non_idx_int_terms, j, un_, current_k_));
               timed_axioms.push_back(aae_.store_axioms_idx_time(
-                  non_idx_terms, j, un_, current_k_));
+                  non_idx_int_terms, j, un_, current_k_));
               timed_axioms.push_back(aae_.const_array_axioms_idx_time(
-                  non_idx_terms, j, un_, current_k_));
+                  non_idx_int_terms, j, un_, current_k_));
 
               for (auto timed_axiom_set : timed_axioms) {
                 if (opts_.max_array_axioms > 0 &&
@@ -515,7 +512,7 @@ bool ProphIC3::fix_bmc()
               logger(1) << "checking for prophecy targets over an octagonal "
                            "abstract domain with addition at "
                         << j << endlog;
-              unordered_map<string, TermSet> octagonal_addition_domain =
+              TermSet octagonal_addition_domain =
                   aae_.octagonal_addition_domain_terms();
 
               timed_axioms.clear();
@@ -1032,8 +1029,7 @@ void ProphIC3::print_witness(msat_model model,
     bool is_array = msat_is_array_type(msat_env_, abstractor.get_orig_type(arr),
                                        &idx_type, nullptr);
     assert(is_array);
-    string typestr = msat_type_repr(idx_type);
-    for (auto i : aae_.all_indices().at(typestr)) {
+    for (auto i : aae_.all_indices()) {
       for (size_t k = 0; k <= reached_k; ++k) {
         indices.insert(msat_model_eval(model, un_.at_time(i, k)));
       }
