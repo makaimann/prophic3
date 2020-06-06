@@ -187,13 +187,14 @@ private:
    * Important Note: lambda argument can be an error term (if there is no finite
    * domain lambda)
    */
-  void enumerate_store_equalities(ic3ia::TermSet &axioms, msat_decl read_res, msat_decl read_arg,
-                                  msat_term store_eq, msat_type orig_idx_type,
-                                  ic3ia::TermSet &indices, msat_term lambda);
+  void enumerate_store_equalities(ic3ia::TermSet &axioms, msat_decl read_res,
+                                  msat_decl read_arg, msat_term store_eq,
+                                  ic3ia::TermSet &indices);
 
   /* Enumerate store axioms on all indices: forall i . arr[i] = val */
-  void enumerate_const_array_axioms(ic3ia::TermSet &axioms, msat_decl read, msat_term arr,
-                                    msat_type orig_idx_type, msat_term val, ic3ia::TermSet &indices);
+  void enumerate_const_array_axioms(ic3ia::TermSet &axioms, msat_decl read,
+                                    msat_term arr, msat_term val,
+                                    ic3ia::TermSet &indices);
 
   // TODO: Figure out if we can remove some of these lemmas
   //       probably don't need them all
@@ -213,15 +214,13 @@ private:
    * domain lambda)
    */
   void enumerate_eq_uf_axioms(ic3ia::TermSet &axioms, msat_decl read0,
-                              msat_decl read1, msat_type orig_idx_type, msat_term eq_uf,
-                              msat_term witness, ic3ia::TermSet &indices,
-                              msat_term lambda);
+                              msat_decl read1, msat_term eq_uf,
+                              msat_term witness, ic3ia::TermSet &indices);
 
   // helpers for enumerate_eq_uf_axioms
   void enumerate_equality_axioms(ic3ia::TermSet &axioms, msat_decl read0,
-                                 msat_decl read1, msat_type orig_idx_type,
-                                 msat_term eq_uf, ic3ia::TermSet &indices,
-                                 msat_term lambda);
+                                 msat_decl read1, msat_term eq_uf,
+                                 ic3ia::TermSet &indices);
 
   void eq_witness_axiom(ic3ia::TermSet &axioms, msat_decl read0,
                         msat_decl read1, msat_term eq_uf, msat_term witness);
