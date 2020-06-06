@@ -391,6 +391,12 @@ void ArrayAbstractor::abstract_array_terms()
     bool ok = msat_is_array_type(msat_env_, arr_type, &arridxtype, &arrelemtype);
     assert(ok);
 
+    if (!msat_is_integer_type(msat_env_, arridxtype)) {
+      std::cout << "Non-integer indices not supported. Got "
+                << msat_type_repr(arridxtype) << std::endl;
+      throw std::exception();
+    }
+
     // turn arrays to uninterpreted sorts (but use slightly nicer name for const arrays)
     std::string name = std::string("abs_") + msat_term_repr(arr);
     if (msat_term_is_array_const(msat_env_, arr)) {
@@ -627,10 +633,6 @@ msat_term ArrayAbstractor::construct_abstract_term(msat_term term) {
 
         msat_type idx_type;
         msat_is_array_type(e, msat_term_get_type(lhs), &idx_type, nullptr);
-        if (!msat_is_integer_type(e, idx_type)) {
-          std::cout << "Non-integer indices not supported. Got "
-                    << msat_type_repr(idx_type) << std::endl;
-        }
         std::string abs_arr_typestr = msat_type_repr(msat_term_get_type(lhs_cache));
         msat_decl witness_fun = super->witness_ufs_.at(abs_arr_typestr);
         msat_term cached_args[2] = {lhs_cache, rhs_cache};
