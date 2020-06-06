@@ -19,17 +19,16 @@ ArrayAbstractor::~ArrayAbstractor()
 }
 
 // get the abstraction of a concrete term
-msat_term ArrayAbstractor::abstract(msat_term conc_term)
-{
+msat_term ArrayAbstractor::abstract(msat_term conc_term) const {
   if (abstraction_cache_.find(conc_term) != abstraction_cache_.end())
   {
     return abstraction_cache_.at(conc_term);
   }
 
   struct Data {
-    ArrayAbstractor * super;
+    const ArrayAbstractor *super;
     TermMap cache;
-    Data(ArrayAbstractor * a) : super(a) {}
+    Data(const ArrayAbstractor *a) : super(a) {}
   };
 
   auto visit = [](msat_env e, msat_term t, int preorder,
@@ -100,15 +99,15 @@ msat_term ArrayAbstractor::abstract(msat_term conc_term)
   return data.cache.at(conc_term);
 }
 
-msat_term ArrayAbstractor::concrete(msat_term abs_term) {
+msat_term ArrayAbstractor::concrete(msat_term abs_term) const {
   if (concrete_cache_.find(abs_term) != concrete_cache_.end()) {
     return concrete_cache_.at(abs_term);
   }
 
   struct Data {
-    ArrayAbstractor *super;
+    const ArrayAbstractor *super;
     TermMap cache;
-    Data(ArrayAbstractor *a) : super(a) {}
+    Data(const ArrayAbstractor *a) : super(a) {}
   };
 
   auto visit = [](msat_env e, msat_term t, int preorder,
@@ -128,6 +127,7 @@ msat_term ArrayAbstractor::concrete(msat_term abs_term) {
         bool abs_select = false;
         bool abs_store = false;
         bool abs_eq = false;
+        bool abs_witness = false;
         for (auto elem : d->super->type2read_) {
           if (dec_id == msat_decl_id(elem.second)) {
             abs_select = true;
@@ -146,9 +146,18 @@ msat_term ArrayAbstractor::concrete(msat_term abs_term) {
           }
         }
 
+        for (auto elem : d->super->witness_ufs_) {
+          if (dec_id == msat_decl_id(elem.second)) {
+            abs_witness = true;
+          }
+        }
+
         assert(!(abs_select && abs_store));
         assert(!(abs_select && abs_eq));
         assert(!(abs_store && abs_eq));
+        assert(!(abs_select && abs_witness));
+        assert(!(abs_witness && abs_eq));
+        assert(!(abs_store && abs_witness));
 
         if (abs_select) {
           assert(arity == 2);
@@ -166,6 +175,14 @@ msat_term ArrayAbstractor::concrete(msat_term abs_term) {
           msat_term arr0 = d->cache.at(msat_term_get_arg(t, 0));
           msat_term arr1 = d->cache.at(msat_term_get_arg(t, 1));
           d->cache[t] = msat_make_eq(e, arr0, arr1);
+        } else if (abs_witness) {
+          // map back to a concrete version of the witness uf
+          assert(arity == 2);
+          msat_term args[2] = {d->cache.at(msat_term_get_arg(t, 0)),
+                               d->cache.at(msat_term_get_arg(t, 1))};
+          msat_decl conc_witness_fun = d->super->concrete_witness_ufs_.at(
+              msat_type_repr(msat_term_get_type(args[0])));
+          d->cache[t] = msat_make_uf(e, conc_witness_fun, &args[0]);
         } else {
           // just rebuild the term
           TermList args;
@@ -209,13 +226,10 @@ msat_term ArrayAbstractor::make_eq(msat_env env, msat_term lhs, msat_term rhs) c
   msat_term eq;
   // just a regular equality if not abstracting arrays or
   // we don't have an original type stored
-  if (!use_eq_uf_ || orig_types_.find(lhs) == orig_types_.end())
-  {
+  if (!use_eq_uf_) {
     eq = msat_make_eq(env, lhs, rhs);
-  }
-  else
-  {
-    msat_type _type = orig_types_.at(lhs);
+  } else {
+    msat_type _type = get_orig_type(lhs);
     if (msat_is_array_type(env, _type, nullptr, nullptr))
     {
       std::string typestr = msat_type_repr(msat_term_get_type(lhs));
@@ -227,7 +241,6 @@ msat_term ArrayAbstractor::make_eq(msat_env env, msat_term lhs, msat_term rhs) c
     else
     {
       // not an array
-      // could be an index that was in orig_types_
       eq = msat_make_eq(env, lhs, rhs);
     }
   }
@@ -268,8 +281,6 @@ void ArrayAbstractor::do_abstraction()
                                                  fv_type);
       msat_term fvN = msat_make_constant(msat_env_, decl_fvN);
       new_state_vars_[fv] = fvN;
-      // map next to type
-      orig_types_[fvN] = fv_type;
     }
   }
 
@@ -393,8 +404,6 @@ void ArrayAbstractor::abstract_array_terms()
     msat_term arr_abs = msat_make_constant(msat_env_, decl_arrabs);
     abstraction_cache_[arr] = arr_abs;
     removed_vars_.insert(arr);
-    // keep track of the original type
-    orig_types_[arr_abs] = arr_type;
 
     if (conc_ts_.is_statevar(arr))
     {
@@ -403,8 +412,6 @@ void ArrayAbstractor::abstract_array_terms()
                                                      abs_type);
       msat_term arr_absN = msat_make_constant(msat_env_, decl_arrabsN);
       new_state_vars_[arr_abs] = arr_absN;
-      // map next to type also
-      orig_types_[arr_absN] = arr_type;
       abstraction_cache_[conc_ts_.next(arr)] = arr_absN;
     }
 
@@ -440,10 +447,19 @@ msat_type ArrayAbstractor::abstract_array_type(msat_type t)
     // create a witness function as well
     msat_type witness_funtype =
       msat_get_function_type(msat_env_, &eq_param_types[0], 2, msat_get_integer_type(msat_env_));
-    std::string witnessname = "witness_" + std::to_string(eq_id_);
+    std::string witnessname = "abs_witness_" + std::to_string(eq_id_);
     witness_ufs_[msat_type_repr(abs_type)] = msat_declare_function(msat_env_,
                                                                    witnessname.c_str(),
                                                                    witness_funtype);
+
+    // create a concrete witness function (for mapping from abstract to concrete
+    // system)
+    msat_type eq_arr_types[2] = {t, t};
+    msat_type conc_witness_funtype = msat_get_function_type(
+        msat_env_, &eq_arr_types[0], 2, msat_get_integer_type(msat_env_));
+    std::string conc_witnessname = "conc_witness_" + std::to_string(eq_id_);
+    concrete_witness_ufs_[msat_type_repr(t)] = msat_declare_function(
+        msat_env_, conc_witnessname.c_str(), conc_witness_funtype);
     eq_id_++;
 
     // ------------------------ create read and write functions
@@ -459,7 +475,7 @@ msat_type ArrayAbstractor::abstract_array_type(msat_type t)
     std::string readname = "read_" + std::to_string(num_arr_vars_);
     msat_decl readfun =
         msat_declare_function(msat_env_, readname.c_str(), read_funtype);
-    type2read_[t_typestr] = readfun;
+    type2read_[msat_type_repr(abs_type)] = readfun;
 
     // create a write function for these arrays
     msat_type write_param_types[3] = {abs_type,
@@ -470,7 +486,7 @@ msat_type ArrayAbstractor::abstract_array_type(msat_type t)
     std::string writename = "write_" + std::to_string(num_arr_vars_);
     msat_decl writefun =
         msat_declare_function(msat_env_, writename.c_str(), write_funtype);
-    type2write_[t_typestr] = writefun;
+    type2write_[msat_type_repr(abs_type)] = writefun;
 
     num_arr_vars_++;
     return abs_type;
@@ -489,6 +505,8 @@ inline bool is_array_equality(msat_env env, msat_term t) {
   }
 }
 
+// legacy function
+// could be used again if we add support for bitvectors
 msat_term idx_to_int(msat_env env, msat_term t) {
   msat_type _type = msat_term_get_type(t);
   msat_term res;
@@ -609,13 +627,16 @@ msat_term ArrayAbstractor::construct_abstract_term(msat_term term) {
 
         msat_type idx_type;
         msat_is_array_type(e, msat_term_get_type(lhs), &idx_type, nullptr);
+        if (!msat_is_integer_type(e, idx_type)) {
+          std::cout << "Non-integer indices not supported. Got "
+                    << msat_type_repr(idx_type) << std::endl;
+        }
         std::string abs_arr_typestr = msat_type_repr(msat_term_get_type(lhs_cache));
         msat_decl witness_fun = super->witness_ufs_.at(abs_arr_typestr);
         msat_term cached_args[2] = {lhs_cache, rhs_cache};
         msat_term witness = msat_make_uf(e, witness_fun, &cached_args[0]);
 
         super->witnesses_[arr_eq] = witness;
-        super->orig_types_[witness] = idx_type;
         super->indices_.insert(witness);
         // TODO: figure out cleanest way to get next-state version of lemmas as well
         // e.g. equal(next(arr), next(arr2)) -> ...
@@ -625,20 +646,11 @@ msat_term ArrayAbstractor::construct_abstract_term(msat_term term) {
         msat_term arr_cache = super->abstraction_cache_[arr];
 
         // turn idx into an integer
-        msat_term idx = msat_term_get_arg(t, 1);
-        msat_term int_idx = idx_to_int(e, super->abstraction_cache_[idx]);
-        msat_type orig_idx_sort = msat_term_get_type(idx);
-        super->indices_.insert(int_idx);
-        super->orig_types_[int_idx] = orig_idx_sort;
-
-        msat_type arridxtype;
-        msat_type arrelemtype;
-        msat_type arrtype = msat_term_get_type(arr);
-        // populate arridxtype and arrelemtype
-        assert(msat_is_array_type(e, arrtype, &arridxtype, &arrelemtype));
+        msat_term idx = super->abstraction_cache_.at(msat_term_get_arg(t, 1));
+        super->indices_.insert(idx);
 
         msat_decl readfun = super->get_read(arr_cache);
-        msat_term cached_args[2] = {arr_cache, int_idx};
+        msat_term cached_args[2] = {arr_cache, idx};
         msat_term read_uf = msat_make_uf(e, readfun, &cached_args[0]);
         super->abstraction_cache_[t] = read_uf;
       } else if (msat_term_is_array_write(e, t)) {
@@ -647,34 +659,19 @@ msat_term ArrayAbstractor::construct_abstract_term(msat_term term) {
         msat_term val = msat_term_get_arg(t, 2);
 
         msat_term arr_cache = super->abstraction_cache_.at(arr);
-        msat_term int_idx_cache =
-            idx_to_int(e, super->abstraction_cache_.at(idx));
+        msat_term idx_cache = super->abstraction_cache_.at(idx);
         msat_term val_cache = super->abstraction_cache_.at(val);
 
         msat_type abs_type = msat_term_get_type(arr_cache);
 
         // save index
-        msat_type orig_idx_sort = msat_term_get_type(idx);
-        super->indices_.insert(int_idx_cache);
-        // also see HACK below
-        super->orig_types_[int_idx_cache] = orig_idx_sort;
+        super->indices_.insert(idx_cache);
 
         msat_decl writefun = super->get_write(arr_cache);
 
-        msat_term args[3] = {arr_cache, int_idx_cache, val_cache};
+        msat_term args[3] = {arr_cache, idx_cache, val_cache};
         msat_term arr_write = msat_make_uf(e, writefun, &args[0]);
         super->abstraction_cache_[t] = arr_write;
-
-        // HACK: if the write index is a complex term (not a
-        // variable), it maybe rewritten while createing the abstract
-        // write term. For example, (+ x y) can be rewritten to (+ y
-        // x). This might cause a cache miss. To fix it, we write the
-        // cache with the write index from the new arr_write term.
-        {
-          int_idx_cache = msat_term_get_arg(arr_write, 1);
-          super->orig_types_[int_idx_cache] = orig_idx_sort;
-        }
-
       } else {
         // rebuild the term
         size_t arity = msat_term_arity(t);
@@ -702,14 +699,6 @@ msat_term ArrayAbstractor::construct_abstract_term(msat_term term) {
         }
         assert(!MSAT_ERROR_TERM(res));
         super->abstraction_cache_[t] = res;
-      }
-
-      // HACK set original type if it's an array
-      msat_term abs_t = super->abstraction_cache_[t];
-      if (msat_is_array_type(e, _type, nullptr, nullptr) &&
-          (super->orig_types_.find(abs_t) == super->orig_types_.end()))
-      {
-        super->orig_types_[abs_t] = _type;
       }
     }
 
@@ -834,12 +823,8 @@ void ArrayAbstractor::create_lambdas() {
     abs_ts_.add_trans(msat_make_equal(msat_env_, lambda,
                                       lambdaN)); // lambda is a frozen var
 
-    // store original sort (might be the same if it's already an integer)
-    orig_types_[lambda] = _type;
-
     // if it's an infinite domain index, can just add it to index sets
-    // otherwise keep it separate
-    // for now, only handle int and bit-vector
+    // for now, only handle int
     if (msat_is_integer_type(msat_env_, _type)) {
       indices_.insert(lambda);
       // TODO: optimization, don't need next(lambda) because lambda is a

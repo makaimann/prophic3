@@ -858,18 +858,15 @@ TermSet ProphIC3::detect_indices(msat_term term)
 TermMap ProphIC3::add_frozen_proph_vars(const ic3ia::TermMap & proph_targets)
 {
   TermMap idx_to_proph;
-  TermTypeMap & orig_types = aa_.orig_types();
   msat_term equalities = msat_make_true(msat_env_);
 
   std::string name;
   msat_term t;
   msat_type t_type;
-  msat_type t_orig_type;
   for (auto elem : proph_targets)
   {
     t = elem.second;
     t_type = msat_term_get_type(t);
-    t_orig_type = orig_types.at(t);
 
     name = "proph" + std::to_string(num_proph_vars_++);
     msat_decl proph_decl =
@@ -887,10 +884,6 @@ TermMap ProphIC3::add_frozen_proph_vars(const ic3ia::TermMap & proph_targets)
     // map the original target (i.e. an index) to proph
     idx_to_proph[elem.first] = proph;
 
-    // update type map for this prophecy
-    // should match the target
-    orig_types[proph] = t_orig_type;
-
     msat_decl proph_decl_next =
       msat_declare_function(msat_env_, (name + ".next").c_str(), t_type);
     msat_term proph_next = msat_make_constant(msat_env_, proph_decl_next);
@@ -898,7 +891,7 @@ TermMap ProphIC3::add_frozen_proph_vars(const ic3ia::TermMap & proph_targets)
 
     // add as an index -- must be after making it a statevar
     // so that the axiom enumerator knows it's a state
-    aae_.add_index(t_orig_type, proph);
+    aae_.add_index(t_type, proph);
 
     // make it frozen
     abs_ts_.add_trans(msat_make_eq(msat_env_, proph_next, proph));
@@ -921,8 +914,6 @@ TermMap ProphIC3::add_history_vars(const std::unordered_map<msat_term, size_t> t
     logger(1) << "\t" << msat_to_smtlib2_term(msat_env_, un_.untime(elem.first)) << ":" << elem.second << endlog;
   }
 
-  TermTypeMap & orig_types = aa_.orig_types();
-
   // just the history variables that need to be refined over
   TermMap hist_vars_to_refine;
   // all created history variables (including intermediate ones)
@@ -935,14 +926,13 @@ TermMap ProphIC3::add_history_vars(const std::unordered_map<msat_term, size_t> t
     msat_term v = hr_.hist_var(untimed_target, elem.second, all_created_hist_vars);
     // update type maps -- need to keep track of this for proph var indices
     try {
-      _type = orig_types.at(untimed_target);
+      _type = msat_term_get_type(untimed_target);
     } catch (std::out_of_range e) {
       // HACK: sometimes rewriting causes the original type to be lost for the
       // octagonal domain for now just work around it and assume they're
       // integers
       _type = msat_term_get_type(untimed_target);
     }
-    orig_types[v] = _type;
     hist_vars_to_refine[elem.first] = v;
   }
 
@@ -980,8 +970,6 @@ void ProphIC3::print_witness(msat_model model,
                              ArrayAxiomEnumerator &aae_) {
 
   ArrayAbstractor &abstractor = aae_.get_abstractor();
-  TermTypeMap &orig_types = abstractor.orig_types();
-
   logger(1) << "+++++++++++++++++++++ FAILED +++++++++++++++++++" << endlog;
   logger(1) << "prop: " << msat_to_smtlib2_term(msat_env_, abs_ts_.prop())
             << endlog;
@@ -1041,7 +1029,8 @@ void ProphIC3::print_witness(msat_model model,
 
     TermSet indices;
     msat_type idx_type;
-    bool is_array = msat_is_array_type(msat_env_, orig_types.at(arr), &idx_type, nullptr);
+    bool is_array = msat_is_array_type(msat_env_, abstractor.get_orig_type(arr),
+                                       &idx_type, nullptr);
     assert(is_array);
     string typestr = msat_type_repr(idx_type);
     for (auto i : aae_.all_indices().at(typestr)) {
@@ -1051,7 +1040,7 @@ void ProphIC3::print_witness(msat_model model,
     }
 
     for (auto w : abstractor.witnesses()) {
-      if (!msat_type_equals(idx_type, orig_types.at(w.second))) {
+      if (!msat_type_equals(idx_type, abstractor.get_orig_type(w.second))) {
         continue;
       }
       for (size_t k = 0; k <= reached_k; ++k) {

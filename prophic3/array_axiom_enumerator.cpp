@@ -70,8 +70,6 @@ ArrayAxiomEnumerator::octagonal_addition_domain_terms() const {
     }
   }
 
-  TermTypeMap &orig_types = abstractor_.orig_types();
-
   // compute the octagonal domain by performing all possible additions
   msat_term t;
   for (auto elem : args) {
@@ -86,8 +84,6 @@ ArrayAxiomEnumerator::octagonal_addition_domain_terms() const {
       for (auto a2 : elem.second) {
         t = msat_make_plus(msat_env_, a1, a2);
         octagonal_domain[elem.first].insert(t);
-        // HACK: assuming none of these were changed
-        orig_types[t] = msat_term_get_type(t);
       }
     }
   }
@@ -228,12 +224,11 @@ ic3ia::TermSet ArrayAxiomEnumerator::store_axioms()
 ic3ia::TermSet ArrayAxiomEnumerator::lambda_alldiff_axioms()
 {
   TermSet axioms;
-  TermTypeMap & orig_types = abstractor_.orig_types();
   TermSet & lambdas = abstractor_.lambdas();
   std::string typestr;
   for (auto l : lambdas)
   {
-    typestr = msat_type_repr(orig_types.at(l));
+    typestr = msat_type_repr(msat_term_get_type(l));
     for (auto i : all_indices_.at(typestr))
     {
       if (ts_.cur(i) != l)
@@ -464,8 +459,6 @@ void ArrayAxiomEnumerator::enumerate_store_equalities(TermSet &axioms, msat_decl
 
   for (auto i : indices)
   {
-    // TODO: Add next version of indices to orig_types in abstracter (not doing yet to avoid conflicts)
-
     args0[1] = i;
     args1[1] = i;
 
@@ -722,8 +715,6 @@ void ArrayAxiomEnumerator::collect_terms(msat_term term) {
   Data data(typestrs, non_idx_terms_);
   msat_visit_term(msat_env_, term, visit, &data);
 
-  TermTypeMap & orig_types = abstractor_.orig_types();
-
   for (auto elem : non_idx_terms_) {
     // remove indices from the sets
     for (auto idx : all_indices_.at(elem.first)) {
@@ -735,9 +726,6 @@ void ArrayAxiomEnumerator::collect_terms(msat_term term) {
     for (auto t : elem.second) {
       if (ts_.is_nextstatevar(t)) {
         non_idx_terms_.at(elem.first).erase(t);
-      } else {
-        // HACK: assuming none of these were changed
-        orig_types[t] = msat_term_get_type(t);
       }
     }
   }

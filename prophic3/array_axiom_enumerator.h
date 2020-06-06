@@ -16,8 +16,6 @@ public:
       : ts_(ts), abstractor_(aa) {
     msat_env_ = ts.get_env();
 
-    TermTypeMap & orig_types = abstractor_.orig_types();
-
     // sort the indices
     // convenient to store them grouped by current and all for 1-step and 2-step
     // lemmas
@@ -25,10 +23,6 @@ public:
     msat_term base_idx; // gets assigned the actual var if it's wrapped in ubv_to_int
     for (auto idx : abstractor_.indices()) {
       typestr = msat_type_repr(abstractor_.get_orig_type(idx));
-
-      // HACK keep original type over current and next state version
-      orig_types[ts.cur(idx)] = orig_types.at(idx);
-      orig_types[ts.next(idx)] = orig_types.at(idx);
 
       // save state variable indices
       if (ts.only_cur(idx))

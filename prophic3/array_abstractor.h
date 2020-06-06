@@ -44,12 +44,11 @@ public:
     const ic3ia::TermMap &abstraction_cache() const {
       return abstraction_cache_;
     };
-    msat_term abstract(msat_term conc_term);
-    msat_term concrete(msat_term abs_term);
+    msat_term abstract(msat_term conc_term) const;
+    msat_term concrete(msat_term abs_term) const;
     const ic3ia::TermSet &indices() const { return indices_; };
     const ic3ia::TermMap &witnesses() const { return witnesses_; };
     const ic3ia::TermSet &prop_free_vars() const { return prop_free_vars_; }
-    TermTypeMap &orig_types() { return orig_types_; };
     const ic3ia::TermSet &const_arrs() const { return const_arrs_; };
     const ic3ia::TermSet &stores() const { return stores_; };
     ic3ia::TermSet &lambdas() { return lambdas_; };
@@ -57,21 +56,13 @@ public:
 
     msat_type get_orig_type(msat_term t) const
     {
-      if (orig_types_.find(t) != orig_types_.end())
-      {
-        return orig_types_.at(t);
-      }
-      else
-      {
-        return msat_term_get_type(t);
-      }
+      return msat_term_get_type(concrete(t));
     }
 
     /* returns the read function for array arr */
     msat_decl get_read(msat_term arr) const
     {
-      assert(orig_types_.find(arr) != orig_types_.end());
-      std::string typestr = msat_type_repr(orig_types_.at(arr));
+      std::string typestr = msat_type_repr(msat_term_get_type(arr));
       assert(type2read_.find(typestr) != type2read_.end());
       msat_decl read = type2read_.at(typestr);
       if (MSAT_ERROR_DECL(read)) {
@@ -84,8 +75,7 @@ public:
     /* returns the write function for array arr */
     msat_decl get_write(msat_term arr) const
     {
-      assert(orig_types_.find(arr) != orig_types_.end());
-      std::string typestr = msat_type_repr(orig_types_.at(arr));
+      std::string typestr = msat_type_repr(msat_term_get_type(arr));
       assert(type2write_.find(typestr) != type2write_.end());
 
       msat_decl write = type2write_.at(typestr);
@@ -149,14 +139,15 @@ public:
     std::unordered_map<std::string, msat_decl> eq_ufs_;
     // map from abstract array sorts to their witness UF
     std::unordered_map<std::string, msat_decl> witness_ufs_;
-    // TODO: Figure out if we still even need this
-    // the original sort for terms
-    TermTypeMap orig_types_;
+    // map from array sorts to their concrete witness UF
+    // used for concretizing abstract system
+    std::unordered_map<std::string, msat_decl> concrete_witness_ufs_;
     // set of constant arrays
     ic3ia::TermSet const_arrs_;
     // set of store equalities -- note: these have been flattened
     ic3ia::TermSet stores_;
 
+    // maps abstract type to the read/write function
     std::unordered_map<std::string, msat_decl> type2read_;
     std::unordered_map<std::string, msat_decl> type2write_;
 
