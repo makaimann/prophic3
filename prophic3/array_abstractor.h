@@ -32,12 +32,11 @@ void detect_arrays(msat_env env, msat_term term, ic3ia::TermSet & out_const_arrs
 
 class ArrayAbstractor {
 public:
-    ArrayAbstractor(const ic3ia::TransitionSystem &ts, bool use_eq_uf, bool use_multi_uf);
-    ~ArrayAbstractor();
+  ArrayAbstractor(const ic3ia::TransitionSystem &ts, bool use_eq_uf);
+  ~ArrayAbstractor();
 
-    const ic3ia::TransitionSystem &abstract_transition_system() const
-    {
-        return abs_ts_;
+  const ic3ia::TransitionSystem &abstract_transition_system() const {
+    return abs_ts_;
     }
 
     // getters
@@ -50,7 +49,6 @@ public:
     const ic3ia::TermSet &indices() const { return indices_; };
     const ic3ia::TermMap &witnesses() const { return witnesses_; };
     const ic3ia::TermSet &prop_free_vars() const { return prop_free_vars_; }
-    const TermDeclMap &read_ufs() const { return read_ufs_; };
     TermTypeMap &orig_types() { return orig_types_; };
     const ic3ia::TermSet &const_arrs() const { return const_arrs_; };
     const ic3ia::TermSet &stores() const { return stores_; };
@@ -72,41 +70,30 @@ public:
     /* returns the read function for array arr */
     msat_decl get_read(msat_term arr) const
     {
-      if (use_multi_uf_)
-      {
-        assert(read_ufs_.find(arr) != read_ufs_.end());
-        return read_ufs_.at(arr);
+      assert(orig_types_.find(arr) != orig_types_.end());
+      std::string typestr = msat_type_repr(orig_types_.at(arr));
+      assert(type2read_.find(typestr) != type2read_.end());
+      msat_decl read = type2read_.at(typestr);
+      if (MSAT_ERROR_DECL(read)) {
+        std::cout << "Got error decl" << std::endl;
+        throw std::exception();
       }
-      else
-      {
-        assert(orig_types_.find(arr) != orig_types_.end());
-        std::string typestr = msat_type_repr(orig_types_.at(arr));
-        assert(type2read_.find(typestr) != type2read_.end());
-        msat_decl read = type2read_.at(typestr);
-        if (MSAT_ERROR_DECL(read))
-        {
-          std::cout << "Got error decl" << std::endl;
-          throw std::exception();
-        }
-        return read;
-      }
+      return read;
     }
 
     /* returns the write function for array arr */
     msat_decl get_write(msat_term arr) const
     {
-      if (use_multi_uf_)
-      {
-        assert(write_ufs_.find(arr) != write_ufs_.end());
-        return write_ufs_.at(arr);
+      assert(orig_types_.find(arr) != orig_types_.end());
+      std::string typestr = msat_type_repr(orig_types_.at(arr));
+      assert(type2write_.find(typestr) != type2write_.end());
+
+      msat_decl write = type2write_.at(typestr);
+      if (MSAT_ERROR_DECL(write)) {
+        std::cout << "Got error decl" << std::endl;
+        throw std::exception();
       }
-      else
-      {
-        assert(orig_types_.find(arr) != orig_types_.end());
-        std::string typestr = msat_type_repr(orig_types_.at(arr));
-        assert(type2write_.find(typestr) != type2write_.end());
-        return type2write_.at(typestr);
-      }
+      return write;
     }
 
     // creates an equality: if we're using abstract array equality, it will generate that
@@ -141,9 +128,6 @@ public:
     // sets whether array equality is abstracted with a UF
     // or if it's an equality between the abstract arrays (of uninterpreted sort)
     bool use_eq_uf_;
-    // if false, uses a single read/write UF per array *sort*
-    // if true, uses a read/write UF per array *variable*
-    bool use_multi_uf_;
 
     ic3ia::TransitionSystem abs_ts_;
 
@@ -160,8 +144,6 @@ public:
     ic3ia::TermSet indices_;
     // map from equality UF to a witness for disequality
     ic3ia::TermMap witnesses_;
-    // map from abstract arrays to their read UF
-    TermDeclMap read_ufs_;
     // map from abstract array sorts to their equal UF
     // (unless using option -no-eq-uf)
     std::unordered_map<std::string, msat_decl> eq_ufs_;
@@ -175,7 +157,6 @@ public:
     // set of store equalities -- note: these have been flattened
     ic3ia::TermSet stores_;
 
-    // these are used if use_multi_uf is false
     std::unordered_map<std::string, msat_decl> type2read_;
     std::unordered_map<std::string, msat_decl> type2write_;
 
@@ -186,8 +167,6 @@ public:
 
     // maps a string of an array type to an uninterpreted type
     std::unordered_map<std::string, msat_type> type_map_;
-    // maps abstract arrays to their write UF
-    TermDeclMap write_ufs_;
 
     ic3ia::TermSet lambdas_;
     ic3ia::TermSet finite_domain_lambdas_;

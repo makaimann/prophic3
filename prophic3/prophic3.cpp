@@ -106,18 +106,13 @@ std::string format_term(msat_env e, msat_term t, std::string indentation = "") {
   return ostr.str();
 }
 
-ProphIC3::ProphIC3(const ic3ia::TransitionSystem &ts, const ic3ia::Options &opts,
-                   ic3ia::LiveEncoder &l2s, unsigned int verbosity)
-  : msat_env_(ts.get_env()),
-    conc_ts_(ts),
-    rw_(conc_ts_),
-    aa_(rw_.rewrite_transition_system(), opts.use_uf_for_arr_eq, opts.multi_uf),
-    abs_ts_(aa_.abstract_transition_system()),
-    aae_(abs_ts_, aa_),
-    hr_(abs_ts_),
-    opts_(opts),
-    l2s_(l2s),
-    un_(abs_ts_) {
+ProphIC3::ProphIC3(const ic3ia::TransitionSystem &ts,
+                   const ic3ia::Options &opts, ic3ia::LiveEncoder &l2s,
+                   unsigned int verbosity)
+    : msat_env_(ts.get_env()), conc_ts_(ts), rw_(conc_ts_),
+      aa_(rw_.rewrite_transition_system(), opts.use_uf_for_arr_eq),
+      abs_ts_(aa_.abstract_transition_system()), aae_(abs_ts_, aa_),
+      hr_(abs_ts_), opts_(opts), l2s_(l2s), un_(abs_ts_) {
 
   ic3ia::Logger & l = ic3ia::Logger::get();
   l.set_verbosity(verbosity);
@@ -142,7 +137,6 @@ ProphIC3::ProphIC3(const ic3ia::TransitionSystem &ts, const ic3ia::Options &opts
   }
   reducer_ = msat_create_shared_env(cfg, abs_ts_.get_env());
   msat_destroy_config(cfg);
-
 }
 
 ProphIC3::~ProphIC3()
@@ -1014,9 +1008,26 @@ void ProphIC3::print_witness(msat_model model,
   logger(1) << endlog;
   logger(1) << "+++++++++++++++++++++ UF values ++++++++++++++++++++"
             << endlog;
-  for (auto elem : abstractor.read_ufs()) {
-    msat_term arr = elem.first;
-    msat_decl fun = elem.second;
+
+  // collect all the arrays
+  TermList abs_arrays;
+  for (auto sv : abs_ts_.statevars()) {
+    msat_term concsv = abstractor.concrete(sv);
+    msat_type typ = msat_term_get_type(concsv);
+    if (msat_is_array_type(msat_env_, typ, nullptr, nullptr)) {
+      abs_arrays.push_back(sv);
+    }
+  }
+  for (auto iv : abs_ts_.inputvars()) {
+    msat_term conciv = abstractor.concrete(iv);
+    msat_type typ = msat_term_get_type(conciv);
+    if (msat_is_array_type(msat_env_, typ, nullptr, nullptr)) {
+      abs_arrays.push_back(iv);
+    }
+  }
+
+  for (msat_term arr : abs_arrays) {
+    msat_decl fun = abstractor.get_read(arr);
 
     // skip if not a variable
     // a variable is a term with no children and no built-in

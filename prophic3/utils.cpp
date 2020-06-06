@@ -244,8 +244,6 @@ Options get_options(int argc, const char **argv)
           ret.use_hist_eq_initial_preds = false;
         } else if (a == "-max-array-axioms") {
           ok = getint(++i, ret.max_array_axioms);
-        } else if (a == "-multi-uf") {
-          ret.multi_uf = true;
         } else if (a == "-no-unsatcore-array-refiner") {
           ret.unsatcore_array_refiner = false;
         } else if (a == "-no-track-proph-vars-pred") {
@@ -302,8 +300,6 @@ Options get_options(int argc, const char **argv)
                        "as initial predicates"
                     << "\n   -max-array-axioms : maximum number of array "
                        "axioms per iteration (per BMC model)"
-                    << "\n   -multi-uf : use a read/write UF per array "
-                       "variable instead of per array type"
                     << "\n   -no-unsatcore-array-refiner : don't use unsatcore "
                        "in the array refiner to filter axioms "
                     << "\n   -no-track-proph-vars-pred : don't track prophecy "

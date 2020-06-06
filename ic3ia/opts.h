@@ -60,7 +60,6 @@ struct Options {
     bool use_uf_for_arr_eq;
     bool use_hist_eq_initial_preds;
     int max_array_axioms;
-    bool multi_uf;
     bool unsatcore_array_refiner;
     bool track_proph_vars_pred;
     bool axiom_reduction;
@@ -103,7 +102,6 @@ struct Options {
         use_uf_for_arr_eq = true;
         use_hist_eq_initial_preds = true;
         max_array_axioms = 0;
-        multi_uf = false;
         unsatcore_array_refiner = true;
         track_proph_vars_pred = true;
         axiom_reduction = true;
