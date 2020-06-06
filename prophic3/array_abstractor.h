@@ -127,6 +127,9 @@ public:
     /* abstracts a term */
     msat_term construct_abstract_term(msat_term term);
 
+    /* abstracts all array equalities in the given term */
+    void construct_abstract_array_equalities();
+
     /* creates lambda indices for each sort */
     void create_lambdas();
 

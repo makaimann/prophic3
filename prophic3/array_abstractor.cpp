@@ -59,9 +59,22 @@ msat_term ArrayAbstractor::abstract(msat_term conc_term)
                      msat_decl write = d->super->get_write(abs_arr);
                      msat_term cached_args[3] = {abs_arr, abs_idx, abs_elem};
                      d->cache[t] = msat_make_uf(e, write, &cached_args[0]);
-                   }
-                   else if (arity > 0)
-                   {
+                   } else if (d->super->use_eq_uf_ &&
+                              msat_term_is_equal(e, t) &&
+                              msat_is_array_type(
+                                  e,
+                                  msat_term_get_type(msat_term_get_arg(t, 0)),
+                                  nullptr, nullptr)) {
+                     assert(arity == 2);
+                     msat_term cached_args[2] = {
+                         d->cache.at(msat_term_get_arg(t, 0)),
+                         d->cache.at(msat_term_get_arg(t, 1))};
+
+                     std::string typestr =
+                         msat_type_repr(msat_term_get_type(cached_args[0]));
+                     msat_decl equf = d->super->eq_ufs_.at(typestr);
+                     d->cache[t] = msat_make_uf(e, equf, cached_args);
+                   } else if (arity > 0) {
                      // rebuild term
                      msat_decl dec = msat_term_get_decl(t);
                      TermList args;
@@ -72,9 +85,7 @@ msat_term ArrayAbstractor::abstract(msat_term conc_term)
 
                      // might have to have a special-case for ite, like in construct_abstract_term
                      d->cache[t] = msat_make_term(e, dec, &args[0]);
-                   }
-                   else
-                   {
+                   } else {
                      // just map to itself
                      d->cache[t] = t;
                    }
@@ -86,6 +97,108 @@ msat_term ArrayAbstractor::abstract(msat_term conc_term)
   msat_visit_term(msat_env_, conc_term, visit, &data);
   assert(data.cache.find(conc_term) != data.cache.end());
   return data.cache.at(conc_term);
+}
+
+msat_term ArrayAbstractor::concrete(msat_term abs_term) {
+  if (concrete_cache_.find(abs_term) != concrete_cache_.end()) {
+    return concrete_cache_.at(abs_term);
+  }
+
+  struct Data {
+    ArrayAbstractor *super;
+    TermMap cache;
+    Data(ArrayAbstractor *a) : super(a) {}
+  };
+
+  auto visit = [](msat_env e, msat_term t, int preorder,
+                  void *data) -> msat_visit_status {
+    Data *d = static_cast<Data *>(data);
+    size_t arity = msat_term_arity(t);
+    msat_decl dec = msat_term_get_decl(t);
+    if (!preorder) {
+      if (is_variable(e, t)) {
+        assert(d->super->concrete_cache_.find(t) !=
+               d->super->concrete_cache_.end());
+        d->cache[t] = d->super->concrete_cache_.at(t);
+      } else if (msat_term_is_uf(e, t)) {
+        size_t dec_id = msat_decl_id(dec);
+        bool abs_select = false;
+        bool abs_store = false;
+        bool abs_eq = false;
+        for (auto elem : d->super->type2read_) {
+          if (dec_id == msat_decl_id(elem.second)) {
+            abs_select = true;
+          }
+        }
+
+        for (auto elem : d->super->type2write_) {
+          if (dec_id == msat_decl_id(elem.second)) {
+            abs_store = true;
+          }
+        }
+
+        for (auto elem : d->super->eq_ufs_) {
+          if (dec_id == msat_decl_id(elem.second)) {
+            abs_eq = true;
+          }
+        }
+
+        assert(!(abs_select && abs_store));
+        assert(!(abs_select && abs_eq));
+        assert(!(abs_store && abs_eq));
+
+        if (abs_select) {
+          assert(arity == 2);
+          msat_term arr = d->cache.at(msat_term_get_arg(t, 0));
+          msat_term idx = d->cache.at(msat_term_get_arg(t, 1));
+          d->cache[t] = msat_make_array_read(e, arr, idx);
+        } else if (abs_store) {
+          assert(arity == 3);
+          msat_term arr = d->cache.at(msat_term_get_arg(t, 0));
+          msat_term idx = d->cache.at(msat_term_get_arg(t, 1));
+          msat_term elem = d->cache.at(msat_term_get_arg(t, 2));
+          d->cache[t] = msat_make_array_write(e, arr, idx, elem);
+        } else if (abs_eq) {
+          assert(arity == 2);
+          msat_term arr0 = d->cache.at(msat_term_get_arg(t, 0));
+          msat_term arr1 = d->cache.at(msat_term_get_arg(t, 1));
+          d->cache[t] = msat_make_eq(e, arr0, arr1);
+        } else {
+          // just rebuild the term
+          TermList args;
+          args.reserve(arity);
+          for (size_t i = 0; i < arity; ++i) {
+            args.push_back(d->cache.at(msat_term_get_arg(t, i)));
+          }
+          d->cache[t] = msat_make_term(e, dec, &args[0]);
+        }
+      } else if (arity > 0) {
+        // rebuild term
+        TermList args;
+        args.reserve(arity);
+        for (size_t i = 0; i < arity; ++i) {
+          args.push_back(d->cache.at(msat_term_get_arg(t, i)));
+        }
+
+        // might have to have a special-case for ite, like in
+        // construct_abstract_term
+        if (msat_term_is_equal(e, t)) {
+          d->cache[t] = msat_make_eq(e, args[0], args[1]);
+        } else {
+          d->cache[t] = msat_make_term(e, dec, &args[0]);
+        }
+      } else {
+        // just map to itself
+        d->cache[t] = t;
+      }
+    }
+    return MSAT_VISIT_PROCESS;
+  };
+
+  Data data(this);
+  msat_visit_term(msat_env_, abs_term, visit, &data);
+  assert(data.cache.find(abs_term) != data.cache.end());
+  return data.cache.at(abs_term);
 }
 
 msat_term ArrayAbstractor::make_eq(msat_env env, msat_term lhs, msat_term rhs) const
@@ -168,68 +281,8 @@ void ArrayAbstractor::do_abstraction()
   // use the same uf for all curr/next combinations
   if (use_eq_uf_)
   {
-
-    // first, gather all the equalities
-    TermSet equalities;
-    for (auto elem : witnesses_)
-    {
-      equalities.insert(elem.first);
-    }
-    for(auto e : stores_)
-    {
-      equalities.insert(e);
-    }
-
-    // abstract all equalities
-    TermMap eq_substitution_map;
-    for (auto e : equalities)
-    {
-      assert(msat_term_arity(e) == 2);
-
-      msat_term lhs = msat_term_get_arg(e, 0);
-      msat_term rhs = msat_term_get_arg(e, 1);
-      eq_substitution_map[e] = make_eq(msat_env_, lhs, rhs);
-    }
-
-    // now substitute those abstract equalities
-    TermSet new_stores;
-    TermMap new_witnesses;
-    TermList to_subst;
-    TermList vals;
-    msat_term val;
-    for (auto s : stores_)
-    {
-      if (eq_substitution_map.find(s) == eq_substitution_map.end())
-      {
-        std::cout << "Missing " << msat_to_smtlib2_term(msat_env_, s) << ":" << msat_term_id(s) << std::endl;
-        throw std::exception();
-      }
-      val = eq_substitution_map.at(s);
-      new_stores.insert(val);
-      to_subst.push_back(s);
-      vals.push_back(val);
-    }
-    stores_ = new_stores;
-
-    for (auto elem : witnesses_)
-    {
-      val = eq_substitution_map.at(elem.first);
-      new_witnesses[val] = elem.second;
-      to_subst.push_back(elem.first);
-      vals.push_back(val);
-    }
-    witnesses_ = new_witnesses;
-
-    new_init = msat_apply_substitution(msat_env_, new_init, to_subst.size(),
-                                       &to_subst[0], &vals[0]);
-    new_trans = msat_apply_substitution(msat_env_, new_trans, to_subst.size(),
-                                       &to_subst[0], &vals[0]);
-    new_prop = msat_apply_substitution(msat_env_, new_prop, to_subst.size(),
-                                       &to_subst[0], &vals[0]);
-
-    // re-initialize
-    abs_ts_.initialize(new_state_vars_, new_init, new_trans, new_prop,
-                       conc_ts_.live_prop());
+    // modifies abs_ts_
+    construct_abstract_array_equalities();
   }
 
   // make const arrays frozenvars
@@ -706,6 +759,76 @@ msat_term ArrayAbstractor::construct_abstract_term(msat_term term) {
   msat_visit_term(msat_env_, term, visit, &data);
   assert(abstraction_cache_.find(term) != abstraction_cache_.end());
   return abstraction_cache_.at(term);
+}
+
+void ArrayAbstractor::construct_abstract_array_equalities() {
+  assert(use_eq_uf_);
+
+  // first, gather all the equalities
+  TermSet equalities;
+  for (auto elem : witnesses_) {
+    equalities.insert(elem.first);
+  }
+  for (auto e : stores_) {
+    equalities.insert(e);
+  }
+
+  // abstract all equalities
+  TermMap eq_substitution_map;
+  for (auto e : equalities) {
+    assert(msat_term_arity(e) == 2);
+
+    msat_term lhs = msat_term_get_arg(e, 0);
+    msat_term rhs = msat_term_get_arg(e, 1);
+    // make eq will use an abstract equality because of use_eq_uf_ option
+    msat_term abs_eq = make_eq(msat_env_, lhs, rhs);
+    eq_substitution_map[e] = abs_eq;
+  }
+
+  // update abstraction_cache_
+  for (auto elem : abstraction_cache_) {
+    if (eq_substitution_map.find(elem.second) != eq_substitution_map.end()) {
+      abstraction_cache_[elem.first] = eq_substitution_map.at(elem.second);
+    }
+  }
+
+  // now substitute those abstract equalities
+  TermSet new_stores;
+  TermMap new_witnesses;
+  TermList to_subst;
+  TermList vals;
+  msat_term val;
+  for (auto s : stores_) {
+    if (eq_substitution_map.find(s) == eq_substitution_map.end()) {
+      std::cout << "Missing " << msat_to_smtlib2_term(msat_env_, s) << ":"
+                << msat_term_id(s) << std::endl;
+      throw std::exception();
+    }
+    val = eq_substitution_map.at(s);
+    new_stores.insert(val);
+    to_subst.push_back(s);
+    vals.push_back(val);
+  }
+  stores_ = new_stores;
+
+  for (auto elem : witnesses_) {
+    val = eq_substitution_map.at(elem.first);
+    new_witnesses[val] = elem.second;
+    to_subst.push_back(elem.first);
+    vals.push_back(val);
+  }
+  witnesses_ = new_witnesses;
+
+  msat_term new_init = msat_apply_substitution(
+      msat_env_, abs_ts_.init(), to_subst.size(), &to_subst[0], &vals[0]);
+  msat_term new_trans = msat_apply_substitution(
+      msat_env_, abs_ts_.trans(), to_subst.size(), &to_subst[0], &vals[0]);
+  msat_term new_prop = msat_apply_substitution(
+      msat_env_, abs_ts_.prop(), to_subst.size(), &to_subst[0], &vals[0]);
+
+  // re-initialize
+  abs_ts_.initialize(new_state_vars_, new_init, new_trans, new_prop,
+                     conc_ts_.live_prop());
 }
 
 void ArrayAbstractor::create_lambdas() {
