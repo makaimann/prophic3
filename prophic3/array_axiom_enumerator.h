@@ -40,6 +40,7 @@ public:
       if (!ts.contains_next(idx))
       {
         curr_indices_[typestr].insert(idx);
+        curr_indices_no_witnesses_[typestr].insert(idx);
       }
       orig_indices_[typestr].insert(idx);
       orig_indices_set_.insert(idx);
@@ -55,17 +56,58 @@ public:
       }
     }
 
+    // remove witnesses from curr_indices_no_witnesses_
+    for (auto witelem : abstractor_.witnesses()) {
+      for (auto cielem : curr_indices_no_witnesses_) {
+        curr_indices_no_witnesses_[cielem.first].erase(witelem.second);
+      }
+    }
+
     // Find all the array equalities
     collect_equalities(ts.init(), init_equalities_);
     collect_equalities(ts.trans(), trans_equalities_);
     collect_equalities(ts.prop(), prop_equalities_);
+
+    // Find terms that match index types -- for fallback search for prophecy
+    // vars
+    collect_terms(ts.init());
+    collect_terms(ts.trans());
+    collect_terms(ts.prop());
+
+    ic3ia::logger(2) << "Found the following terms for prophecy candidates"
+                     << ic3ia::endlog;
+    for (auto elem : non_idx_terms_) {
+      ic3ia::logger(2) << elem.first << ic3ia::endlog;
+      for (auto t : elem.second) {
+        ic3ia::logger(2) << "\t" << msat_to_smtlib2_term(msat_env_, t)
+                         << ic3ia::endlog;
+      }
+    }
   }
 
   // TODO: adapt the private methods for the new representation (not using
   // structs for each type of equality) then have methods to enumerate different
   // kinds of axioms
 
-  ic3ia::TermSet orig_indices() const { return orig_indices_set_; };
+  const ic3ia::TermSet &orig_indices() const { return orig_indices_set_; };
+
+  const std::unordered_map<std::string, ic3ia::TermSet> &curr_indices() const {
+    return curr_indices_;
+  };
+
+  const std::unordered_map<std::string, ic3ia::TermSet> &non_idx_terms() const {
+    return non_idx_terms_;
+  };
+
+  // TODO: think about caching this -- but we also want to update it
+  // periodically as new terms are added
+  /**
+   *  Enumerates terms obtained by adding two terms drawn from indices (except
+   * witnesses) and the general terms in the transition system from
+   * non_idx_terms
+   */
+  std::unordered_map<std::string, ic3ia::TermSet>
+  octagonal_addition_domain_terms() const;
 
   // Note: not differentiating between zero-step and one-step axioms
   //       just enumerating them all together
@@ -81,23 +123,35 @@ public:
    */
   ic3ia::TermSet lambda_alldiff_axioms();
 
-  /** Enumerate equality axioms over indices at all times
+  /** Enumerate equality axioms over indices at j
+   *  indices - the index sets to enumerate axiom over
+   *  j - the time step of the indices (they haven't been unrolled yet)
    *  un - the unroller to use for timing
    *  k - the maximum time-step (inclusive)
    */
-  std::vector<ic3ia::TermSet> equality_axioms_all_idx_times(ic3ia::Unroller &un, size_t k);
+  ic3ia::TermSet equality_axioms_idx_time(
+      const std::unordered_map<std::string, ic3ia::TermSet> &indices, size_t j,
+      ic3ia::Unroller &un, size_t k);
 
-  /** Enumerate store axioms over indices at all times
+  /** Enumerate store axioms over indices at j
+   *  indices - the index sets to enumerate axiom over
+   *  j - the time step of the indices (they haven't been unrolled yet)
    *  un - the unroller to use for timing
    *  k - the maximum time-step (inclusive)
    */
-  std::vector<ic3ia::TermSet> store_axioms_all_idx_times(ic3ia::Unroller &un, size_t k);
+  ic3ia::TermSet store_axioms_idx_time(
+      const std::unordered_map<std::string, ic3ia::TermSet> &indices, size_t j,
+      ic3ia::Unroller &un, size_t k);
 
-  /** Enumerate const array axioms over indices at all times
+  /** Enumerate const array axioms over indices j
+   *  indices - the index sets to enumerate axiom over
+   *  j - the time step of the indices (they haven't been unrolled yet)
    *  un - the unroller to use for timing
    *  k - the maximum time-step (inclusive)
    */
-  std::vector<ic3ia::TermSet> const_array_axioms_all_idx_times(ic3ia::Unroller &un, size_t k);
+  ic3ia::TermSet const_array_axioms_idx_time(
+      const std::unordered_map<std::string, ic3ia::TermSet> &indices, size_t j,
+      ic3ia::Unroller &un, size_t k);
 
   /* Adds an index to the index set (mostly used for adding prophecy vars) */
   void add_index(msat_type _type, msat_term i);
@@ -120,7 +174,11 @@ private:
   ic3ia::TermSet orig_indices_set_;
   std::unordered_map<std::string, ic3ia::TermSet> state_indices_;
   std::unordered_map<std::string, ic3ia::TermSet> curr_indices_;
+  std::unordered_map<std::string, ic3ia::TermSet> curr_indices_no_witnesses_;
   std::unordered_map<std::string, ic3ia::TermSet> all_indices_;
+  // terms that are not used as indices but will be enumerated
+  // as indices as a fallback to find prophecy variables
+  std::unordered_map<std::string, ic3ia::TermSet> non_idx_terms_;
   // equality ufs present in init
   ic3ia::TermSet init_equalities_;
   // equality ufs present in trans
@@ -184,9 +242,22 @@ private:
                               msat_term witness, ic3ia::TermSet &indices,
                               msat_term lambda);
 
+  // helpers for enumerate_eq_uf_axioms
+  void enumerate_equality_axioms(ic3ia::TermSet &axioms, msat_decl read0,
+                                 msat_decl read1, msat_type orig_idx_type,
+                                 msat_term eq_uf, ic3ia::TermSet &indices,
+                                 msat_term lambda);
+
+  void eq_witness_axiom(ic3ia::TermSet &axioms, msat_decl read0,
+                        msat_decl read1, msat_term eq_uf, msat_term witness);
+
   /* Collect all array equality UFs from the given term and add to set s */
   void collect_equalities(msat_term term, ic3ia::TermSet & s);
 
+  /* Collect all the terms that match a type from the index set
+   * assumes all_indices_ is already populated
+   */
+  void collect_terms(msat_term term);
 };
   } // namespace prophic3
 

@@ -50,9 +50,6 @@ namespace prophic3
     size_t current_k_{0};
     size_t num_proph_vars_{0};
 
-    // TODO: Look into using unroller's untime feature
-    ic3ia::TermMap untime_cache;
-
     /* Keep track of created prophecy vars */
     ic3ia::TermMap frozen_proph_vars_;
 
@@ -67,6 +64,13 @@ namespace prophic3
      * any new axioms
      */
     bool fix_bmc();
+
+    /** Check axiom in the current refiner_ model
+     *  used as a helper for fix_bmc
+     *  @param axiom_to_check - the axiom to check
+     *  @return true iff the axiom was violated
+     */
+    bool is_axiom_violated(msat_term axiom_to_check) const;
 
     /* Helper for fix_bmc */
     void refine_abs_ts(ic3ia::TermSet & untimed_axioms);

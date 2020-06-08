@@ -1,0 +1,33 @@
+MODULE main
+-- checks that if an arbitrary predicate holds on every piece of data inserted to FIFO
+-- then it holds on every data exiting the FIFO
+VAR
+  fifo : array integer of integer;
+  wptr : integer;
+  rptr : integer;
+  push : boolean;
+  pop  : boolean;
+
+IVAR
+  data : integer;
+
+FUN
+  P : integer -> boolean;
+
+DEFINE depth := 8;
+
+INIT wptr = 0
+INIT rptr = 0
+
+TRANS next(fifo) = (push ? WRITE(fifo, wptr, data) : fifo)
+TRANS next(wptr) = (push ? wptr + 1 : wptr)
+TRANS next(rptr) = (pop  ? rptr + 1 : rptr)
+
+-- predicate holds on incoming data
+TRANS push -> P(data)
+
+-- environmental constraints
+INVAR (wptr = rptr) -> !pop
+INVAR (wptr - rptr >= depth) -> !push
+
+INVARSPEC pop -> P(READ(fifo, rptr))

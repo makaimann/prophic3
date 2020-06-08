@@ -66,6 +66,8 @@ struct Options {
     bool axiom_reduction;
     bool kind;
     bool state_promotion;
+    bool abs_bmc_only;
+    bool enum_grammar_search;
 
     Options()
     {
@@ -107,6 +109,8 @@ struct Options {
         axiom_reduction = true;
         kind = false;
         state_promotion=false;
+        abs_bmc_only = false;
+        enum_grammar_search = false;
     }
 };
 
