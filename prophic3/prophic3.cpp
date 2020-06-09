@@ -106,18 +106,13 @@ std::string format_term(msat_env e, msat_term t, std::string indentation = "") {
   return ostr.str();
 }
 
-ProphIC3::ProphIC3(const ic3ia::TransitionSystem &ts, const ic3ia::Options &opts,
-                   ic3ia::LiveEncoder &l2s, unsigned int verbosity)
-  : msat_env_(ts.get_env()),
-    conc_ts_(ts),
-    rw_(conc_ts_),
-    aa_(rw_.rewrite_transition_system(), opts.use_uf_for_arr_eq, opts.multi_uf),
-    abs_ts_(aa_.abstract_transition_system()),
-    aae_(abs_ts_, aa_),
-    hr_(abs_ts_),
-    opts_(opts),
-    l2s_(l2s),
-    un_(abs_ts_) {
+ProphIC3::ProphIC3(const ic3ia::TransitionSystem &ts,
+                   const ic3ia::Options &opts, ic3ia::LiveEncoder &l2s,
+                   unsigned int verbosity)
+    : msat_env_(ts.get_env()), conc_ts_(ts), rw_(conc_ts_),
+      aa_(rw_.rewrite_transition_system(), opts.use_uf_for_arr_eq),
+      abs_ts_(aa_.abstract_transition_system()), aae_(abs_ts_, aa_),
+      hr_(abs_ts_), opts_(opts), l2s_(l2s), un_(abs_ts_) {
 
   ic3ia::Logger & l = ic3ia::Logger::get();
   l.set_verbosity(verbosity);
@@ -142,7 +137,6 @@ ProphIC3::ProphIC3(const ic3ia::TransitionSystem &ts, const ic3ia::Options &opts
   }
   reducer_ = msat_create_shared_env(cfg, abs_ts_.get_env());
   msat_destroy_config(cfg);
-
 }
 
 ProphIC3::~ProphIC3()
@@ -414,11 +408,8 @@ bool ProphIC3::fix_bmc()
         // TODO: use pointers or something to avoid copying the TermSets into
         // the vector
         vector<TermSet> timed_axioms;
-        const unordered_map<string, TermSet> &curr_indices =
-            aae_.curr_indices();
-
-        const unordered_map<string, TermSet> &non_idx_terms =
-            aae_.non_idx_terms();
+        const TermSet &curr_indices = aae_.curr_indices();
+        const TermSet &non_idx_int_terms = aae_.non_idx_int_terms();
 
         // Heuristic: stop once you find timed axioms going backward from
         // property violation
@@ -483,11 +474,11 @@ bool ProphIC3::fix_bmc()
                   << endlog;
               timed_axioms.clear();
               timed_axioms.push_back(aae_.equality_axioms_idx_time(
-                  non_idx_terms, j, un_, current_k_));
+                  non_idx_int_terms, j, un_, current_k_));
               timed_axioms.push_back(aae_.store_axioms_idx_time(
-                  non_idx_terms, j, un_, current_k_));
+                  non_idx_int_terms, j, un_, current_k_));
               timed_axioms.push_back(aae_.const_array_axioms_idx_time(
-                  non_idx_terms, j, un_, current_k_));
+                  non_idx_int_terms, j, un_, current_k_));
 
               for (auto timed_axiom_set : timed_axioms) {
                 if (opts_.max_array_axioms > 0 &&
@@ -521,7 +512,7 @@ bool ProphIC3::fix_bmc()
               logger(1) << "checking for prophecy targets over an octagonal "
                            "abstract domain with addition at "
                         << j << endlog;
-              unordered_map<string, TermSet> octagonal_addition_domain =
+              TermSet octagonal_addition_domain =
                   aae_.octagonal_addition_domain_terms();
 
               timed_axioms.clear();
@@ -864,18 +855,15 @@ TermSet ProphIC3::detect_indices(msat_term term)
 TermMap ProphIC3::add_frozen_proph_vars(const ic3ia::TermMap & proph_targets)
 {
   TermMap idx_to_proph;
-  TermTypeMap & orig_types = aa_.orig_types();
   msat_term equalities = msat_make_true(msat_env_);
 
   std::string name;
   msat_term t;
   msat_type t_type;
-  msat_type t_orig_type;
   for (auto elem : proph_targets)
   {
     t = elem.second;
     t_type = msat_term_get_type(t);
-    t_orig_type = orig_types.at(t);
 
     name = "proph" + std::to_string(num_proph_vars_++);
     msat_decl proph_decl =
@@ -893,10 +881,6 @@ TermMap ProphIC3::add_frozen_proph_vars(const ic3ia::TermMap & proph_targets)
     // map the original target (i.e. an index) to proph
     idx_to_proph[elem.first] = proph;
 
-    // update type map for this prophecy
-    // should match the target
-    orig_types[proph] = t_orig_type;
-
     msat_decl proph_decl_next =
       msat_declare_function(msat_env_, (name + ".next").c_str(), t_type);
     msat_term proph_next = msat_make_constant(msat_env_, proph_decl_next);
@@ -904,7 +888,7 @@ TermMap ProphIC3::add_frozen_proph_vars(const ic3ia::TermMap & proph_targets)
 
     // add as an index -- must be after making it a statevar
     // so that the axiom enumerator knows it's a state
-    aae_.add_index(t_orig_type, proph);
+    aae_.add_index(t_type, proph);
 
     // make it frozen
     abs_ts_.add_trans(msat_make_eq(msat_env_, proph_next, proph));
@@ -927,8 +911,6 @@ TermMap ProphIC3::add_history_vars(const std::unordered_map<msat_term, size_t> t
     logger(1) << "\t" << msat_to_smtlib2_term(msat_env_, un_.untime(elem.first)) << ":" << elem.second << endlog;
   }
 
-  TermTypeMap & orig_types = aa_.orig_types();
-
   // just the history variables that need to be refined over
   TermMap hist_vars_to_refine;
   // all created history variables (including intermediate ones)
@@ -941,14 +923,13 @@ TermMap ProphIC3::add_history_vars(const std::unordered_map<msat_term, size_t> t
     msat_term v = hr_.hist_var(untimed_target, elem.second, all_created_hist_vars);
     // update type maps -- need to keep track of this for proph var indices
     try {
-      _type = orig_types.at(untimed_target);
+      _type = msat_term_get_type(untimed_target);
     } catch (std::out_of_range e) {
       // HACK: sometimes rewriting causes the original type to be lost for the
       // octagonal domain for now just work around it and assume they're
       // integers
       _type = msat_term_get_type(untimed_target);
     }
-    orig_types[v] = _type;
     hist_vars_to_refine[elem.first] = v;
   }
 
@@ -986,8 +967,6 @@ void ProphIC3::print_witness(msat_model model,
                              ArrayAxiomEnumerator &aae_) {
 
   ArrayAbstractor &abstractor = aae_.get_abstractor();
-  TermTypeMap &orig_types = abstractor.orig_types();
-
   logger(1) << "+++++++++++++++++++++ FAILED +++++++++++++++++++" << endlog;
   logger(1) << "prop: " << msat_to_smtlib2_term(msat_env_, abs_ts_.prop())
             << endlog;
@@ -1014,9 +993,22 @@ void ProphIC3::print_witness(msat_model model,
   logger(1) << endlog;
   logger(1) << "+++++++++++++++++++++ UF values ++++++++++++++++++++"
             << endlog;
-  for (auto elem : abstractor.read_ufs()) {
-    msat_term arr = elem.first;
-    msat_decl fun = elem.second;
+
+  // collect all the arrays
+  TermList abs_arrays;
+  for (auto sv : abs_ts_.statevars()) {
+    if (msat_is_array_type(msat_env_, abstractor.get_orig_type(sv), nullptr, nullptr)) {
+      abs_arrays.push_back(sv);
+    }
+  }
+  for (auto iv : abs_ts_.inputvars()) {
+    if (msat_is_array_type(msat_env_, abstractor.get_orig_type(iv), nullptr, nullptr)) {
+      abs_arrays.push_back(iv);
+    }
+  }
+
+  for (msat_term arr : abs_arrays) {
+    msat_decl fun = abstractor.get_read(arr);
 
     // skip if not a variable
     // a variable is a term with no children and no built-in
@@ -1030,17 +1022,17 @@ void ProphIC3::print_witness(msat_model model,
 
     TermSet indices;
     msat_type idx_type;
-    bool is_array = msat_is_array_type(msat_env_, orig_types.at(arr), &idx_type, nullptr);
+    bool is_array = msat_is_array_type(msat_env_, abstractor.get_orig_type(arr),
+                                       &idx_type, nullptr);
     assert(is_array);
-    string typestr = msat_type_repr(idx_type);
-    for (auto i : aae_.all_indices().at(typestr)) {
+    for (auto i : aae_.all_indices()) {
       for (size_t k = 0; k <= reached_k; ++k) {
         indices.insert(msat_model_eval(model, un_.at_time(i, k)));
       }
     }
 
     for (auto w : abstractor.witnesses()) {
-      if (!msat_type_equals(idx_type, orig_types.at(w.second))) {
+      if (!msat_type_equals(idx_type, abstractor.get_orig_type(w.second))) {
         continue;
       }
       for (size_t k = 0; k <= reached_k; ++k) {
