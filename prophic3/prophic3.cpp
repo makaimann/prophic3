@@ -845,9 +845,9 @@ TermSet ProphIC3::detect_indices(msat_term term)
                  return MSAT_VISIT_PROCESS;
                };
 
-  const TermSet & orig_indices = aae_.orig_indices();
+  const TermSet &all_indices = aae_.all_indices();
   TermSet out_indices;
-  Data data(orig_indices, out_indices);
+  Data data(all_indices, out_indices);
   msat_visit_term(msat_env_, term, visit, &data);
   return out_indices;
 }

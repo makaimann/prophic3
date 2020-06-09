@@ -34,7 +34,6 @@ public:
         curr_indices_.insert(idx);
         curr_indices_no_witnesses_.insert(idx);
       }
-      orig_indices_.insert(idx);
       all_indices_.insert(idx);
     }
 
@@ -67,7 +66,7 @@ public:
   // structs for each type of equality) then have methods to enumerate different
   // kinds of axioms
 
-  const ic3ia::TermSet &orig_indices() const { return orig_indices_; };
+  const ic3ia::TermSet &all_indices() const { return all_indices_; };
 
   const ic3ia::TermSet &curr_indices() const { return curr_indices_; };
 
@@ -144,7 +143,6 @@ private:
   const ic3ia::TransitionSystem &ts_;
   ArrayAbstractor &abstractor_;
   msat_env msat_env_;
-  ic3ia::TermSet orig_indices_;
   ic3ia::TermSet state_indices_;
   ic3ia::TermSet curr_indices_;
   ic3ia::TermSet curr_indices_no_witnesses_;
