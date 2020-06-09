@@ -997,16 +997,12 @@ void ProphIC3::print_witness(msat_model model,
   // collect all the arrays
   TermList abs_arrays;
   for (auto sv : abs_ts_.statevars()) {
-    msat_term concsv = abstractor.concrete(sv);
-    msat_type typ = msat_term_get_type(concsv);
-    if (msat_is_array_type(msat_env_, typ, nullptr, nullptr)) {
+    if (msat_is_array_type(msat_env_, abstractor.get_orig_type(sv), nullptr, nullptr)) {
       abs_arrays.push_back(sv);
     }
   }
   for (auto iv : abs_ts_.inputvars()) {
-    msat_term conciv = abstractor.concrete(iv);
-    msat_type typ = msat_term_get_type(conciv);
-    if (msat_is_array_type(msat_env_, typ, nullptr, nullptr)) {
+    if (msat_is_array_type(msat_env_, abstractor.get_orig_type(iv), nullptr, nullptr)) {
       abs_arrays.push_back(iv);
     }
   }
