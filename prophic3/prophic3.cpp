@@ -271,6 +271,9 @@ int ProphIC3::witness(std::vector<TermList> & out)
 
 bool ProphIC3::fix_bmc()
 {
+  // mapping from timed version of untimeable axioms to the untimed version
+  TermMap timed_to_untimed;
+
   // untimed axioms to add to transition system
   TermSet untimed_axioms_to_add;
   // stores timed axioms that need to be refined
@@ -295,8 +298,9 @@ bool ProphIC3::fix_bmc()
                return msat_make_constant(refiner_, d);
              };
 
-  TermList labels;
-  TermList label2axiom;
+  TermSet labels;
+  TermMap axiom2label; // maps untimed axiom to a label
+  TermMap label2axiom; // maps label to an untimed axiom
   // Heuristic: fix bmc up until it goes two steps without adding new axioms
   size_t num_steps_no_axioms = 0;
   while (num_steps_no_axioms < 2) {
@@ -319,11 +323,7 @@ bool ProphIC3::fix_bmc()
     msat_reset_env(refiner_);
     msat_assert_formula(refiner_, refinement_formula_);
 
-    if (opts_.unsatcore_array_refiner) {
-      broken = msat_solve_with_assumptions(refiner_, &labels[0], labels.size());
-    } else {
-      broken = msat_solve(refiner_) == MSAT_SAT;
-    }
+    broken = msat_solve(refiner_) == MSAT_SAT;
 
 
     // note: init_eq_axioms should come first (see comment about max_k below)
@@ -371,6 +371,7 @@ bool ProphIC3::fix_bmc()
             msat_term timed_axiom = un_.at_time(ax, k);
             if (is_axiom_violated(timed_axiom)) {
               violated_axioms.insert(timed_axiom);
+              timed_to_untimed[timed_axiom] = ax;
               untimed_axioms_to_add.insert(ax);
               ++lemma_cnt;
             }
@@ -395,6 +396,7 @@ bool ProphIC3::fix_bmc()
             msat_term timed_axiom = un_.at_time(ax, k);
             if (is_axiom_violated(timed_axiom)) {
               violated_axioms.insert(timed_axiom);
+              timed_to_untimed[timed_axiom] = ax;
               untimed_axioms_to_add.insert(ax);
               lemma_cnt++;
             }
@@ -565,20 +567,48 @@ bool ProphIC3::fix_bmc()
         logger(1) << "Found " << violated_axioms.size() << " violated TIMED axioms!" << endlog;
       }
 
-      for (auto ax : violated_axioms) {
+      for (auto timed_ax : violated_axioms) {
         if (opts_.unsatcore_array_refiner) {
-          msat_term l = lbl(ax);
-          labels.push_back(l);
-          label2axiom.push_back(ax);
-          msat_assert_formula(refiner_, msat_make_or(refiner_, msat_make_not(refiner_, l), ax));
+          msat_term l;
+          MSAT_MAKE_ERROR_TERM(l);
+          if (timed_to_untimed.find(timed_ax) != timed_to_untimed.end())
+          {
+            // this was an untimeable axiom
+            msat_term ax = timed_to_untimed.at(timed_ax);
+            if (axiom2label.find(ax) != axiom2label.end())
+            {
+              l = axiom2label.at(ax);
+              labels.insert(l);
+            }
+            else
+            {
+              // we need to make a new label
+              // this is the first version of this untimed axiom that we've seen
+              l = lbl(ax);
+              labels.insert(l);
+              axiom2label[ax] = l;
+              label2axiom[l] = ax;
+            }
+          }
+          else
+          {
+            // make a new label for timed axioms
+            l = lbl(timed_ax);
+            labels.insert(l);
+            label2axiom[l] = timed_ax;
+          }
+
+          assert(!MSAT_ERROR_TERM(l));
+          msat_assert_formula(refiner_, msat_make_or(refiner_, msat_make_not(refiner_, l), timed_ax));
         } else {
-          msat_assert_formula(refiner_, ax);
+          msat_assert_formula(refiner_, timed_ax);
         }
       }
 
       if (opts_.unsatcore_array_refiner) {
-        broken = (msat_solve_with_assumptions(refiner_, &labels[0],
-                                              labels.size()) == MSAT_SAT);
+        TermList labels_vec(labels.begin(), labels.end());
+        broken = (msat_solve_with_assumptions(refiner_, &labels_vec[0],
+                                              labels_vec.size()) == MSAT_SAT);
       } else {
         broken = msat_solve(refiner_) == MSAT_SAT;
       }
@@ -640,9 +670,9 @@ bool ProphIC3::fix_bmc()
 
       logger(1) << "REFINER-UNSATCORE SIZE " << core.size() << endlog;
 
-      for (size_t i = 0; i < label2axiom.size(); ++i) {
-        msat_term a = label2axiom[i];
-        msat_term l = labels[i];
+      for (auto elem : label2axiom) {
+        msat_term l = elem.first;
+        msat_term a = elem.second;
         if (core.find(l) == core.end()) {
           untimed_axioms_to_add.erase(a);
           // TODO evaluate this more: should we remove timed axioms also
@@ -723,6 +753,7 @@ bool ProphIC3::fix_bmc()
       current_k_++;
     }
 
+    timed_to_untimed.clear();
     untimed_axioms_to_add.clear();
     timed_axioms_to_refine.clear();
 
