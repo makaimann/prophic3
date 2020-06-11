@@ -45,9 +45,9 @@ public:
     }
 
     // Find all the array equalities
-    collect_equalities(ts.init(), init_equalities_);
-    collect_equalities(ts.trans(), trans_equalities_);
-    collect_equalities(ts.prop(), prop_equalities_);
+    collect_equalities(ts.init(), array_equalities_);
+    collect_equalities(ts.trans(), array_equalities_);
+    collect_equalities(ts.prop(), array_equalities_);
 
     // Find integer terms -- for fallback grammar search
     collect_int_terms(ts.init());
@@ -85,9 +85,9 @@ public:
 
   // Note: not differentiating between zero-step and one-step axioms
   //       just enumerating them all together
-  ic3ia::TermSet init_eq_axioms();
-  ic3ia::TermSet trans_eq_axioms();
-  ic3ia::TermSet prop_eq_axioms();
+  // if only_cur set, filters out all axioms that are over non-current state
+  // vars
+  ic3ia::TermSet array_eq_axioms(bool only_cur);
 
   ic3ia::TermSet const_array_axioms();
   ic3ia::TermSet store_axioms();
@@ -150,12 +150,8 @@ private:
   // terms that are not used as indices but will be enumerated
   // as indices as a fallback to find prophecy variables
   ic3ia::TermSet non_idx_int_terms_;
-  // equality ufs present in init
-  ic3ia::TermSet init_equalities_;
-  // equality ufs present in trans
-  ic3ia::TermSet trans_equalities_;
-  // equality ufs present in prop
-  ic3ia::TermSet prop_equalities_;
+  // array equalities in transition system
+  ic3ia::TermSet array_equalities_;
 
   // map axioms to the index that was being refined over
   ic3ia::TermMap axioms_to_index_;

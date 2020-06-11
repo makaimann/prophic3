@@ -305,14 +305,9 @@ bool ProphIC3::fix_bmc()
 
     broken = msat_solve(refiner_) == MSAT_SAT;
 
-
-    // note: init_eq_axioms should come first (see comment about max_k below)
     std::vector<TermSet> untimed_axiom_sets = {
-        aae_.init_eq_axioms(), aae_.const_array_axioms(), aae_.prop_eq_axioms(),
-        aae_.store_axioms()};
-    if (current_k_ > 0) {
-      untimed_axiom_sets.push_back(aae_.trans_eq_axioms());
-    }
+        aae_.array_eq_axioms(current_k_ == 0), aae_.store_axioms(),
+        aae_.const_array_axioms()};
 
     while(broken)
     {

@@ -85,52 +85,34 @@ TermSet ArrayAxiomEnumerator::octagonal_addition_domain_terms() const {
 
 // public facing axiom enumeration
 
-ic3ia::TermSet ArrayAxiomEnumerator::init_eq_axioms()
-{
+ic3ia::TermSet ArrayAxiomEnumerator::array_eq_axioms(bool only_cur) {
   const ic3ia::TermMap & witnesses = abstractor_.witnesses();
+  TermSet *indices;
+  TermSet state_indices;
+  if (only_cur) {
+    // filter axioms
+    for (auto idx : all_indices_) {
+      if (ts_.only_cur(idx)) {
+        state_indices.insert(idx);
+      }
+    }
+    indices = &state_indices;
+  } else {
+    indices = &all_indices_;
+  }
   ic3ia::TermSet axioms;
   msat_decl read0;
   msat_decl read1;
-
-  for (auto e : init_equalities_)
-  {
+  for (auto e : array_equalities_) {
+    if (only_cur && !ts_.only_cur(e)) {
+      // skip equalities that have inputs or next in them
+      continue;
+    }
     read0 = abstractor_.get_read(msat_term_get_arg(e, 0));
     read1 = abstractor_.get_read(msat_term_get_arg(e, 1));
-    enumerate_eq_uf_axioms(axioms, read0, read1, e, witnesses.at(e),
-                           state_indices_);
+    enumerate_eq_uf_axioms(axioms, read0, read1, e, witnesses.at(e), *indices);
   }
-  return axioms;
-}
 
-ic3ia::TermSet ArrayAxiomEnumerator::trans_eq_axioms()
-{
-  const ic3ia::TermMap & witnesses = abstractor_.witnesses();
-  ic3ia::TermSet axioms;
-  msat_decl read0;
-  msat_decl read1;
-  for (auto e : trans_equalities_)
-  {
-    read0 = abstractor_.get_read(msat_term_get_arg(e, 0));
-    read1 = abstractor_.get_read(msat_term_get_arg(e, 1));
-    enumerate_eq_uf_axioms(axioms, read0, read1, e, witnesses.at(e),
-                           all_indices_);
-  }
-  return axioms;
-}
-
-ic3ia::TermSet ArrayAxiomEnumerator::prop_eq_axioms()
-{
-  const ic3ia::TermMap & witnesses = abstractor_.witnesses();
-  ic3ia::TermSet axioms;
-  msat_decl read0;
-  msat_decl read1;
-  for (auto e : prop_equalities_)
-  {
-    read0 = abstractor_.get_read(msat_term_get_arg(e, 0));
-    read1 = abstractor_.get_read(msat_term_get_arg(e, 1));
-    enumerate_eq_uf_axioms(axioms, read0, read1, e, witnesses.at(e),
-                           all_indices_);
-  }
   return axioms;
 }
 
@@ -220,21 +202,17 @@ TermSet ArrayAxiomEnumerator::equality_axioms_idx_time(const TermSet &indices,
 
   msat_decl read0;
   msat_decl read1;
-  vector<TermSet> equalities_vec({init_equalities_, trans_equalities_});
-  for (auto equalities : equalities_vec)
-  {
-    for (auto e : equalities) {
-      read0 = abstractor_.get_read(msat_term_get_arg(e, 0));
-      read1 = abstractor_.get_read(msat_term_get_arg(e, 1));
+  for (auto e : array_equalities_) {
+    read0 = abstractor_.get_read(msat_term_get_arg(e, 0));
+    read1 = abstractor_.get_read(msat_term_get_arg(e, 1));
 
-      for (size_t i = 0; i < k; i++) {
-        msat_term e_i = un.at_time(e, i);
+    for (size_t i = 0; i < k; i++) {
+      msat_term e_i = un.at_time(e, i);
 
-        // don't enumerate witness axioms because those are just over the
-        // witness index not parameterized by an index e.g. using
-        // enumerate_equality_axioms instead of enumerate_eq_uf_axioms
-        enumerate_equality_axioms(axioms, read0, read1, e_i, timed_indices);
-      }
+      // don't enumerate witness axioms because those are just over the
+      // witness index not parameterized by an index e.g. using
+      // enumerate_equality_axioms instead of enumerate_eq_uf_axioms
+      enumerate_equality_axioms(axioms, read0, read1, e_i, timed_indices);
     }
   }
 
