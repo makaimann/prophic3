@@ -109,8 +109,8 @@ std::string format_term(msat_env e, msat_term t, std::string indentation = "") {
 ProphIC3::ProphIC3(const ic3ia::TransitionSystem &ts,
                    const ic3ia::Options &opts, ic3ia::LiveEncoder &l2s,
                    unsigned int verbosity)
-    : msat_env_(ts.get_env()), conc_ts_(ts), rw_(conc_ts_),
-      aa_(rw_.rewrite_transition_system(), opts.use_uf_for_arr_eq),
+    : msat_env_(ts.get_env()), conc_ts_(ts),
+      aa_(conc_ts_, opts.use_uf_for_arr_eq),
       abs_ts_(aa_.abstract_transition_system()), aae_(abs_ts_, aa_),
       hr_(abs_ts_), opts_(opts), l2s_(l2s), un_(abs_ts_) {
 
