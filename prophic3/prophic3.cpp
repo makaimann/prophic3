@@ -757,17 +757,21 @@ void ProphIC3::refine_abs_ts(TermSet & untimed_axioms)
 {
   int init_cnt = 0;
   for (auto ax : untimed_axioms) {
-    // logger(1) << "Added to trans: " << msat_to_smtlib2_term(msat_env_, ax) << endlog;
+    logger(2) << "Added to trans: " << msat_to_smtlib2_term(msat_env_, ax)
+              << endlog;
     abs_ts_.add_trans(ax);
 
     // if there's no next-state variables, add next version to trans
     if (!abs_ts_.contains_next(ax)) {
-      // logger(1) << "Added to trans next: " << msat_to_smtlib2_term(msat_env_, abs_ts_.next(ax)) << endlog;
+      logger(2) << "Added to trans next: "
+                << msat_to_smtlib2_term(msat_env_, abs_ts_.next(ax)) << endlog;
       abs_ts_.add_trans(abs_ts_.next(ax));
     }
 
     if (abs_ts_.only_cur(ax) && (current_k_ == 0))
     {
+      logger(2) << "Added to init: " << msat_to_smtlib2_term(msat_env_, ax)
+                << endlog;
       abs_ts_.add_init(ax);
       init_cnt++;
     }

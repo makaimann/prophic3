@@ -142,29 +142,8 @@ ic3ia::TermSet ArrayAxiomEnumerator::store_axioms()
 {
   ic3ia::TermSet axioms;
   const ic3ia::TermSet & stores = abstractor_.stores();
-  msat_term arr0;
-  msat_term store;
-  msat_term arr1;
-  msat_term idx;
-  msat_term val;
-  msat_decl read0;
-  msat_decl read1;
-  for (auto e : stores)
-  {
-    arr0 = msat_term_get_arg(e, 0);
-    store = msat_term_get_arg(e, 1);
-    if (msat_term_arity(arr0) == 3) {
-      // need to swap, got the array and store wrong
-      arr1 = arr0; // using arr1 as a temporary variable
-      arr0 = store;
-      store = arr1;
-    }
-    arr1 = msat_term_get_arg(store, 0);
-    idx = msat_term_get_arg(store, 1);
-    read0 = abstractor_.get_read(arr0);
-    read1 = abstractor_.get_read(arr1);
-
-    enumerate_store_equalities(axioms, read0, read1, e, all_indices_);
+  for (auto st : stores) {
+    enumerate_store_equalities(axioms, st, all_indices_);
   }
   return axioms;
 }
@@ -231,41 +210,10 @@ TermSet ArrayAxiomEnumerator::store_axioms_idx_time(const TermSet &indices,
   }
 
   const TermSet &stores = abstractor_.stores();
-
-  msat_term arr0;
-  msat_term store;
-  msat_term arr1;
-  msat_term idx;
-  msat_term val;
-  msat_decl read0;
-  msat_decl read1;
-
-  for (auto e : stores) {
-    arr0 = msat_term_get_arg(e, 0);
-    store = msat_term_get_arg(e, 1);
-    if (msat_term_arity(arr0) == 3) {
-      // using arr1 as a temporary variable
-      arr1 = arr0;
-      arr0 = store;
-      store = arr1;
-    }
-    arr1 = msat_term_get_arg(store, 0);
-    idx = msat_term_get_arg(store, 1);
-
-    // abstract arrays
-    read0 = abstractor_.get_read(arr0);
-    read1 = abstractor_.get_read(arr1);
-
+  for (auto st : stores) {
     for (size_t i = 0; i < k; i++) {
-      msat_term arr0_i = un.at_time(arr0, i);
-      msat_term e_i = un.at_time(e, i);
-
-      // TODO: as an optimization, don't enumerate all i, j pairs
-      //       for *state variable* indices, ones where abs(i - j) <= 1
-      //       have already been checked
-      //       IMPORTANT: That only holds for STATE indices, because inputs
-      //                   don't have next
-      enumerate_store_equalities(axioms, read0, read1, e_i, timed_indices);
+      msat_term st_i = un.at_time(st, i);
+      enumerate_store_equalities(axioms, st_i, timed_indices);
     }
   }
   return axioms;
@@ -328,38 +276,26 @@ msat_term ArrayAxiomEnumerator::get_index(msat_term ax) const
 
 // protected helper functions
 void ArrayAxiomEnumerator::enumerate_store_equalities(TermSet &axioms,
-                                                      msat_decl read_res,
-                                                      msat_decl read_arg,
-                                                      msat_term store_eq,
+                                                      msat_term store,
                                                       TermSet &indices) {
 
-  msat_term arr_res  = msat_term_get_arg(store_eq, 0);
-  msat_term store_uf = msat_term_get_arg(store_eq, 1);
-
-  if (msat_term_arity(arr_res) == 3)
-  {
-    // guessed wrong, need to reverse
-    arr_res  = msat_term_get_arg(store_eq, 1);
-    store_uf = msat_term_get_arg(store_eq, 0);
-  }
-
-  msat_term arr_arg = msat_term_get_arg(store_uf, 0);
-  msat_term idx     = msat_term_get_arg(store_uf, 1);
-  msat_term val     = msat_term_get_arg(store_uf, 2);
+  msat_decl read = abstractor_.get_read(store);
+  msat_term arr = msat_term_get_arg(store, 0);
+  msat_term idx = msat_term_get_arg(store, 1);
+  msat_term val = msat_term_get_arg(store, 2);
 
   // temporary variable to be used throughout function
   msat_term ax;
-  msat_term args0[2] = {arr_res, idx};
-  msat_term args1[2] = {arr_arg, idx};
+  msat_term args0[2] = {store, idx};
+  msat_term args1[2] = {arr, idx};
 
   // value at write index
-  msat_term antecedent = store_eq;
-  msat_term consequent = msat_make_eq(msat_env_,
-				      msat_make_uf(msat_env_, read_res, &args0[0]), val);
-  ax = implies(antecedent, consequent);
+  ax = msat_make_eq(msat_env_, msat_make_uf(msat_env_, read, &args0[0]), val);
   axioms.insert(ax);
   axioms_to_index_[ax] = idx;
 
+  msat_term antecedent;
+  msat_term consequent;
   for (auto i : indices)
   {
     args0[1] = i;
@@ -367,11 +303,10 @@ void ArrayAxiomEnumerator::enumerate_store_equalities(TermSet &axioms,
 
     // TODO: optimization: don't put in the trivial (i != i) case
     // i != j case
-    antecedent = msat_make_and(msat_env_, store_eq,
-                               msat_make_not(msat_env_, msat_make_eq(msat_env_, i, idx)));
-    consequent = msat_make_eq(msat_env_,
-                              msat_make_uf(msat_env_, read_res, &args0[0]),
-                              msat_make_uf(msat_env_, read_arg, &args1[0]));
+    antecedent = msat_make_not(msat_env_, msat_make_eq(msat_env_, i, idx));
+    consequent =
+        msat_make_eq(msat_env_, msat_make_uf(msat_env_, read, &args0[0]),
+                     msat_make_uf(msat_env_, read, &args1[0]));
     ax = implies(antecedent, consequent);
     axioms.insert(ax);
     axioms_to_index_[ax] = i;

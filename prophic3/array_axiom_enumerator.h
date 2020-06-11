@@ -177,8 +177,7 @@ private:
    * Important Note: lambda argument can be an error term (if there is no finite
    * domain lambda)
    */
-  void enumerate_store_equalities(ic3ia::TermSet &axioms, msat_decl read_res,
-                                  msat_decl read_arg, msat_term store_eq,
+  void enumerate_store_equalities(ic3ia::TermSet &axioms, msat_term store,
                                   ic3ia::TermSet &indices);
 
   /* Enumerate store axioms on all indices: forall i . arr[i] = val */
