@@ -101,16 +101,12 @@ ic3ia::TermSet ArrayAxiomEnumerator::array_eq_axioms(bool only_cur) {
     indices = &all_indices_;
   }
   ic3ia::TermSet axioms;
-  msat_decl read0;
-  msat_decl read1;
   for (auto e : array_equalities_) {
     if (only_cur && !ts_.only_cur(e)) {
       // skip equalities that have inputs or next in them
       continue;
     }
-    read0 = abstractor_.get_read(msat_term_get_arg(e, 0));
-    read1 = abstractor_.get_read(msat_term_get_arg(e, 1));
-    enumerate_eq_uf_axioms(axioms, read0, read1, e, witnesses.at(e), *indices);
+    enumerate_eq_uf_axioms(axioms, e, *indices);
   }
 
   return axioms;
@@ -179,19 +175,14 @@ TermSet ArrayAxiomEnumerator::equality_axioms_idx_time(const TermSet &indices,
     timed_indices.insert(un.at_time(idx, j));
   }
 
-  msat_decl read0;
-  msat_decl read1;
   for (auto e : array_equalities_) {
-    read0 = abstractor_.get_read(msat_term_get_arg(e, 0));
-    read1 = abstractor_.get_read(msat_term_get_arg(e, 1));
-
     for (size_t i = 0; i < k; i++) {
       msat_term e_i = un.at_time(e, i);
 
       // don't enumerate witness axioms because those are just over the
       // witness index not parameterized by an index e.g. using
       // enumerate_equality_axioms instead of enumerate_eq_uf_axioms
-      enumerate_equality_axioms(axioms, read0, read1, e_i, timed_indices);
+      enumerate_equality_axioms(axioms, e_i, timed_indices);
     }
   }
 
@@ -332,25 +323,24 @@ void ArrayAxiomEnumerator::enumerate_const_array_axioms(TermSet & axioms,
   }
 }
 
-void ArrayAxiomEnumerator::enumerate_eq_uf_axioms(
-    ic3ia::TermSet &axioms, msat_decl read0, msat_decl read1, msat_term eq_uf,
-    msat_term witness, ic3ia::TermSet &indices) {
+void ArrayAxiomEnumerator::enumerate_eq_uf_axioms(ic3ia::TermSet &axioms,
+                                                  msat_term abs_eq,
+                                                  ic3ia::TermSet &indices) {
 
-  enumerate_equality_axioms(axioms, read0, read1, eq_uf, indices);
-
-  eq_witness_axiom(axioms, read0, read1, eq_uf, witness);
+  enumerate_equality_axioms(axioms, abs_eq, indices);
+  eq_witness_axiom(axioms, abs_eq);
 }
 
 void ArrayAxiomEnumerator::enumerate_equality_axioms(TermSet &axioms,
-                                                     msat_decl read0,
-                                                     msat_decl read1,
-                                                     msat_term eq_uf,
+                                                     msat_term abs_eq,
                                                      TermSet &indices) {
   // temporary variable to be used throughout function
   msat_term ax;
 
-  msat_term arr0 = msat_term_get_arg(eq_uf, 0);
-  msat_term arr1 = msat_term_get_arg(eq_uf, 1);
+  msat_term arr0 = msat_term_get_arg(abs_eq, 0);
+  msat_term arr1 = msat_term_get_arg(abs_eq, 1);
+
+  msat_decl read = abstractor_.get_read(arr0);
 
   msat_term args0[2];
   msat_term args1[2];
@@ -364,26 +354,25 @@ void ArrayAxiomEnumerator::enumerate_equality_axioms(TermSet &axioms,
   {
     args0[1] = i;
     args1[1] = i;
-    eq_reads = msat_make_equal(msat_env_, msat_make_uf(msat_env_, read0, &args0[0]),
-                               msat_make_uf(msat_env_, read1, &args1[0]));
+    eq_reads =
+        msat_make_equal(msat_env_, msat_make_uf(msat_env_, read, &args0[0]),
+                        msat_make_uf(msat_env_, read, &args1[0]));
 
     // arr0[i] != arr1[i] -> !eq(arr0, arr1)
-    ax = implies(msat_make_not(msat_env_,
-                               eq_reads),
-                 msat_make_not(msat_env_, eq_uf));
+    ax = implies(msat_make_not(msat_env_, eq_reads),
+                 msat_make_not(msat_env_, abs_eq));
     axioms.insert(ax);
     axioms_to_index_[ax] = i;
   }
 }
 
-void ArrayAxiomEnumerator::eq_witness_axiom(TermSet &axioms, msat_decl read0,
-                                            msat_decl read1, msat_term eq_uf,
-                                            msat_term witness) {
-  // temporary variable to be used throughout function
-  msat_term ax;
+void ArrayAxiomEnumerator::eq_witness_axiom(TermSet &axioms, msat_term abs_eq) {
+  msat_term witness = abstractor_.witnesses().at(abs_eq);
 
-  msat_term arr0 = msat_term_get_arg(eq_uf, 0);
-  msat_term arr1 = msat_term_get_arg(eq_uf, 1);
+  msat_term arr0 = msat_term_get_arg(abs_eq, 0);
+  msat_term arr1 = msat_term_get_arg(abs_eq, 1);
+
+  msat_decl read = abstractor_.get_read(arr0);
 
   msat_term args0[2];
   msat_term args1[2];
@@ -396,9 +385,9 @@ void ArrayAxiomEnumerator::eq_witness_axiom(TermSet &axioms, msat_decl read0,
   args0[1] = witness;
   args1[1] = witness;
   msat_term eq_reads =
-      msat_make_equal(msat_env_, msat_make_uf(msat_env_, read0, &args0[0]),
-                      msat_make_uf(msat_env_, read1, &args1[0]));
-  ax = implies(eq_reads, eq_uf);
+      msat_make_equal(msat_env_, msat_make_uf(msat_env_, read, &args0[0]),
+                      msat_make_uf(msat_env_, read, &args1[0]));
+  msat_term ax = implies(eq_reads, abs_eq);
   axioms.insert(ax);
   axioms_to_index_[ax] = witness;
 }

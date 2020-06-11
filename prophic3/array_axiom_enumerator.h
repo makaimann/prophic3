@@ -198,21 +198,15 @@ private:
    *    (exists i . a[i] != b[i]) | a = b
    *    a[witness] != b[witness] | a = b
    *    a[witness] = b[witness] -> a =b
-   *
-   * Important Note: lambda argument can be an error term (if there is no finite
-   * domain lambda)
    */
-  void enumerate_eq_uf_axioms(ic3ia::TermSet &axioms, msat_decl read0,
-                              msat_decl read1, msat_term eq_uf,
-                              msat_term witness, ic3ia::TermSet &indices);
+  void enumerate_eq_uf_axioms(ic3ia::TermSet &axioms, msat_term abs_eq,
+                              ic3ia::TermSet &indices);
 
   // helpers for enumerate_eq_uf_axioms
-  void enumerate_equality_axioms(ic3ia::TermSet &axioms, msat_decl read0,
-                                 msat_decl read1, msat_term eq_uf,
+  void enumerate_equality_axioms(ic3ia::TermSet &axioms, msat_term abs_eq,
                                  ic3ia::TermSet &indices);
 
-  void eq_witness_axiom(ic3ia::TermSet &axioms, msat_decl read0,
-                        msat_decl read1, msat_term eq_uf, msat_term witness);
+  void eq_witness_axiom(ic3ia::TermSet &axioms, msat_term abs_eq);
 
   /* Collect all array equality UFs from the given term and add to set s */
   void collect_equalities(msat_term term, ic3ia::TermSet & s);
