@@ -175,29 +175,9 @@ msat_truth_value ProphIC3::prove()
   logger(1) << "Created " << prop_indices_map.size();
   logger(1) << " prophecy variables for the property" << endlog;
 
-  logger(2) << "++++++++++++++++++ Abstract System +++++++++++++++++++"
-            << endlog;
-
-  logger(2) << "STATES" << endlog;
-  for (auto sv : abs_ts_.statevars()) {
-    logger(2) << "\t" << msat_to_smtlib2_term(msat_env_, sv) << endlog;
+  if (Logger::get().get_verbosity() >= 2) {
+    print_system(abs_ts_, "Abstract System");
   }
-  logger(2) << "INPUTS" << endlog;
-  for (auto in : abs_ts_.inputvars()) {
-    logger(2) << "\t" << msat_to_smtlib2_term(msat_env_, in) << endlog;
-  }
-
-  logger(2) << "INIT" << endlog;
-  logger(2) << format_term(msat_env_, abs_ts_.init()) << endlog;
-
-  logger(2) << "TRANS" << endlog;
-  logger(2) << format_term(msat_env_, abs_ts_.trans()) << endlog;
-
-  logger(2) << "PROP" << endlog;
-  logger(2) << format_term(msat_env_, abs_ts_.prop()) << endlog;
-
-  logger(2) << "++++++++++++++++++ +++++++++++++++ +++++++++++++++++++"
-            << endlog;
 
   int iter_cnt = 0;
   while (res != MSAT_TRUE)
@@ -1355,37 +1335,32 @@ bool ProphIC3::reduce_axioms(const TermSet & untimed_axioms,
 void ProphIC3::print_system(ic3ia::TransitionSystem & ts, std::string name) const
 {
   msat_env env = ts.get_env();
-  logger(1) << "Printing Transition System: " << name << endlog;
+  std::cout << "++++++++++++++++++++ Printing Transition System: " << name
+            << " ++++++++++++++++++++" << std::endl;
 
-  logger(1) << "STATEVARS" << endlog;
+  std::cout << "STATEVARS" << std::endl;
   for (auto sv : ts.statevars())
   {
-    logger(1) << "\t" << msat_to_smtlib2_term(env, sv) << endlog;
+    std::cout << "\t" << msat_to_smtlib2_term(env, sv) << std::endl;
   }
 
-  logger(1) << "INPUTS" << endlog;
+  std::cout << "INPUTS" << std::endl;
   for (auto i : ts.inputvars())
   {
-    logger(1) << "\t" << msat_to_smtlib2_term(env, i) << endlog;
+    std::cout << "\t" << msat_to_smtlib2_term(env, i) << std::endl;
   }
 
-  logger(1) << endlog;
-  logger(1) << "INIT" << endlog;
-  for (auto c : conjunctive_partition(env, ts.init()))
-  {
-    logger(1) << "\t" << msat_to_smtlib2_term(env, c) << endlog;
-  }
+  std::cout << std::endl;
+  std::cout << "INIT" << std::endl;
+  std::cout << format_term(env, ts.init()) << std::endl;
 
-  logger(1) << endlog;
-  logger(1) << "TRANS" << endlog;
-  for (auto c : conjunctive_partition(env, ts.trans()))
-  {
-    logger(1) << "\t" << msat_to_smtlib2_term(env, c) << endlog;
-  }
+  std::cout << std::endl;
+  std::cout << "TRANS" << std::endl;
+  std::cout << format_term(env, ts.trans()) << std::endl;
 
-  logger(1) << endlog;
-  logger(1) << "PROP" << endlog;
-  logger(1) << "\t" << msat_to_smtlib2_term(env, ts.prop()) << endlog;
+  std::cout << std::endl;
+  std::cout << "PROP" << std::endl;
+  std::cout << format_term(env, ts.prop()) << std::endl;
 }
 
 }
