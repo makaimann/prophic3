@@ -361,6 +361,12 @@ bool ProphIC3::fix_bmc()
               break;
             }
 
+            // HACK: filter out axioms that are not over state variables
+            //       at time zero -- they can't be added anyway
+            if (current_k_ == 0 && !abs_ts_.only_cur(ax)) {
+              continue;
+            }
+
             // don't check axioms with times beyond the current time-step
             // (because of next)
             if (k == max_k && abs_ts_.contains_next(ax))
@@ -391,6 +397,12 @@ bool ProphIC3::fix_bmc()
         logger(1) << "Trying lazy lambda all different refinement!" << endlog;
         for (auto ax : aae_.lambda_alldiff_axioms())
         {
+          // HACK: filter out axioms that are not over state variables
+          //       at time zero -- they can't be added anyway
+          if (current_k_ == 0 && !abs_ts_.only_cur(ax)) {
+            continue;
+          }
+
           for(size_t k = 0; k <= current_k_; k++)
           {
             msat_term timed_axiom = un_.at_time(ax, k);
@@ -632,28 +644,6 @@ bool ProphIC3::fix_bmc()
     }
 
     // refine the transition system
-
-    // HACK: minor hack, just filter out non-state variable axioms
-    //       could be added by axiom enumerators other than init_eq_axioms
-    if (current_k_ == 0)
-    {
-      // shouldn't get timed axioms at initial state check
-      assert(timed_axioms_to_refine.size() == 0);
-      TermSet to_remove;
-      for (auto ax : untimed_axioms_to_add)
-      {
-        if (!abs_ts_.only_cur(ax))
-        {
-          to_remove.insert(ax);
-        }
-      }
-
-      for (auto ax : to_remove)
-      {
-        untimed_axioms_to_add.erase(ax);
-      }
-    }
-
     /************************************* Reduce the axioms ************************************/
     TermSet red_untimed_axioms;
     TermSet red_timed_axioms;
