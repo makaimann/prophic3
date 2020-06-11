@@ -115,21 +115,8 @@ ic3ia::TermSet ArrayAxiomEnumerator::array_eq_axioms(bool only_cur) {
 ic3ia::TermSet ArrayAxiomEnumerator::const_array_axioms()
 {
   ic3ia::TermSet axioms;
-  const ic3ia::TermSet & const_arrs = abstractor_.const_arrs();
-
-  msat_term abs_ca;
-  msat_decl read;
-  msat_term val;
-  for (msat_term ca : const_arrs) {
-    abs_ca = abstractor_.abstract(ca);
-    read = abstractor_.get_read(abs_ca);
-    val = msat_term_get_arg(ca, 0);
-    // the value could be an array itself -- look up abstraction
-    // if it's not, nothing will happen
-    val = abstractor_.abstract(val);
-    enumerate_const_array_axioms(axioms, read,
-                                 abs_ca, // need to convert to abstracted array
-                                 val, curr_indices_);
+  for (msat_term ca : abstractor_.const_arrs()) {
+    enumerate_const_array_axioms(axioms, ca, curr_indices_);
   }
   return axioms;
 }
@@ -220,28 +207,11 @@ TermSet ArrayAxiomEnumerator::const_array_axioms_idx_time(
     timed_indices.insert(un.at_time(idx, j));
   }
 
-  const ic3ia::TermSet &const_arrs = abstractor_.const_arrs();
-
-  msat_term abs_ca;
-  msat_term val;
-  msat_decl read;
-
-  for (msat_term ca : const_arrs)
-  {
-    abs_ca = abstractor_.abstract(ca);
-    val = msat_term_get_arg(ca, 0);
-    // the value could be an array itself -- look up abstraction
-    // if it's not, nothing will happen
-    val = abstractor_.abstract(val);
-    read = abstractor_.get_read(abs_ca);
-
+  for (msat_term ca : abstractor_.const_arrs()) {
     for (size_t i = 0; i < k; i++)
     {
-      msat_term abs_ca_i = un.at_time(abs_ca, i);
-      msat_term val_i = un.at_time(val, i);
-
-      enumerate_const_array_axioms(axioms, read, abs_ca_i, val_i,
-                                   timed_indices);
+      msat_term ca_i = un.at_time(ca, i);
+      enumerate_const_array_axioms(axioms, ca_i, timed_indices);
     }
   }
   return axioms;
@@ -304,19 +274,20 @@ void ArrayAxiomEnumerator::enumerate_store_equalities(TermSet &axioms,
   }
 }
 
-void ArrayAxiomEnumerator::enumerate_const_array_axioms(TermSet & axioms,
-                                                        msat_decl read,
-                                                        msat_term arr,
-                                                        msat_term val,
-                                                        TermSet & indices)
-{
+void ArrayAxiomEnumerator::enumerate_const_array_axioms(
+    TermSet &axioms, msat_term conc_const_arr, TermSet &indices) {
   // temporary variable to be used throughout function
   msat_term ax;
+
+  msat_term val = abstractor_.abstract(msat_term_get_arg(conc_const_arr, 0));
+
+  msat_term abs_ca = abstractor_.abstract(conc_const_arr);
+  msat_decl read = abstractor_.get_read(abs_ca);
 
   // equals value at every index
   for (auto i : indices)
   {
-    msat_term args[2] = {arr, i};
+    msat_term args[2] = {abs_ca, i};
     ax = msat_make_equal(msat_env_, msat_make_uf(msat_env_, read, &args[0]), val);
     axioms.insert(ax);
     axioms_to_index_[ax] = i;

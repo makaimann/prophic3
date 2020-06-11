@@ -181,8 +181,8 @@ private:
                                   ic3ia::TermSet &indices);
 
   /* Enumerate store axioms on all indices: forall i . arr[i] = val */
-  void enumerate_const_array_axioms(ic3ia::TermSet &axioms, msat_decl read,
-                                    msat_term arr, msat_term val,
+  void enumerate_const_array_axioms(ic3ia::TermSet &axioms,
+                                    msat_term conc_const_arr,
                                     ic3ia::TermSet &indices);
 
   // TODO: Figure out if we can remove some of these lemmas
