@@ -968,17 +968,12 @@ void ProphIC3::print_witness(msat_model model,
                              ArrayAxiomEnumerator &aae_) {
 
   ArrayAbstractor &abstractor = aae_.get_abstractor();
-  logger(1) << "+++++++++++++++++++++ FAILED +++++++++++++++++++" << endlog;
-  logger(1) << "prop: " << msat_to_smtlib2_term(msat_env_, abs_ts_.prop())
-            << endlog;
+  if (Logger::get().get_verbosity() >= 1)
+  {
+    logger(1) << "+++++++++++++++++++++ FAILED +++++++++++++++++++" << endlog;
+    print_system(abs_ts_, "Abstract System");
+  }
 
-  logger(1) << endlog;
-  logger(1) << "++++++++++++++++++++++ Abstract TS +++++++++++++++++++++ "
-            << endlog;
-  logger(1) << "INIT:" << endlog;
-  logger(1) << msat_to_smtlib2_term(msat_env_, abs_ts_.init()) << endlog;
-  logger(1) << "TRANS:" << endlog;
-  logger(1) << msat_to_smtlib2_term(msat_env_, abs_ts_.trans()) << endlog;
   logger(1) << "STORES:" << endlog;
   for(auto s : abstractor.stores())
   {
