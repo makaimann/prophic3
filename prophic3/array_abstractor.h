@@ -91,6 +91,12 @@ public:
 
   private:
 
+    void populate_caches(msat_term conc_term, msat_term abs_term)
+    {
+      abstraction_cache_[conc_term] = abs_term;
+      concrete_cache_[abs_term] = conc_term;
+    }
+
     void do_abstraction();
 
     /* abstracts array vars in conc_ts_
