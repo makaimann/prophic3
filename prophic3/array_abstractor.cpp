@@ -335,11 +335,6 @@ void ArrayAbstractor::do_abstraction()
   // create the lambdas used to refer to indices which have never been
   // seen before
   create_lambdas();
-
-  // populate the concretization cache
-  for (auto elem : abstraction_cache_) {
-    concrete_cache_[elem.second] = elem.first;
-  }
 }
 
 void ArrayAbstractor::abstract_array_terms()
@@ -408,7 +403,7 @@ void ArrayAbstractor::abstract_array_terms()
     msat_decl decl_arrabs =
       msat_declare_function(msat_env_, name.c_str(), abs_type);
     msat_term arr_abs = msat_make_constant(msat_env_, decl_arrabs);
-    abstraction_cache_[arr] = arr_abs;
+    populate_caches(arr, arr_abs);
     removed_vars_.insert(arr);
 
     if (conc_ts_.is_statevar(arr))
@@ -418,7 +413,7 @@ void ArrayAbstractor::abstract_array_terms()
                                                      abs_type);
       msat_term arr_absN = msat_make_constant(msat_env_, decl_arrabsN);
       new_state_vars_[arr_abs] = arr_absN;
-      abstraction_cache_[conc_ts_.next(arr)] = arr_absN;
+      populate_caches(conc_ts_.next(arr), arr_absN);
     }
 
     num_arr_vars_++;
@@ -609,7 +604,7 @@ msat_term ArrayAbstractor::construct_abstract_term(msat_term term) {
         msat_term rhs_cache = super->abstraction_cache_.at(rhs);
 
         msat_term arr_eq = msat_make_eq(e, lhs_cache, rhs_cache);
-        super->abstraction_cache_[t] = arr_eq;
+        super->populate_caches(t, arr_eq);
 
         if (msat_term_is_term_ite(e, lhs_cache) ||
             msat_term_is_term_ite(e, rhs_cache)) {
@@ -643,7 +638,7 @@ msat_term ArrayAbstractor::construct_abstract_term(msat_term term) {
         msat_decl readfun = super->get_read(arr_cache);
         msat_term cached_args[2] = {arr_cache, idx};
         msat_term read_uf = msat_make_uf(e, readfun, &cached_args[0]);
-        super->abstraction_cache_[t] = read_uf;
+        super->populate_caches(t, read_uf);
       } else if (msat_term_is_array_write(e, t)) {
         msat_term arr = msat_term_get_arg(t, 0);
         msat_term idx = msat_term_get_arg(t, 1);
@@ -662,8 +657,7 @@ msat_term ArrayAbstractor::construct_abstract_term(msat_term term) {
 
         msat_term args[3] = {arr_cache, idx_cache, val_cache};
         msat_term arr_write = msat_make_uf(e, writefun, &args[0]);
-        super->abstraction_cache_[t] = arr_write;
-
+        super->populate_caches(t, arr_write);
         // save the abstract store
         super->stores_.insert(arr_write);
       } else {
@@ -692,7 +686,7 @@ msat_term ArrayAbstractor::construct_abstract_term(msat_term term) {
           }
         }
         assert(!MSAT_ERROR_TERM(res));
-        super->abstraction_cache_[t] = res;
+        super->populate_caches(t, res);
       }
     }
 
@@ -726,10 +720,10 @@ void ArrayAbstractor::construct_abstract_array_equalities() {
     eq_substitution_map[e] = abs_eq;
   }
 
-  // update abstraction_cache_
+  // update caches (overwrites previous values)
   for (auto elem : abstraction_cache_) {
     if (eq_substitution_map.find(elem.second) != eq_substitution_map.end()) {
-      abstraction_cache_[elem.first] = eq_substitution_map.at(elem.second);
+      populate_caches(elem.first, eq_substitution_map.at(elem.second));
     }
   }
 
