@@ -310,16 +310,15 @@ TermSet ArrayAxiomEnumerator::const_array_axioms_idx_time(
 
 void ArrayAxiomEnumerator::add_index(msat_type orig_idx_type, msat_term i) {
   // TODO: what if the index is an input -- could happen
+  all_indices_.insert(i);
   if (ts_.only_cur(i))
   {
-    state_indices_.insert(i);
     all_indices_.insert(ts_.next(i));
   }
   if (!ts_.contains_next(i))
   {
     curr_indices_.insert(i);
   }
-  all_indices_.insert(i);
 }
 
 msat_term ArrayAxiomEnumerator::get_index(msat_term ax) const

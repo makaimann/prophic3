@@ -25,7 +25,6 @@ public:
       // save state variable indices
       if (ts.only_cur(idx))
       {
-        state_indices_.insert(idx);
         all_indices_.insert(ts.next(idx));
       }
 
@@ -143,7 +142,6 @@ private:
   const ic3ia::TransitionSystem &ts_;
   ArrayAbstractor &abstractor_;
   msat_env msat_env_;
-  ic3ia::TermSet state_indices_;
   ic3ia::TermSet curr_indices_;
   ic3ia::TermSet curr_indices_no_witnesses_;
   ic3ia::TermSet all_indices_;
