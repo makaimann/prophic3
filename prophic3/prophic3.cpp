@@ -314,17 +314,7 @@ bool ProphIC3::fix_bmc()
       int lemma_cnt = 0;
 
       for (size_t i = 0; i < untimed_axiom_sets.size(); ++i) {
-        int max_k;
-        if (i == 0) {
-          // for init_eq_axioms, only check at time 0
-          max_k = 0;
-        } else {
-          max_k = current_k_;
-        }
-
-        // Need to check up to (and include) max_k for single-time
-        // e.g. if it has no next, then need to include last time step
-        for (size_t k = 0; k <= max_k; ++k) {
+        for (size_t k = 0; k <= current_k_; ++k) {
           if (opts_.max_array_axioms > 0 &&
               lemma_cnt >= opts_.max_array_axioms) {
             break;
@@ -344,8 +334,7 @@ bool ProphIC3::fix_bmc()
 
             // don't check axioms with times beyond the current time-step
             // (because of next)
-            if (k == max_k && abs_ts_.contains_next(ax))
-            {
+            if (k == current_k_ && abs_ts_.contains_next(ax)) {
               continue;
             }
 
