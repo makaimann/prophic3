@@ -197,6 +197,23 @@ msat_truth_value ProphIC3::prove()
       f.open(filename);
       abs_ts_.to_vmt(f);
       f.close();
+
+      TransitionSystem refined_conc_ts(abs_ts_.get_env());
+      TermMap state_vars;
+      for (auto sv : abs_ts_.statevars()) {
+        state_vars[aa_.concrete(sv)] = aa_.concrete(abs_ts_.next(sv));
+      }
+      refined_conc_ts.initialize(state_vars, aa_.concrete(abs_ts_.init()),
+                                 aa_.concrete(abs_ts_.trans()),
+                                 aa_.concrete(abs_ts_.prop()),
+                                 abs_ts_.live_prop());
+
+      ofstream fconc;
+      std::string conc_filename = opts_.trace;
+      conc_filename += "_conc_system_" + std::to_string(iter_cnt) + ".vmt";
+      fconc.open(conc_filename);
+      refined_conc_ts.to_vmt(fconc);
+      fconc.close();
     }
     iter_cnt++;
 
