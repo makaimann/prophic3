@@ -111,9 +111,8 @@ ProphIC3::ProphIC3(const ic3ia::TransitionSystem &ts,
                    unsigned int verbosity)
     : msat_env_(ts.get_env()), conc_ts_(ts),
       aa_(conc_ts_, opts.use_uf_for_arr_eq),
-      abs_ts_(aa_.abstract_transition_system()), aae_(abs_ts_, aa_),
-      hr_(abs_ts_), opts_(opts), l2s_(l2s), un_(abs_ts_) {
-
+      abs_ts_(aa_.abstract_transition_system()), un_(abs_ts_),
+      aae_(abs_ts_, un_, aa_), hr_(abs_ts_), opts_(opts), l2s_(l2s) {
   ic3ia::Logger & l = ic3ia::Logger::get();
   l.set_verbosity(verbosity);
 
@@ -403,8 +402,10 @@ bool ProphIC3::fix_bmc()
         // TODO: use pointers or something to avoid copying the TermSets into
         // the vector
         vector<TermSet> timed_axioms;
-        const TermSet &curr_indices = aae_.curr_indices();
-        const TermSet &non_idx_int_terms = aae_.non_idx_int_terms();
+        const TermSet &curr_indices =
+            aae_.get_index_targets(NO_NEXT_INDEX_SET_AND_PROPH);
+        const TermSet &non_idx_int_terms =
+            aae_.get_index_targets(NON_INDEX_INT_TERMS);
 
         // Heuristic: stop once you find timed axioms going backward from
         // property violation
@@ -851,7 +852,7 @@ TermSet ProphIC3::detect_indices(msat_term term)
                  return MSAT_VISIT_PROCESS;
                };
 
-  const TermSet &all_indices = aae_.all_indices();
+  const TermSet &all_indices = aae_.get_index_targets(INDEX_SET);
   TermSet out_indices;
   Data data(all_indices, out_indices);
   msat_visit_term(msat_env_, term, visit, &data);
@@ -972,7 +973,7 @@ void ProphIC3::print_witness(msat_model model,
                              size_t reached_k,
                              ArrayAxiomEnumerator &aae_) {
 
-  ArrayAbstractor &abstractor = aae_.get_abstractor();
+  ArrayAbstractor &abstractor = aa_;
   if (Logger::get().get_verbosity() >= 1)
   {
     logger(1) << "+++++++++++++++++++++ FAILED +++++++++++++++++++" << endlog;
@@ -1026,7 +1027,7 @@ void ProphIC3::print_witness(msat_model model,
     bool is_array = msat_is_array_type(msat_env_, abstractor.get_orig_type(arr),
                                        &idx_type, nullptr);
     assert(is_array);
-    for (auto i : aae_.all_indices()) {
+    for (auto i : aae_.get_index_targets(INDEX_SET)) {
       for (size_t k = 0; k <= reached_k; ++k) {
         indices.insert(msat_model_eval(model, un_.at_time(i, k)));
       }

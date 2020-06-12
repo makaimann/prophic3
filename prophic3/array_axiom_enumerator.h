@@ -9,38 +9,67 @@
 #include "array_abstractor.h"
 
 namespace prophic3 {
+
+// categories for different type of indices to enumerate array axioms over
+enum IndexTarget {
+  // only indices made up of states
+  STATE_INDEX_SET = 0,
+  // all indices except the witnesses
+  STATE_INDEX_SET_NO_WITNESSES,
+  // full index set
+  INDEX_SET,
+  // state indices plus prophecy variables
+  STATE_INDEX_SET_AND_PROPH,
+  // current state and input indices plus prophecy variables
+  NO_NEXT_INDEX_SET_AND_PROPH,
+  // index set plus prophecy variables
+  INDEX_SET_AND_PROPH,
+  // prophecy variables only
+  PROPH,
+  // integer terms from transition relation
+  // that are not indices
+  NON_INDEX_INT_TERMS
+};
+
 class ArrayAxiomEnumerator {
 public:
-  ArrayAxiomEnumerator(const ic3ia::TransitionSystem &ts,
-                                 ArrayAbstractor &aa)
-      : ts_(ts), abstractor_(aa) {
+  ArrayAxiomEnumerator(const ic3ia::TransitionSystem &ts, ic3ia::Unroller &u,
+                       ArrayAbstractor &aa)
+      : ts_(ts), un_(u), abstractor_(aa) {
     msat_env_ = ts.get_env();
 
     // sort the indices
     // convenient to store them grouped by current and all for 1-step and 2-step
     // lemmas
-    msat_term base_idx; // gets assigned the actual var if it's wrapped in ubv_to_int
     for (auto idx : abstractor_.indices()) {
+
+      index_targets_[INDEX_SET].insert(idx);
 
       // save state variable indices
       if (ts.only_cur(idx))
       {
-        all_indices_.insert(ts.next(idx));
+        index_targets_[STATE_INDEX_SET].insert(idx);
+        index_targets_[STATE_INDEX_SET_NO_WITNESSES].insert(idx);
+        index_targets_[INDEX_SET].insert(ts.next(idx));
       }
 
       if (!ts.contains_next(idx))
       {
-        curr_indices_.insert(idx);
-        curr_indices_no_witnesses_.insert(idx);
+        index_targets_[NO_NEXT_INDEX_SET_AND_PROPH].insert(idx);
       }
-      all_indices_.insert(idx);
     }
 
-    // remove witnesses from curr_indices_no_witnesses_
+    // remove witnesses from INDEX_SET_NO_WITNESSES
     for (auto witelem : abstractor_.witnesses()) {
-      for (auto cielem : curr_indices_no_witnesses_) {
-        curr_indices_no_witnesses_.erase(witelem.second);
-      }
+      index_targets_[STATE_INDEX_SET_NO_WITNESSES].erase(witelem.second);
+    }
+
+    // populate prophecy index sets (prophecy variables will be added to these)
+    for (auto idx : index_targets_[STATE_INDEX_SET]) {
+      index_targets_[STATE_INDEX_SET_AND_PROPH].insert(idx);
+    }
+    for (auto idx : index_targets_[INDEX_SET]) {
+      index_targets_[INDEX_SET_AND_PROPH].insert(idx);
     }
 
     // Find all the array equalities
@@ -52,33 +81,14 @@ public:
     collect_int_terms(ts.init());
     collect_int_terms(ts.trans());
     collect_int_terms(ts.prop());
-
-    ic3ia::logger(2) << "Found the following terms for prophecy candidates"
-                     << ic3ia::endlog;
-    for (auto t : non_idx_int_terms_) {
-      ic3ia::logger(2) << "\t" << msat_to_smtlib2_term(msat_env_, t)
-                       << ic3ia::endlog;
-    }
   }
-
-  // TODO: adapt the private methods for the new representation (not using
-  // structs for each type of equality) then have methods to enumerate different
-  // kinds of axioms
-
-  const ic3ia::TermSet &all_indices() const { return all_indices_; };
-
-  const ic3ia::TermSet &curr_indices() const { return curr_indices_; };
-
-  const ic3ia::TermSet &non_idx_int_terms() const {
-    return non_idx_int_terms_;
-  };
 
   // TODO: think about caching this -- but we also want to update it
   // periodically as new terms are added
   /**
    *  Enumerates terms obtained by adding two terms drawn from indices (except
    * witnesses) and the general terms in the transition system from
-   * non_idx_int_terms
+   * NON_INDEX_INT_TERMS
    */
   ic3ia::TermSet octagonal_addition_domain_terms() const;
 
@@ -134,20 +144,38 @@ public:
    */
   msat_term get_index(msat_term ax) const;
 
-  // debugging
-  ArrayAbstractor &get_abstractor() { return abstractor_; };
-  const ic3ia::TermSet &all_indices() { return all_indices_; };
+  /** Returns a set of indices
+   *  @param it the IndexTarget enum category
+   *  @param t optional time, if given it will unroll all the indices at that
+   * time otherwise, it will return the non-timed indices
+   */
+  ic3ia::TermSet get_index_targets(IndexTarget it, int t = -1) {
+    if (!index_targets_[it].size()) {
+      std::cout << "Warning, empty index set for IndexTarget = " << it
+                << std::endl;
+    }
+
+    if (t >= 0) {
+      ic3ia::TermSet timed_indices;
+      for (auto idx : index_targets_[it]) {
+        timed_indices.insert(un_.at_time(idx, t));
+      }
+      return timed_indices;
+    } else {
+      return index_targets_[it];
+    }
+  }
 
 private:
   const ic3ia::TransitionSystem &ts_;
+  ic3ia::Unroller &un_;
   ArrayAbstractor &abstractor_;
   msat_env msat_env_;
-  ic3ia::TermSet curr_indices_;
-  ic3ia::TermSet curr_indices_no_witnesses_;
-  ic3ia::TermSet all_indices_;
-  // terms that are not used as indices but will be enumerated
-  // as indices as a fallback to find prophecy variables
-  ic3ia::TermSet non_idx_int_terms_;
+
+  // maps IndexTarget enums to sets of index targets
+  // categorizing targets by type
+  std::unordered_map<IndexTarget, ic3ia::TermSet> index_targets_;
+
   // array equalities in transition system
   ic3ia::TermSet array_equalities_;
 
