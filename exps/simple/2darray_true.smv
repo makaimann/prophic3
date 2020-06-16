@@ -1,0 +1,24 @@
+MODULE main
+
+VAR
+  mem  : array integer of array integer of integer;
+  pc   : integer;
+  i    : integer;
+  j    : integer;
+  x    : integer;
+  y    : integer;
+  data : integer;
+
+FROZENVAR
+  N : integer;
+
+INIT mem = CONSTARRAY(typeof(mem), CONSTARRAY(array integer of integer, 0))
+INIT pc = 0
+
+INVAR N > 0
+
+TRANS next(mem) = ((pc < N) ? ((data < 100) ? WRITE(mem, i, WRITE(READ(mem, i), j, data)) : mem) : mem)
+TRANS next(pc) = pc + 1
+
+
+INVARSPEC (pc >= N) -> (READ(READ(mem, x), y) < 100)

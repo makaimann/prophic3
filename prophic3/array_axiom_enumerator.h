@@ -25,7 +25,6 @@ public:
       // save state variable indices
       if (ts.only_cur(idx))
       {
-        state_indices_.insert(idx);
         all_indices_.insert(ts.next(idx));
       }
 
@@ -45,9 +44,9 @@ public:
     }
 
     // Find all the array equalities
-    collect_equalities(ts.init(), init_equalities_);
-    collect_equalities(ts.trans(), trans_equalities_);
-    collect_equalities(ts.prop(), prop_equalities_);
+    collect_equalities(ts.init(), array_equalities_);
+    collect_equalities(ts.trans(), array_equalities_);
+    collect_equalities(ts.prop(), array_equalities_);
 
     // Find integer terms -- for fallback grammar search
     collect_int_terms(ts.init());
@@ -85,9 +84,9 @@ public:
 
   // Note: not differentiating between zero-step and one-step axioms
   //       just enumerating them all together
-  ic3ia::TermSet init_eq_axioms();
-  ic3ia::TermSet trans_eq_axioms();
-  ic3ia::TermSet prop_eq_axioms();
+  // if only_cur set, filters out all axioms that are over non-current state
+  // vars
+  ic3ia::TermSet array_eq_axioms(bool only_cur);
 
   ic3ia::TermSet const_array_axioms();
   ic3ia::TermSet store_axioms();
@@ -143,19 +142,14 @@ private:
   const ic3ia::TransitionSystem &ts_;
   ArrayAbstractor &abstractor_;
   msat_env msat_env_;
-  ic3ia::TermSet state_indices_;
   ic3ia::TermSet curr_indices_;
   ic3ia::TermSet curr_indices_no_witnesses_;
   ic3ia::TermSet all_indices_;
   // terms that are not used as indices but will be enumerated
   // as indices as a fallback to find prophecy variables
   ic3ia::TermSet non_idx_int_terms_;
-  // equality ufs present in init
-  ic3ia::TermSet init_equalities_;
-  // equality ufs present in trans
-  ic3ia::TermSet trans_equalities_;
-  // equality ufs present in prop
-  ic3ia::TermSet prop_equalities_;
+  // array equalities in transition system
+  ic3ia::TermSet array_equalities_;
 
   // map axioms to the index that was being refined over
   ic3ia::TermMap axioms_to_index_;
@@ -183,13 +177,12 @@ private:
    * Important Note: lambda argument can be an error term (if there is no finite
    * domain lambda)
    */
-  void enumerate_store_equalities(ic3ia::TermSet &axioms, msat_decl read_res,
-                                  msat_decl read_arg, msat_term store_eq,
+  void enumerate_store_equalities(ic3ia::TermSet &axioms, msat_term store,
                                   ic3ia::TermSet &indices);
 
   /* Enumerate store axioms on all indices: forall i . arr[i] = val */
-  void enumerate_const_array_axioms(ic3ia::TermSet &axioms, msat_decl read,
-                                    msat_term arr, msat_term val,
+  void enumerate_const_array_axioms(ic3ia::TermSet &axioms,
+                                    msat_term conc_const_arr,
                                     ic3ia::TermSet &indices);
 
   // TODO: Figure out if we can remove some of these lemmas
@@ -205,21 +198,15 @@ private:
    *    (exists i . a[i] != b[i]) | a = b
    *    a[witness] != b[witness] | a = b
    *    a[witness] = b[witness] -> a =b
-   *
-   * Important Note: lambda argument can be an error term (if there is no finite
-   * domain lambda)
    */
-  void enumerate_eq_uf_axioms(ic3ia::TermSet &axioms, msat_decl read0,
-                              msat_decl read1, msat_term eq_uf,
-                              msat_term witness, ic3ia::TermSet &indices);
+  void enumerate_eq_uf_axioms(ic3ia::TermSet &axioms, msat_term abs_eq,
+                              ic3ia::TermSet &indices);
 
   // helpers for enumerate_eq_uf_axioms
-  void enumerate_equality_axioms(ic3ia::TermSet &axioms, msat_decl read0,
-                                 msat_decl read1, msat_term eq_uf,
+  void enumerate_equality_axioms(ic3ia::TermSet &axioms, msat_term abs_eq,
                                  ic3ia::TermSet &indices);
 
-  void eq_witness_axiom(ic3ia::TermSet &axioms, msat_decl read0,
-                        msat_decl read1, msat_term eq_uf, msat_term witness);
+  void eq_witness_axiom(ic3ia::TermSet &axioms, msat_term abs_eq);
 
   /* Collect all array equality UFs from the given term and add to set s */
   void collect_equalities(msat_term term, ic3ia::TermSet & s);

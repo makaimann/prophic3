@@ -109,8 +109,8 @@ std::string format_term(msat_env e, msat_term t, std::string indentation = "") {
 ProphIC3::ProphIC3(const ic3ia::TransitionSystem &ts,
                    const ic3ia::Options &opts, ic3ia::LiveEncoder &l2s,
                    unsigned int verbosity)
-    : msat_env_(ts.get_env()), conc_ts_(ts), rw_(conc_ts_),
-      aa_(rw_.rewrite_transition_system(), opts.use_uf_for_arr_eq),
+    : msat_env_(ts.get_env()), conc_ts_(ts),
+      aa_(conc_ts_, opts.use_uf_for_arr_eq),
       abs_ts_(aa_.abstract_transition_system()), aae_(abs_ts_, aa_),
       hr_(abs_ts_), opts_(opts), l2s_(l2s), un_(abs_ts_) {
 
@@ -175,29 +175,9 @@ msat_truth_value ProphIC3::prove()
   logger(1) << "Created " << prop_indices_map.size();
   logger(1) << " prophecy variables for the property" << endlog;
 
-  logger(2) << "++++++++++++++++++ Abstract System +++++++++++++++++++"
-            << endlog;
-
-  logger(2) << "STATES" << endlog;
-  for (auto sv : abs_ts_.statevars()) {
-    logger(2) << "\t" << msat_to_smtlib2_term(msat_env_, sv) << endlog;
+  if (Logger::get().get_verbosity() >= 2) {
+    print_system(abs_ts_, "Abstract System");
   }
-  logger(2) << "INPUTS" << endlog;
-  for (auto in : abs_ts_.inputvars()) {
-    logger(2) << "\t" << msat_to_smtlib2_term(msat_env_, in) << endlog;
-  }
-
-  logger(2) << "INIT" << endlog;
-  logger(2) << format_term(msat_env_, abs_ts_.init()) << endlog;
-
-  logger(2) << "TRANS" << endlog;
-  logger(2) << format_term(msat_env_, abs_ts_.trans()) << endlog;
-
-  logger(2) << "PROP" << endlog;
-  logger(2) << format_term(msat_env_, abs_ts_.prop()) << endlog;
-
-  logger(2) << "++++++++++++++++++ +++++++++++++++ +++++++++++++++++++"
-            << endlog;
 
   int iter_cnt = 0;
   while (res != MSAT_TRUE)
@@ -217,6 +197,23 @@ msat_truth_value ProphIC3::prove()
       f.open(filename);
       abs_ts_.to_vmt(f);
       f.close();
+
+      TransitionSystem refined_conc_ts(abs_ts_.get_env());
+      TermMap state_vars;
+      for (auto sv : abs_ts_.statevars()) {
+        state_vars[aa_.concrete(sv)] = aa_.concrete(abs_ts_.next(sv));
+      }
+      refined_conc_ts.initialize(state_vars, aa_.concrete(abs_ts_.init()),
+                                 aa_.concrete(abs_ts_.trans()),
+                                 aa_.concrete(abs_ts_.prop()),
+                                 abs_ts_.live_prop());
+
+      ofstream fconc;
+      std::string conc_filename = opts_.trace;
+      conc_filename += "_conc_system_" + std::to_string(iter_cnt) + ".vmt";
+      fconc.open(conc_filename);
+      refined_conc_ts.to_vmt(fconc);
+      fconc.close();
     }
     iter_cnt++;
 
@@ -325,31 +322,16 @@ bool ProphIC3::fix_bmc()
 
     broken = msat_solve(refiner_) == MSAT_SAT;
 
-
-    // note: init_eq_axioms should come first (see comment about max_k below)
     std::vector<TermSet> untimed_axiom_sets = {
-        aae_.init_eq_axioms(), aae_.const_array_axioms(), aae_.prop_eq_axioms(),
-        aae_.store_axioms()};
-    if (current_k_ > 0) {
-      untimed_axiom_sets.push_back(aae_.trans_eq_axioms());
-    }
+        aae_.array_eq_axioms(current_k_ == 0), aae_.store_axioms(),
+        aae_.const_array_axioms()};
 
     while(broken)
     {
       int lemma_cnt = 0;
 
       for (size_t i = 0; i < untimed_axiom_sets.size(); ++i) {
-        int max_k;
-        if (i == 0) {
-          // for init_eq_axioms, only check at time 0
-          max_k = 0;
-        } else {
-          max_k = current_k_;
-        }
-
-        // Need to check up to (and include) max_k for single-time
-        // e.g. if it has no next, then need to include last time step
-        for (size_t k = 0; k <= max_k; ++k) {
+        for (size_t k = 0; k <= current_k_; ++k) {
           if (opts_.max_array_axioms > 0 &&
               lemma_cnt >= opts_.max_array_axioms) {
             break;
@@ -369,8 +351,7 @@ bool ProphIC3::fix_bmc()
 
             // don't check axioms with times beyond the current time-step
             // (because of next)
-            if (k == max_k && abs_ts_.contains_next(ax))
-            {
+            if (k == current_k_ && abs_ts_.contains_next(ax)) {
               continue;
             }
 
@@ -782,17 +763,21 @@ void ProphIC3::refine_abs_ts(TermSet & untimed_axioms)
 {
   int init_cnt = 0;
   for (auto ax : untimed_axioms) {
-    // logger(1) << "Added to trans: " << msat_to_smtlib2_term(msat_env_, ax) << endlog;
+    logger(2) << "Added to trans: " << msat_to_smtlib2_term(msat_env_, ax)
+              << endlog;
     abs_ts_.add_trans(ax);
 
     // if there's no next-state variables, add next version to trans
     if (!abs_ts_.contains_next(ax)) {
-      // logger(1) << "Added to trans next: " << msat_to_smtlib2_term(msat_env_, abs_ts_.next(ax)) << endlog;
+      logger(2) << "Added to trans next: "
+                << msat_to_smtlib2_term(msat_env_, abs_ts_.next(ax)) << endlog;
       abs_ts_.add_trans(abs_ts_.next(ax));
     }
 
     if (abs_ts_.only_cur(ax) && (current_k_ == 0))
     {
+      logger(2) << "Added to init: " << msat_to_smtlib2_term(msat_env_, ax)
+                << endlog;
       abs_ts_.add_init(ax);
       init_cnt++;
     }
@@ -988,17 +973,12 @@ void ProphIC3::print_witness(msat_model model,
                              ArrayAxiomEnumerator &aae_) {
 
   ArrayAbstractor &abstractor = aae_.get_abstractor();
-  logger(1) << "+++++++++++++++++++++ FAILED +++++++++++++++++++" << endlog;
-  logger(1) << "prop: " << msat_to_smtlib2_term(msat_env_, abs_ts_.prop())
-            << endlog;
+  if (Logger::get().get_verbosity() >= 1)
+  {
+    logger(1) << "+++++++++++++++++++++ FAILED +++++++++++++++++++" << endlog;
+    print_system(abs_ts_, "Abstract System");
+  }
 
-  logger(1) << endlog;
-  logger(1) << "++++++++++++++++++++++ Abstract TS +++++++++++++++++++++ "
-            << endlog;
-  logger(1) << "INIT:" << endlog;
-  logger(1) << msat_to_smtlib2_term(msat_env_, abs_ts_.init()) << endlog;
-  logger(1) << "TRANS:" << endlog;
-  logger(1) << msat_to_smtlib2_term(msat_env_, abs_ts_.trans()) << endlog;
   logger(1) << "STORES:" << endlog;
   for(auto s : abstractor.stores())
   {
@@ -1355,37 +1335,32 @@ bool ProphIC3::reduce_axioms(const TermSet & untimed_axioms,
 void ProphIC3::print_system(ic3ia::TransitionSystem & ts, std::string name) const
 {
   msat_env env = ts.get_env();
-  logger(1) << "Printing Transition System: " << name << endlog;
+  std::cout << "++++++++++++++++++++ Printing Transition System: " << name
+            << " ++++++++++++++++++++" << std::endl;
 
-  logger(1) << "STATEVARS" << endlog;
+  std::cout << "STATEVARS" << std::endl;
   for (auto sv : ts.statevars())
   {
-    logger(1) << "\t" << msat_to_smtlib2_term(env, sv) << endlog;
+    std::cout << "\t" << msat_to_smtlib2_term(env, sv) << std::endl;
   }
 
-  logger(1) << "INPUTS" << endlog;
+  std::cout << "INPUTS" << std::endl;
   for (auto i : ts.inputvars())
   {
-    logger(1) << "\t" << msat_to_smtlib2_term(env, i) << endlog;
+    std::cout << "\t" << msat_to_smtlib2_term(env, i) << std::endl;
   }
 
-  logger(1) << endlog;
-  logger(1) << "INIT" << endlog;
-  for (auto c : conjunctive_partition(env, ts.init()))
-  {
-    logger(1) << "\t" << msat_to_smtlib2_term(env, c) << endlog;
-  }
+  std::cout << std::endl;
+  std::cout << "INIT" << std::endl;
+  std::cout << format_term(env, ts.init()) << std::endl;
 
-  logger(1) << endlog;
-  logger(1) << "TRANS" << endlog;
-  for (auto c : conjunctive_partition(env, ts.trans()))
-  {
-    logger(1) << "\t" << msat_to_smtlib2_term(env, c) << endlog;
-  }
+  std::cout << std::endl;
+  std::cout << "TRANS" << std::endl;
+  std::cout << format_term(env, ts.trans()) << std::endl;
 
-  logger(1) << endlog;
-  logger(1) << "PROP" << endlog;
-  logger(1) << "\t" << msat_to_smtlib2_term(env, ts.prop()) << endlog;
+  std::cout << std::endl;
+  std::cout << "PROP" << std::endl;
+  std::cout << format_term(env, ts.prop()) << std::endl;
 }
 
 }

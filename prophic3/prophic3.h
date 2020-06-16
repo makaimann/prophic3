@@ -32,7 +32,10 @@ namespace prophic3
 
     msat_env msat_env_;
     const ic3ia::TransitionSystem & conc_ts_;
-    Rewriter rw_;
+    // Not using rewriter for now
+    // technically not needed without multi_uf
+    // and with simpler refinement, e.g. add axioms over store directly, not an equality with a store
+    /* Rewriter rw_; */
     ArrayAbstractor aa_;
     ic3ia::TransitionSystem abs_ts_;
     ArrayAxiomEnumerator aae_;

@@ -606,25 +606,14 @@ msat_term ArrayAbstractor::construct_abstract_term(msat_term term) {
         msat_term arr_eq = msat_make_eq(e, lhs_cache, rhs_cache);
         super->populate_caches(t, arr_eq);
 
-        // assuming arrays have already been flattened
-        // thus store equalities are all top-level (e.g. definitions)
-        // and equality with an ite is top-level (more important)
-        if (msat_term_is_array_write(e, lhs) ||
-            msat_term_is_array_write(e, rhs)) {
-          // save the store equality
-          super->stores_.insert(arr_eq);
-          // shouldn't need a witness for stores
-          return MSAT_VISIT_PROCESS;
-        } else if (msat_term_is_term_ite(e, lhs_cache) ||
-                   msat_term_is_term_ite(e, rhs_cache))
-        {
+        if (msat_term_is_term_ite(e, lhs_cache) ||
+            msat_term_is_term_ite(e, rhs_cache)) {
           // equality with an ite is the only one that is always interpreted
           // other array equalities might use an abstract equality
           // depending on options
           // don't need a witness
           return MSAT_VISIT_PROCESS;
         }
-
 
         msat_type idx_type;
         msat_is_array_type(e, msat_term_get_type(lhs), &idx_type, nullptr);
@@ -669,6 +658,8 @@ msat_term ArrayAbstractor::construct_abstract_term(msat_term term) {
         msat_term args[3] = {arr_cache, idx_cache, val_cache};
         msat_term arr_write = msat_make_uf(e, writefun, &args[0]);
         super->populate_caches(t, arr_write);
+        // save the abstract store
+        super->stores_.insert(arr_write);
       } else {
         // rebuild the term
         size_t arity = msat_term_arity(t);
@@ -716,9 +707,6 @@ void ArrayAbstractor::construct_abstract_array_equalities() {
   for (auto elem : witnesses_) {
     equalities.insert(elem.first);
   }
-  for (auto e : stores_) {
-    equalities.insert(e);
-  }
 
   // abstract all equalities
   TermMap eq_substitution_map;
@@ -745,18 +733,6 @@ void ArrayAbstractor::construct_abstract_array_equalities() {
   TermList to_subst;
   TermList vals;
   msat_term val;
-  for (auto s : stores_) {
-    if (eq_substitution_map.find(s) == eq_substitution_map.end()) {
-      std::cout << "Missing " << msat_to_smtlib2_term(msat_env_, s) << ":"
-                << msat_term_id(s) << std::endl;
-      throw std::exception();
-    }
-    val = eq_substitution_map.at(s);
-    new_stores.insert(val);
-    to_subst.push_back(s);
-    vals.push_back(val);
-  }
-  stores_ = new_stores;
 
   for (auto elem : witnesses_) {
     val = eq_substitution_map.at(elem.first);
