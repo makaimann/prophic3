@@ -624,6 +624,7 @@ bool InvarProofChecker::check(const std::vector<TermList> &witness)
 
     struct Data {
       TransitionSystem & ts;
+      bool contains_inputs = false;
       Data(TransitionSystem & t) : ts(t) {}
     };
 
@@ -638,14 +639,21 @@ bool InvarProofChecker::check(const std::vector<TermList> &witness)
                      Data * d = static_cast<Data *>(data);
                      if (!d->ts.is_statevar(t))
                      {
+                       d->contains_inputs = true;
                        std::cout << "found a non-state variable in the invariant: " << msat_to_smtlib2_term(e, t) << std::endl;
-                       throw std::exception();
                      }
                    }
                    return MSAT_VISIT_PROCESS;
                  };
     Data d = Data(ts_);
     msat_visit_term(wenv, inv_, visit, &d);
+
+    if (d.contains_inputs)
+    {
+      // if the witness has inputs in it, don't even bother checking
+      // it can't be right
+      return false;
+    }
     
     logger(1) << "checking init -> inv... " << flushlog;
     msat_assert_formula(wenv, ts_.init());
