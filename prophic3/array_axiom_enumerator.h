@@ -92,7 +92,7 @@ public:
    */
   ic3ia::TermSet octagonal_addition_domain_terms() const;
 
-  // Enumerates all untime-able axioms
+  // Enumerates all untime-able axioms with the default indices (from index set)
   // Note: not differentiating between zero-step and one-step axioms
   //       just enumerating them all together
   // if only_cur set, filters out all axioms that are over non-current state
@@ -100,6 +100,12 @@ public:
   ic3ia::TermSet array_eq_axioms(bool only_cur);
   ic3ia::TermSet const_array_axioms(bool only_cur);
   ic3ia::TermSet store_axioms(bool only_cur);
+
+  // expose the choice of indices to the user
+  // allows checking axioms over indices not in index set
+  ic3ia::TermSet array_eq_axioms(const ic3ia::TermSet &indices);
+  ic3ia::TermSet const_array_axioms(const ic3ia::TermSet &indices);
+  ic3ia::TermSet store_axioms(const ic3ia::TermSet &indices);
 
   /** Enumerates untimeable axioms about
    *  lambda index being different from all others of the same type
@@ -206,12 +212,12 @@ private:
    * domain lambda)
    */
   void enumerate_store_equalities(ic3ia::TermSet &axioms, msat_term store,
-                                  ic3ia::TermSet &indices);
+                                  const ic3ia::TermSet &indices);
 
   /* Enumerate store axioms on all indices: forall i . arr[i] = val */
   void enumerate_const_array_axioms(ic3ia::TermSet &axioms,
                                     msat_term conc_const_arr,
-                                    ic3ia::TermSet &indices);
+                                    const ic3ia::TermSet &indices);
 
   // TODO: Figure out if we can remove some of these lemmas
   //       probably don't need them all
@@ -228,11 +234,11 @@ private:
    *    a[witness] = b[witness] -> a =b
    */
   void enumerate_eq_uf_axioms(ic3ia::TermSet &axioms, msat_term abs_eq,
-                              ic3ia::TermSet &indices);
+                              const ic3ia::TermSet &indices);
 
   // helpers for enumerate_eq_uf_axioms
   void enumerate_equality_axioms(ic3ia::TermSet &axioms, msat_term abs_eq,
-                                 ic3ia::TermSet &indices);
+                                 const ic3ia::TermSet &indices);
 
   void eq_witness_axiom(ic3ia::TermSet &axioms, msat_term abs_eq);
 
