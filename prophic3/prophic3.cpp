@@ -649,7 +649,7 @@ bool ProphIC3::fix_bmc()
         msat_term l = elem.first;
         msat_term a = elem.second;
         if (core.find(l) == core.end()) {
-          untimed_axioms_to_add.erase(a);
+          bool erased = untimed_axioms_to_add.erase(a);
           // TODO evaluate this more: should we remove timed axioms also
           // originally had reduce_timed_axioms handling it entirely and
           // didn't remove it here to avoid removing important (short delay)
@@ -659,7 +659,10 @@ bool ProphIC3::fix_bmc()
           // delay timed axioms first so it's less likely those will be
           // removed (because we're not even enumerating longer ones unless
           // necessary
-          timed_axioms_to_refine.erase(a);
+          erased |= timed_axioms_to_refine.erase(a);
+
+          // expected axiom a to be present in one of the axiom sets
+          assert(erased);
         }
       }
     }
@@ -1114,6 +1117,45 @@ bool ProphIC3::contains_vars(msat_term term, const TermSet &vars) const {
   Data data(vars);
   msat_visit_term(msat_env_, term, visit, &data);
   return data.contains_var;
+}
+
+msat_term ProphIC3::untime_axiom(msat_term axiom) {
+  TermSet free_vars;
+  get_free_vars(msat_env_, axiom, free_vars);
+
+  // find min and max time, ignoring the target
+  size_t min_time = -1;
+  size_t max_time = 0;
+  for (auto v : free_vars) {
+    size_t time = un_.get_time(v);
+    if (time < min_time) {
+      min_time = time;
+    }
+    if (time > max_time) {
+      max_time = time;
+    }
+  }
+
+  assert(max_time - min_time <= 1);
+
+  TermList to_subst;
+  TermList vals;
+  for (auto v : free_vars) {
+    if (un_.get_time(v) == min_time) {
+      to_subst.push_back(v);
+      vals.push_back(un_.untime(v));
+    } else {
+      assert(un_.get_time(v) == max_time);
+      to_subst.push_back(v);
+      vals.push_back(abs_ts_.next(un_.untime(v)));
+    }
+  }
+
+  assert(to_subst.size() == vals.size());
+  msat_term res = msat_apply_substitution(msat_env_, axiom, to_subst.size(),
+                                          &to_subst[0], &vals[0]);
+  assert(!MSAT_ERROR_TERM(res));
+  return res;
 }
 
 msat_term ProphIC3::untime_axiom(msat_term axiom, msat_term target, msat_term proph)

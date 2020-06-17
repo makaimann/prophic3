@@ -49,7 +49,7 @@ namespace prophic3
     msat_env refiner_;
     msat_env reducer_;
     msat_term refinement_formula_;
-    
+
     size_t current_k_{0};
     size_t num_proph_vars_{0};
 
@@ -95,6 +95,10 @@ namespace prophic3
      * returns a map from timed indices to their history variables
      */
     ic3ia::TermMap add_history_vars(const std::unordered_map<msat_term, size_t> targets);
+
+    /* Untimes an axiom
+     * Note: This untiming handles current / next unlike the unroller */
+    msat_term untime_axiom(msat_term axiom);
 
     /* Untimes an axiom given a target and its replacement proph var
      * Note: This untiming handles current / next unlike the unroller */
