@@ -207,20 +207,19 @@ ic3ia::TermSet ArrayAxiomEnumerator::lambda_alldiff_axioms()
 }
 
 TermSet ArrayAxiomEnumerator::equality_axioms_idx_time(const TermSet &indices,
-                                                       size_t j, Unroller &un,
-                                                       size_t k) {
+                                                       size_t j, size_t k) {
 
   TermSet axioms;
   // unrolled indices
   TermSet timed_indices;
 
   for (auto idx : indices) {
-    timed_indices.insert(un.at_time(idx, j));
+    timed_indices.insert(un_.at_time(idx, j));
   }
 
   for (auto e : array_equalities_) {
     for (size_t i = 0; i < k; i++) {
-      msat_term e_i = un.at_time(e, i);
+      msat_term e_i = un_.at_time(e, i);
 
       // don't enumerate witness axioms because those are just over the
       // witness index not parameterized by an index e.g. using
@@ -233,40 +232,40 @@ TermSet ArrayAxiomEnumerator::equality_axioms_idx_time(const TermSet &indices,
 }
 
 TermSet ArrayAxiomEnumerator::store_axioms_idx_time(const TermSet &indices,
-                                                    size_t j, Unroller &un,
-                                                    size_t k) {
+                                                    size_t j, size_t k) {
   TermSet axioms;
   // unrolled indices
   TermSet timed_indices;
 
   for (auto idx : indices) {
-    timed_indices.insert(un.at_time(idx, j));
+    timed_indices.insert(un_.at_time(idx, j));
   }
 
   const TermSet &stores = abstractor_.stores();
   for (auto st : stores) {
     for (size_t i = 0; i < k; i++) {
-      msat_term st_i = un.at_time(st, i);
+      msat_term st_i = un_.at_time(st, i);
       enumerate_store_equalities(axioms, st_i, timed_indices);
     }
   }
   return axioms;
 }
 
-TermSet ArrayAxiomEnumerator::const_array_axioms_idx_time(
-    const TermSet &indices, size_t j, Unroller &un, size_t k) {
+TermSet
+ArrayAxiomEnumerator::const_array_axioms_idx_time(const TermSet &indices,
+                                                  size_t j, size_t k) {
   TermSet axioms;
   // unrolled indices
   TermSet timed_indices;
 
   for (auto idx : indices) {
-    timed_indices.insert(un.at_time(idx, j));
+    timed_indices.insert(un_.at_time(idx, j));
   }
 
   for (msat_term ca : abstractor_.const_arrs()) {
     for (size_t i = 0; i < k; i++)
     {
-      msat_term ca_i = un.at_time(ca, i);
+      msat_term ca_i = un_.at_time(ca, i);
       enumerate_const_array_axioms(axioms, ca_i, timed_indices);
     }
   }

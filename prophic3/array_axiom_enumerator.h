@@ -115,31 +115,26 @@ public:
   /** Enumerate equality axioms over indices at j
    *  indices - the index sets to enumerate axiom over
    *  j - the time step of the indices (they haven't been unrolled yet)
-   *  un - the unroller to use for timing
    *  k - the maximum time-step (inclusive)
    */
   ic3ia::TermSet equality_axioms_idx_time(const ic3ia::TermSet &indices,
-                                          size_t j, ic3ia::Unroller &un,
-                                          size_t k);
+                                          size_t j, size_t k);
 
   /** Enumerate store axioms over indices at j
    *  indices - the index sets to enumerate axiom over
    *  j - the time step of the indices (they haven't been unrolled yet)
-   *  un - the unroller to use for timing
    *  k - the maximum time-step (inclusive)
    */
   ic3ia::TermSet store_axioms_idx_time(const ic3ia::TermSet &indices, size_t j,
-                                       ic3ia::Unroller &un, size_t k);
+                                       size_t k);
 
   /** Enumerate const array axioms over indices j
    *  indices - the index sets to enumerate axiom over
    *  j - the time step of the indices (they haven't been unrolled yet)
-   *  un - the unroller to use for timing
    *  k - the maximum time-step (inclusive)
    */
   ic3ia::TermSet const_array_axioms_idx_time(const ic3ia::TermSet &indices,
-                                             size_t j, ic3ia::Unroller &un,
-                                             size_t k);
+                                             size_t j, size_t k);
 
   /* Adds an index to the index set (mostly used for adding prophecy vars) */
   void add_index(msat_type _type, msat_term i);

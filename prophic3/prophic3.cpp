@@ -428,11 +428,11 @@ bool ProphIC3::fix_bmc()
 
           timed_axioms.clear();
           timed_axioms.push_back(
-              aae_.equality_axioms_idx_time(curr_indices, j, un_, current_k_));
+              aae_.equality_axioms_idx_time(curr_indices, j, current_k_));
           timed_axioms.push_back(
-              aae_.store_axioms_idx_time(curr_indices, j, un_, current_k_));
-          timed_axioms.push_back(aae_.const_array_axioms_idx_time(
-              curr_indices, j, un_, current_k_));
+              aae_.store_axioms_idx_time(curr_indices, j, current_k_));
+          timed_axioms.push_back(
+              aae_.const_array_axioms_idx_time(curr_indices, j, current_k_));
 
           for (auto timed_axiom_set : timed_axioms) {
             if (opts_.max_array_axioms > 0 &&
@@ -473,11 +473,11 @@ bool ProphIC3::fix_bmc()
                   << endlog;
               timed_axioms.clear();
               timed_axioms.push_back(aae_.equality_axioms_idx_time(
-                  non_idx_int_terms, j, un_, current_k_));
-              timed_axioms.push_back(aae_.store_axioms_idx_time(
-                  non_idx_int_terms, j, un_, current_k_));
+                  non_idx_int_terms, j, current_k_));
+              timed_axioms.push_back(
+                  aae_.store_axioms_idx_time(non_idx_int_terms, j, current_k_));
               timed_axioms.push_back(aae_.const_array_axioms_idx_time(
-                  non_idx_int_terms, j, un_, current_k_));
+                  non_idx_int_terms, j, current_k_));
 
               for (auto timed_axiom_set : timed_axioms) {
                 if (opts_.max_array_axioms > 0 &&
@@ -516,11 +516,11 @@ bool ProphIC3::fix_bmc()
 
               timed_axioms.clear();
               timed_axioms.push_back(aae_.equality_axioms_idx_time(
-                  octagonal_addition_domain, j, un_, current_k_));
+                  octagonal_addition_domain, j, current_k_));
               timed_axioms.push_back(aae_.store_axioms_idx_time(
-                  octagonal_addition_domain, j, un_, current_k_));
+                  octagonal_addition_domain, j, current_k_));
               timed_axioms.push_back(aae_.const_array_axioms_idx_time(
-                  octagonal_addition_domain, j, un_, current_k_));
+                  octagonal_addition_domain, j, current_k_));
 
               for (auto timed_axiom_set : timed_axioms) {
                 if (opts_.max_array_axioms > 0 &&
