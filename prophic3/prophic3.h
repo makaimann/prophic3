@@ -68,6 +68,15 @@ namespace prophic3
      */
     bool fix_bmc();
 
+    /** Checks axioms over BMC
+     *  Uses the formal index set which is sound and complete for BMC.
+     *  assumes the two set arguments start empty
+     *  @param untimed_axioms a set to be populated with untimeable axioms
+     *  @param timed_axioms a set to be populated with time-crossing axioms
+     */
+    bool check_axioms_over_bmc(ic3ia::TermSet &untimed_axioms,
+                               ic3ia::TermSet &timed_axioms);
+
     /** Check axiom in the current refiner_ model
      *  used as a helper for fix_bmc
      *  @param axiom_to_check - the axiom to check

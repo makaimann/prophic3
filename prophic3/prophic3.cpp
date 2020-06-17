@@ -267,22 +267,112 @@ int ProphIC3::witness(std::vector<TermList> & out)
 
 bool ProphIC3::fix_bmc()
 {
-  // mapping from timed version of untimeable axioms to the untimed version
-  TermMap timed_to_untimed;
+  TermSet untimed_axioms;
+  TermSet timed_axioms;
+  bool fixable = check_axioms_over_bmc(untimed_axioms, timed_axioms);
 
-  // untimed axioms to add to transition system
+  if (!fixable) {
+    // found a concrete counter-example
+    return false;
+  }
+
+  // TODO: have an option to find better indices for refinement
+
   TermSet untimed_axioms_to_add;
-  // stores timed axioms that need to be refined
-  TermSet timed_axioms_to_refine;
-  // violated axioms to add to BMC run
-  TermSet violated_axioms;
-  // axioms needed to refine initial state with no trans
-  // heuristic stop when we reach a bound greater than 0 with no added axioms
-  bool cont;
-  bool axioms_added;
-  bool broken;
-  bool found_untimed_axioms;
-  bool found_timed_axioms;
+  TermSet timed_axioms_to_add;
+  if (opts_.axiom_reduction) {
+    if (timed_axioms.size()) {
+      logger(1) << "reducing TIMED axioms" << endlog;
+      // use map to sort by distance from safety violation
+      std::map<int, std::map<msat_term, ic3ia::TermSet>> sorted_map;
+      for (auto timed_ax : timed_axioms) {
+        msat_term tmp_idx = aae_.get_index(timed_ax);
+        int delay_amount = current_k_ - un_.get_time(tmp_idx);
+        msat_term untimed_idx = un_.untime(tmp_idx);
+        sorted_map[delay_amount][untimed_idx].insert(timed_ax);
+      }
+
+      // place axiom sets in a vector
+      // relying on iteration order for sortedness
+      std::vector<ic3ia::TermSet> sorted_timed_axioms;
+      for (auto elem0 : sorted_map) {
+        for (auto elem1 : elem0.second) {
+          sorted_timed_axioms.push_back(elem1.second);
+        }
+      }
+
+      bool ok = reduce_timed_axioms(untimed_axioms, sorted_timed_axioms,
+                                    timed_axioms_to_add);
+      assert(ok);
+
+    } else {
+      logger(1) << "reducing untime-able axioms" << endlog;
+      bool ok = reduce_axioms(untimed_axioms, untimed_axioms_to_add);
+      assert(ok);
+    }
+  } else {
+    untimed_axioms_to_add = untimed_axioms;
+    timed_axioms_to_add = timed_axioms;
+  }
+
+  /************************************* Fix the transition system
+   * ************************************/
+  if (timed_axioms_to_add.size()) {
+    // add prophecy variables but not axioms
+    // don't refine with untimed axioms search for them again
+    prophesize_abs_ts(timed_axioms_to_add, false);
+    TermMap new_statevars;
+    for (auto sv : abs_ts_.statevars()) {
+      new_statevars[sv] = abs_ts_.next(sv);
+    }
+    abs_ts_.initialize(new_statevars, abs_ts_.init(), abs_ts_.trans(),
+                       abs_ts_.prop(), abs_ts_.live_prop());
+
+    // find untimed axioms again
+    logger(1) << "searching for untime-able axioms on system with new "
+                 "auxiliary variables"
+              << endlog;
+    untimed_axioms.clear();
+    timed_axioms.clear();
+    untimed_axioms_to_add.clear();
+    timed_axioms_to_add.clear();
+    fixable = check_axioms_over_bmc(untimed_axioms, timed_axioms);
+    assert(fixable);
+    assert(!timed_axioms.size());
+
+    if (opts_.axiom_reduction) {
+      logger(1) << "reducing untime-able axioms" << endlog;
+      bool ok = reduce_axioms(untimed_axioms, untimed_axioms_to_add);
+      assert(ok);
+    } else {
+      untimed_axioms_to_add = untimed_axioms;
+    }
+  }
+
+  // refine the system with axioms
+  refine_abs_ts(untimed_axioms_to_add);
+
+  return fixable;
+}
+
+bool ProphIC3::check_axioms_over_bmc(TermSet &untimed_axioms,
+                                     TermSet &timed_axioms) {
+  assert(!untimed_axioms.size());
+  assert(!timed_axioms.size());
+
+  // set up BMC
+  msat_term bad = msat_make_not(refiner_, abs_ts_.prop());
+  refinement_formula_ = un_.at_time(abs_ts_.init(), 0);
+  for (int i = 0; i < current_k_; ++i) {
+    refinement_formula_ = msat_make_and(refiner_, refinement_formula_,
+                                        un_.at_time(abs_ts_.trans(), i));
+  }
+  refinement_formula_ = msat_make_and(refiner_, refinement_formula_,
+                                      un_.at_time(bad, current_k_));
+
+  msat_reset_env(refiner_);
+  msat_assert_formula(refiner_, refinement_formula_);
+  bool broken = msat_solve(refiner_) == MSAT_SAT;
 
   auto lbl = [=](msat_term p) -> msat_term
              {
@@ -294,453 +384,205 @@ bool ProphIC3::fix_bmc()
                return msat_make_constant(refiner_, d);
              };
 
+  // mapping from timed version of untimeable axioms to the untimed version
+  TermMap timed_to_untimed;
   TermSet labels;
   TermMap axiom2label; // maps untimed axiom to a label
   TermMap label2axiom; // maps label to an untimed axiom
-  // Heuristic: fix bmc up until it goes two steps without adding new axioms
-  size_t num_steps_no_axioms = 0;
-  while (num_steps_no_axioms < 2) {
-    axioms_added = false;
-    labels.clear();
-    label2axiom.clear();
 
-    logger(1) << "--- Trying BMC " << current_k_ << " ---" << endlog;
-    // set up BMC
-    msat_term bad = msat_make_not(refiner_, abs_ts_.prop());
-    refinement_formula_ = un_.at_time(abs_ts_.init(), 0);
-    for(int i = 0; i < current_k_; ++i)
-    {
-      refinement_formula_ = msat_make_and(refiner_, refinement_formula_,
-                                          un_.at_time(abs_ts_.trans(), i));
-    }
-    refinement_formula_ = msat_make_and(refiner_, refinement_formula_,
-                                        un_.at_time(bad, current_k_));
+  logger(1) << "--- Checking axioms over BMC at " << current_k_ << " ---"
+            << endlog;
 
-    msat_reset_env(refiner_);
-    msat_assert_formula(refiner_, refinement_formula_);
+  TermSet violated_axioms;
+  bool only_cur = (current_k_ == 0);
+  std::vector<TermSet> untimed_axiom_sets = {aae_.array_eq_axioms(only_cur),
+                                             aae_.store_axioms(only_cur),
+                                             aae_.const_array_axioms(only_cur)};
 
-    broken = msat_solve(refiner_) == MSAT_SAT;
+  while (broken) {
+    int lemma_cnt = 0;
+    violated_axioms.clear();
 
-    // if at bound 0 then should only have axioms over current state variables
-    bool only_cur = (current_k_ == 0);
-
-    std::vector<TermSet> untimed_axiom_sets = {
-        aae_.array_eq_axioms(only_cur), aae_.store_axioms(only_cur),
-        aae_.const_array_axioms(only_cur)};
-
-    while(broken)
-    {
-      int lemma_cnt = 0;
-
-      for (size_t i = 0; i < untimed_axiom_sets.size(); ++i) {
-        for (size_t k = 0; k <= current_k_; ++k) {
+    // check for regular untime-able axioms
+    logger(1) << "Checking for untime-able axioms" << endlog;
+    for (size_t i = 0; i < untimed_axiom_sets.size(); ++i) {
+      for (size_t k = 0; k <= current_k_; ++k) {
+        for (auto ax : untimed_axiom_sets[i]) {
           if (opts_.max_array_axioms > 0 &&
               lemma_cnt >= opts_.max_array_axioms) {
+            // TODO: breaking from this loop won't exit other loops
+            //       it will keep trying and breaking
+            //       optimization could break from all loops
             break;
           }
 
-          for (auto ax : untimed_axiom_sets[i]) {
-            if (opts_.max_array_axioms > 0 &&
-                lemma_cnt >= opts_.max_array_axioms) {
-              break;
-            }
-
-            // HACK: filter out axioms that are not over state variables
-            //       at time zero -- they can't be added anyway
-            if (current_k_ == 0 && !abs_ts_.only_cur(ax)) {
-              continue;
-            }
-
-            // don't check axioms with times beyond the current time-step
-            // (because of next)
-            if (k == current_k_ && abs_ts_.contains_next(ax)) {
-              continue;
-            }
-
-            msat_term timed_axiom = un_.at_time(ax, k);
-            if (is_axiom_violated(timed_axiom)) {
-              violated_axioms.insert(timed_axiom);
-              timed_to_untimed[timed_axiom] = ax;
-              untimed_axioms_to_add.insert(ax);
-              ++lemma_cnt;
-            }
+          msat_term timed_axiom = un_.at_time(ax, k);
+          if (is_axiom_violated(timed_axiom)) {
+            violated_axioms.insert(timed_axiom);
+            timed_to_untimed[timed_axiom] = ax;
+            untimed_axioms.insert(ax);
+            ++lemma_cnt;
           }
         }
       }
+    }
 
+    bool found_untimed_axioms = violated_axioms.size();
+
+    // if there weren't any regular untimeable axioms
+    // try the lambda refinement (this is also untime-able)
+    if (!found_untimed_axioms) {
+      logger(1) << "Checking lambda all different axioms" << endlog;
+      for (auto ax : aae_.lambda_alldiff_axioms(only_cur)) {
+        for (size_t k = 0; k <= current_k_; k++) {
+          msat_term timed_axiom = un_.at_time(ax, k);
+          if (is_axiom_violated(timed_axiom)) {
+            violated_axioms.insert(timed_axiom);
+            untimed_axioms.insert(ax);
+            timed_to_untimed[timed_axiom] = ax;
+            lemma_cnt++;
+          }
+        }
+      }
       found_untimed_axioms = violated_axioms.size();
+    }
 
-      logger(1) << "Found " << violated_axioms.size() << " violated untime-able axioms!"
-                << endlog;
+    // check for timed axioms over the index set if there were no axioms found
+    if (!found_untimed_axioms) {
+      logger(1) << "Checking for timed axioms" << endlog;
+      vector<TermSet> timed_axiom_candidates;
+      const TermSet &curr_indices =
+          aae_.get_index_targets(NO_NEXT_INDEX_SET_AND_PROPH);
 
-      // if there weren't any regular untimeable axioms
-      // try the lambda refinement (this is untime-able)
-      if (!found_untimed_axioms)
-      {
-        logger(1) << "Trying lazy lambda all different refinement!" << endlog;
-        for (auto ax : aae_.lambda_alldiff_axioms())
-        {
-          // HACK: filter out axioms that are not over state variables
-          //       at time zero -- they can't be added anyway
-          if (current_k_ == 0 && !abs_ts_.only_cur(ax)) {
-            continue;
-          }
+      bool found_timed_axioms_last_iter = false;
 
-          for(size_t k = 0; k <= current_k_; k++)
-          {
-            msat_term timed_axiom = un_.at_time(ax, k);
-            if (is_axiom_violated(timed_axiom)) {
-              violated_axioms.insert(timed_axiom);
-              timed_to_untimed[timed_axiom] = ax;
-              untimed_axioms_to_add.insert(ax);
-              lemma_cnt++;
-            }
-          }
+      // outer loop goes backwards from current_k_
+      for (int j = current_k_; j >= 0; j--) {
+        if (found_timed_axioms_last_iter) {
+          // if found axioms already, we should not continue
+          // need to check if we've ruled out all counterexamples at this bound
+          break;
         }
-        found_untimed_axioms = violated_axioms.size();
-      }
 
-      if (!found_untimed_axioms)
-      {
-        // TODO: use pointers or something to avoid copying the TermSets into
-        // the vector
-        vector<TermSet> timed_axioms;
-        const TermSet &curr_indices =
-            aae_.get_index_targets(NO_NEXT_INDEX_SET_AND_PROPH);
-        const TermSet &non_idx_int_terms =
-            aae_.get_index_targets(NON_INDEX_INT_TERMS);
+        timed_axiom_candidates.clear();
+        timed_axiom_candidates.push_back(
+            aae_.equality_axioms_idx_time(curr_indices, j, current_k_));
+        timed_axiom_candidates.push_back(
+            aae_.store_axioms_idx_time(curr_indices, j, current_k_));
+        timed_axiom_candidates.push_back(
+            aae_.const_array_axioms_idx_time(curr_indices, j, current_k_));
 
-        // Heuristic: stop once you find timed axioms going backward from
-        // property violation
-        //            might be sufficient
-        bool found_timed_axioms_last_iter = false;
-
-        // check timed axioms backwards from property violation
-        for (int j = current_k_; j >= 0; j--) {
-          if (found_timed_axioms_last_iter) {
-            break;
-          }
-
-          // check for prophecy targets over indices
-
-          logger(1) << "checking for prophecy targets over indices at " << j
-                    << endlog;
-
-          timed_axioms.clear();
-          timed_axioms.push_back(
-              aae_.equality_axioms_idx_time(curr_indices, j, current_k_));
-          timed_axioms.push_back(
-              aae_.store_axioms_idx_time(curr_indices, j, current_k_));
-          timed_axioms.push_back(
-              aae_.const_array_axioms_idx_time(curr_indices, j, current_k_));
-
-          for (auto timed_axiom_set : timed_axioms) {
+        for (auto timed_axiom_set : timed_axiom_candidates) {
+          for (auto timed_ax : timed_axiom_set) {
             if (opts_.max_array_axioms > 0 &&
                 lemma_cnt >= opts_.max_array_axioms) {
+              // TODO optimization could exit both loops
               // exit loop if over allotted axiom limit
               break;
             }
 
-            for (auto timed_ax : timed_axiom_set) {
-              if (opts_.max_array_axioms > 0 &&
-                  lemma_cnt >= opts_.max_array_axioms) {
-                // exit loop if over allotted axiom limit
-                break;
-              }
-
-              if (is_axiom_violated(timed_ax)) {
-                violated_axioms.insert(timed_ax);
-                timed_axioms_to_refine.insert(timed_ax);
-                ++lemma_cnt;
-                found_timed_axioms_last_iter = true;
-              }
-            }
-          }
-
-          if (opts_.enum_grammar_search) {
-            // these fallback procedures help solve some more complicated
-            // benchmarks where the index set is not a sufficient search space
-            // for prophecy variables
-            // however it slows things down -- disabling for now
-
-            // fallback -- check for prophecy over arbitrary terms
-            // Heuristic: don't check at last time step, seems unlikely to be
-            // needed there because it would be used in a select if need to
-            // refine  at the time of the property violation
-            if (!found_timed_axioms_last_iter && j != current_k_) {
-              logger(1)
-                  << "checking for prophecy targets over general terms at " << j
-                  << endlog;
-              timed_axioms.clear();
-              timed_axioms.push_back(aae_.equality_axioms_idx_time(
-                  non_idx_int_terms, j, current_k_));
-              timed_axioms.push_back(
-                  aae_.store_axioms_idx_time(non_idx_int_terms, j, current_k_));
-              timed_axioms.push_back(aae_.const_array_axioms_idx_time(
-                  non_idx_int_terms, j, current_k_));
-
-              for (auto timed_axiom_set : timed_axioms) {
-                if (opts_.max_array_axioms > 0 &&
-                    lemma_cnt >= opts_.max_array_axioms) {
-                  // exit loop if over allotted axiom limit
-                  break;
-                }
-
-                for (auto timed_ax : timed_axiom_set) {
-                  if (opts_.max_array_axioms > 0 &&
-                      lemma_cnt >= opts_.max_array_axioms) {
-                    // exit loop if over allotted axiom limit
-                    break;
-                  }
-
-                  if (is_axiom_violated(timed_ax)) {
-                    violated_axioms.insert(timed_ax);
-                    timed_axioms_to_refine.insert(timed_ax);
-                    ++lemma_cnt;
-                    found_timed_axioms_last_iter = true;
-                  }
-                }
-              }
-            }
-
-            // fallback -- check for prophecy over the octagonal addition domain
-            // Heuristic: don't check at last time step, seems unlikely to be
-            // needed there because it would be used in a select if need to
-            // refine at the time of the property violation
-            if (!found_timed_axioms_last_iter && j != current_k_) {
-              logger(1) << "checking for prophecy targets over an octagonal "
-                           "abstract domain with addition at "
-                        << j << endlog;
-              TermSet octagonal_addition_domain =
-                  aae_.octagonal_addition_domain_terms();
-
-              timed_axioms.clear();
-              timed_axioms.push_back(aae_.equality_axioms_idx_time(
-                  octagonal_addition_domain, j, current_k_));
-              timed_axioms.push_back(aae_.store_axioms_idx_time(
-                  octagonal_addition_domain, j, current_k_));
-              timed_axioms.push_back(aae_.const_array_axioms_idx_time(
-                  octagonal_addition_domain, j, current_k_));
-
-              for (auto timed_axiom_set : timed_axioms) {
-                if (opts_.max_array_axioms > 0 &&
-                    lemma_cnt >= opts_.max_array_axioms) {
-                  // exit loop if over allotted axiom limit
-                  break;
-                }
-
-                for (auto timed_ax : timed_axiom_set) {
-                  if (opts_.max_array_axioms > 0 &&
-                      lemma_cnt >= opts_.max_array_axioms) {
-                    // exit loop if over allotted axiom limit
-                    break;
-                  }
-
-                  if (is_axiom_violated(timed_ax)) {
-                    violated_axioms.insert(timed_ax);
-                    timed_axioms_to_refine.insert(timed_ax);
-                    ++lemma_cnt;
-                    found_timed_axioms_last_iter = true;
-                  }
-                }
-              }
+            if (is_axiom_violated(timed_ax)) {
+              violated_axioms.insert(timed_ax);
+              timed_axioms.insert(timed_ax);
+              ++lemma_cnt;
+              found_timed_axioms_last_iter = true;
             }
           }
         }
-
-        found_timed_axioms = violated_axioms.size();
       }
-
-      if (!found_untimed_axioms & !found_timed_axioms) {
-        /* model for the witness */
-        msat_model model = msat_get_model(refiner_);
-        print_witness(model, current_k_, aae_);
-        // TODO: Use real exceptions
-        logger(1) << "It looks like there's a concrete counter-example (or some axioms are missing)" << endlog;
-        msat_destroy_model(model);
-        return false;
-      }
-      else if (!found_untimed_axioms) {
-        logger(1) << "Found " << violated_axioms.size() << " violated TIMED axioms!" << endlog;
-      }
-
-      for (auto timed_ax : violated_axioms) {
-        if (opts_.unsatcore_array_refiner) {
-          msat_term l;
-          MSAT_MAKE_ERROR_TERM(l);
-          if (timed_to_untimed.find(timed_ax) != timed_to_untimed.end())
-          {
-            // this was an untimeable axiom
-            msat_term ax = timed_to_untimed.at(timed_ax);
-            if (axiom2label.find(ax) != axiom2label.end())
-            {
-              l = axiom2label.at(ax);
-              labels.insert(l);
-            }
-            else
-            {
-              // we need to make a new label
-              // this is the first version of this untimed axiom that we've seen
-              l = lbl(ax);
-              labels.insert(l);
-              axiom2label[ax] = l;
-              label2axiom[l] = ax;
-            }
-          }
-          else
-          {
-            // make a new label for timed axioms
-            l = lbl(timed_ax);
-            labels.insert(l);
-            label2axiom[l] = timed_ax;
-          }
-
-          assert(!MSAT_ERROR_TERM(l));
-          msat_assert_formula(refiner_, msat_make_or(refiner_, msat_make_not(refiner_, l), timed_ax));
-        } else {
-          msat_assert_formula(refiner_, timed_ax);
-        }
-      }
-
-      if (opts_.unsatcore_array_refiner) {
-        TermList labels_vec(labels.begin(), labels.end());
-        broken = (msat_solve_with_assumptions(refiner_, &labels_vec[0],
-                                              labels_vec.size()) == MSAT_SAT);
-      } else {
-        broken = msat_solve(refiner_) == MSAT_SAT;
-      }
-
-      violated_axioms.clear();
-    } // end of while(broken) loop
-
-    axioms_added = untimed_axioms_to_add.size();
-    axioms_added |= timed_axioms_to_refine.size();
-
-    if (!axioms_added) {
-      num_steps_no_axioms++;
-      // didn't need any new axioms so we can just continue to the next
-      // iteration
-      current_k_++;
-      continue;
-    } else {
-      // reset num_steps_no_axioms to zero
-      // supposed to be *consecutive* steps
-      num_steps_no_axioms = 0;
     }
 
-    // refine the transition system
-    /************************************* Reduce the axioms ************************************/
-    TermSet red_untimed_axioms;
-    TermSet red_timed_axioms;
+    // if we didn't find any violated axioms, this is a real bug
+    if (!violated_axioms.size()) {
+      /* model for the witness */
+      msat_model model = msat_get_model(refiner_);
+      print_witness(model, current_k_, aae_);
+      // TODO: Use real exceptions
+      logger(1) << "It looks like there's a concrete counter-example (or some "
+                   "axioms are missing)"
+                << endlog;
+      msat_destroy_model(model);
+      return false;
+    }
 
-    // NOTE: unsat core refiner is distinct from additional axiom reduction
-    //       by default both are on, but the second round of axiom reduction
-    //       (see below) can be disabled without disabling the unsat core trick
+    // add all the axioms to the refiner_ environment
+
     if (opts_.unsatcore_array_refiner) {
-      size_t ucsz = 0;
-      msat_term *uc = msat_get_unsat_assumptions(refiner_, &ucsz);
-      assert(uc);
-      TermSet core(uc, uc + ucsz);
-      msat_free(uc);
-
-      logger(1) << "REFINER-UNSATCORE SIZE " << core.size() << endlog;
-
-      for (auto elem : label2axiom) {
-        msat_term l = elem.first;
-        msat_term a = elem.second;
-        if (core.find(l) == core.end()) {
-          bool erased = untimed_axioms_to_add.erase(a);
-          // TODO evaluate this more: should we remove timed axioms also
-          // originally had reduce_timed_axioms handling it entirely and
-          // didn't remove it here to avoid removing important (short delay)
-          // timed axioms however, with the general term fallback procedure
-          // that searches for prophecy targets over other terms, we generate
-          // way too many axioms also, we're being careful to enumerate short
-          // delay timed axioms first so it's less likely those will be
-          // removed (because we're not even enumerating longer ones unless
-          // necessary
-          erased |= timed_axioms_to_refine.erase(a);
-
-          // expected axiom a to be present in one of the axiom sets
-          assert(erased);
-        }
-      }
-    }
-
-    if (opts_.axiom_reduction) {
-      if (timed_axioms_to_refine.size())
-      {
-        logger(1) << "reducing TIMED axioms" << endlog;
-        // use map to sort by distance from safety violation
-        std::map<int, std::map<msat_term, ic3ia::TermSet>> sorted_map;
-        for (auto timed_ax : timed_axioms_to_refine)
-        {
-          msat_term tmp_idx = aae_.get_index(timed_ax);
-          int delay_amount = current_k_ - un_.get_time(tmp_idx);
-          msat_term untimed_idx = un_.untime(tmp_idx);
-          sorted_map[delay_amount][untimed_idx].insert(timed_ax);
-        }
-
-        // place axiom sets in a vector
-        // relying on iteration order for sortedness
-        std::vector<ic3ia::TermSet> sorted_timed_axioms;
-        for (auto elem0 : sorted_map)
-        {
-          for (auto elem1 : elem0.second)
-          {
-            sorted_timed_axioms.push_back(elem1.second);
+      // solve with assumptions so we can get an unsat core
+      for (auto timed_ax : violated_axioms) {
+        msat_term l;
+        MSAT_MAKE_ERROR_TERM(l);
+        if (timed_to_untimed.find(timed_ax) != timed_to_untimed.end()) {
+          // this was an untimeable axiom
+          msat_term ax = timed_to_untimed.at(timed_ax);
+          if (axiom2label.find(ax) != axiom2label.end()) {
+            l = axiom2label.at(ax);
+            labels.insert(l);
+          } else {
+            // we need to make a new label
+            // this is the first version of this untimed axiom that we've seen
+            l = lbl(ax);
+            labels.insert(l);
+            axiom2label[ax] = l;
+            label2axiom[l] = ax;
           }
+        } else {
+          // make a new label for timed axioms
+          l = lbl(timed_ax);
+          labels.insert(l);
+          label2axiom[l] = timed_ax;
         }
 
-        bool ok = reduce_timed_axioms(untimed_axioms_to_add,
-                                      sorted_timed_axioms, red_timed_axioms);
-        assert(ok);
+        assert(!MSAT_ERROR_TERM(l));
+        msat_assert_formula(
+            refiner_,
+            msat_make_or(refiner_, msat_make_not(refiner_, l), timed_ax));
       }
-      else
-      {
-        logger(1) << "reducing untime-able axioms" << endlog;
-        bool ok = reduce_axioms(untimed_axioms_to_add, red_untimed_axioms);
-        assert(ok);
-      }
+
+      TermList labels_vec(labels.begin(), labels.end());
+      broken = (msat_solve_with_assumptions(refiner_, &labels_vec[0],
+                                            labels_vec.size()) == MSAT_SAT);
     } else {
-      // not reducing axioms
-      red_timed_axioms = timed_axioms_to_refine;
-      red_untimed_axioms = untimed_axioms_to_add;
-    }
-
-    /************************************* Fix the transition system ************************************/
-    if (red_timed_axioms.size()) {
-      // add prophecy variables but not axioms
-      // don't refine with untimed axioms search for them again
-      prophesize_abs_ts(red_timed_axioms, false);
-      TermMap new_statevars;
-      for (auto sv : abs_ts_.statevars())
-      {
-        new_statevars[sv] = abs_ts_.next(sv);
+      for (auto timed_ax : violated_axioms) {
+        msat_assert_formula(refiner_, timed_ax);
       }
-      abs_ts_.initialize(new_statevars, abs_ts_.init(), abs_ts_.trans(), abs_ts_.prop(), abs_ts_.live_prop());
-      // don't update k, should come back and find more untimeable axioms at the same k
-
-      // NOTE: Just adding timed refinements and re-finding untimed axioms
-      //       Has to do with ideas about monotonicity of history variables
-      //       It's also just easier than doing the required substitutions...
+      broken = msat_solve(refiner_) == MSAT_SAT;
     }
-    else {
-      refine_abs_ts(red_untimed_axioms);
-      // increase k
-      current_k_++;
+  } // end of while(broken) loop
+
+  // NOTE: unsat core refiner is distinct from additional axiom reduction
+  //       by default both are on, but the second round of axiom reduction
+  //       (see below) can be disabled without disabling the unsat core trick
+  if (opts_.unsatcore_array_refiner) {
+    size_t ucsz = 0;
+    msat_term *uc = msat_get_unsat_assumptions(refiner_, &ucsz);
+    assert(uc);
+    TermSet core(uc, uc + ucsz);
+    msat_free(uc);
+
+    logger(1) << "REFINER-UNSATCORE SIZE " << core.size() << endlog;
+
+    for (auto elem : label2axiom) {
+      msat_term l = elem.first;
+      msat_term a = elem.second;
+      if (core.find(l) == core.end()) {
+        bool erased = untimed_axioms.erase(a);
+        // TODO evaluate this more: should we remove timed axioms also
+        // originally had reduce_timed_axioms handling it entirely and
+        // didn't remove it here to avoid removing important (short delay)
+        // timed axioms however, with the general term fallback procedure
+        // that searches for prophecy targets over other terms, we generate
+        // way too many axioms also, we're being careful to enumerate short
+        // delay timed axioms first so it's less likely those will be
+        // removed (because we're not even enumerating longer ones unless
+        // necessary
+        erased |= timed_axioms.erase(a);
+
+        // expected axiom a to be present in one of the axiom sets
+        assert(erased);
+      }
     }
-
-    timed_to_untimed.clear();
-    untimed_axioms_to_add.clear();
-    timed_axioms_to_refine.clear();
-
-    // reset the flags
-    found_untimed_axioms = false;
-    found_timed_axioms = false;
   }
-
-  // TODO: separate timed and untimed axioms finding into helper methods
 
   return true;
 }

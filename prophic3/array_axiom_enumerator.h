@@ -110,7 +110,7 @@ public:
   /** Enumerates untimeable axioms about
    *  lambda index being different from all others of the same type
    */
-  ic3ia::TermSet lambda_alldiff_axioms();
+  ic3ia::TermSet lambda_alldiff_axioms(bool only_cur);
 
   /** Enumerate equality axioms over indices at j
    *  indices - the index sets to enumerate axiom over

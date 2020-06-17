@@ -187,18 +187,23 @@ ic3ia::TermSet ArrayAxiomEnumerator::store_axioms(const TermSet &indices) {
   return axioms;
 }
 
-ic3ia::TermSet ArrayAxiomEnumerator::lambda_alldiff_axioms()
-{
+ic3ia::TermSet ArrayAxiomEnumerator::lambda_alldiff_axioms(bool only_cur) {
   TermSet axioms;
   TermSet & lambdas = abstractor_.lambdas();
   std::string typestr;
+  msat_term ax;
   for (auto l : lambdas)
   {
     for (auto i : index_targets_[INDEX_SET]) {
       if (ts_.cur(i) != l)
       {
-        axioms.insert(msat_make_not(msat_env_,
-                                    msat_make_eq(msat_env_, i, l)));
+        ax = msat_make_not(msat_env_, msat_make_eq(msat_env_, i, l));
+        if (!only_cur || ts_.only_cur(ax)) {
+          // if called with only_cur
+          // it won't add axioms unless they are made entirely of current
+          // state variables
+          axioms.insert(ax);
+        }
       }
     }
   }
