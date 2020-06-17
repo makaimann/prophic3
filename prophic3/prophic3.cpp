@@ -321,9 +321,12 @@ bool ProphIC3::fix_bmc()
 
     broken = msat_solve(refiner_) == MSAT_SAT;
 
+    // if at bound 0 then should only have axioms over current state variables
+    bool only_cur = (current_k_ == 0);
+
     std::vector<TermSet> untimed_axiom_sets = {
-        aae_.array_eq_axioms(current_k_ == 0), aae_.store_axioms(),
-        aae_.const_array_axioms()};
+        aae_.array_eq_axioms(only_cur), aae_.store_axioms(only_cur),
+        aae_.const_array_axioms(only_cur)};
 
     while(broken)
     {

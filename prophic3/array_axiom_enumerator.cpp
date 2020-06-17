@@ -106,22 +106,41 @@ ic3ia::TermSet ArrayAxiomEnumerator::array_eq_axioms(bool only_cur) {
   return axioms;
 }
 
-ic3ia::TermSet ArrayAxiomEnumerator::const_array_axioms()
-{
+ic3ia::TermSet ArrayAxiomEnumerator::const_array_axioms(bool only_cur) {
   ic3ia::TermSet axioms;
+  TermSet *indices;
+  TermSet state_indices;
+  if (only_cur) {
+    indices = &index_targets_.at(STATE_INDEX_SET_AND_PROPH);
+  } else {
+    indices = &index_targets_.at(INDEX_SET_AND_PROPH);
+  }
   for (msat_term ca : abstractor_.const_arrs()) {
-    enumerate_const_array_axioms(axioms, ca,
-                                 index_targets_[NO_NEXT_INDEX_SET_AND_PROPH]);
+    if (only_cur && !ts_.only_cur(abstractor_.abstract(ca))) {
+      // skip constant arrays that have inputs or next in them
+      continue;
+    }
+    enumerate_const_array_axioms(axioms, ca, *indices);
   }
   return axioms;
 }
 
-ic3ia::TermSet ArrayAxiomEnumerator::store_axioms()
-{
+ic3ia::TermSet ArrayAxiomEnumerator::store_axioms(bool only_cur) {
   ic3ia::TermSet axioms;
   const ic3ia::TermSet & stores = abstractor_.stores();
+  TermSet *indices;
+  TermSet state_indices;
+  if (only_cur) {
+    indices = &index_targets_.at(STATE_INDEX_SET_AND_PROPH);
+  } else {
+    indices = &index_targets_.at(INDEX_SET_AND_PROPH);
+  }
   for (auto st : stores) {
-    enumerate_store_equalities(axioms, st, index_targets_[INDEX_SET_AND_PROPH]);
+    if (only_cur && !ts_.only_cur(st)) {
+      // skip stores that have inputs or next in them
+      continue;
+    }
+    enumerate_store_equalities(axioms, st, *indices);
   }
   return axioms;
 }

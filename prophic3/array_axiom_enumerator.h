@@ -92,14 +92,14 @@ public:
    */
   ic3ia::TermSet octagonal_addition_domain_terms() const;
 
+  // Enumerates all untime-able axioms
   // Note: not differentiating between zero-step and one-step axioms
   //       just enumerating them all together
   // if only_cur set, filters out all axioms that are over non-current state
   // vars
   ic3ia::TermSet array_eq_axioms(bool only_cur);
-
-  ic3ia::TermSet const_array_axioms();
-  ic3ia::TermSet store_axioms();
+  ic3ia::TermSet const_array_axioms(bool only_cur);
+  ic3ia::TermSet store_axioms(bool only_cur);
 
   /** Enumerates untimeable axioms about
    *  lambda index being different from all others of the same type
