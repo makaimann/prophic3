@@ -792,7 +792,8 @@ TargetSet ProphIC3::search_for_prophecy_targets(TargetSet &index_targets) {
     }
   }
 
-  TermSet addition_domain;
+  // have to include the INDEX_SET or it might find no targets
+  TermSet addition_domain = aae_.get_index_targets(INDEX_SET);
   for (auto v1 : vars) {
     for (auto v2 : vars) {
       addition_domain.insert(msat_make_plus(refiner_, v1, v2));
