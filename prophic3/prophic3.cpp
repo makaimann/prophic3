@@ -328,6 +328,10 @@ bool ProphIC3::fix_bmc()
                   single_idx, current_k_ - elem.second, current_k_)};
           for (auto aset : axiom_sets) {
             for (auto ax : aset) {
+              if (msat_term_is_true(refiner_, ax)) {
+                // don't add axioms that simplify to true
+                continue;
+              }
               sorted_map[elem.second][elem.first].insert(ax);
             }
           }
