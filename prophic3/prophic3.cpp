@@ -276,34 +276,14 @@ bool ProphIC3::fix_bmc()
     return false;
   }
 
-  // TODO: have an option to find better indices for refinement
+  /********************** Fix the transition system **********************/
 
-  TermSet untimed_axioms_to_add;
-  TermSet timed_axioms_to_add;
-  if (opts_.axiom_reduction) {
-    if (timed_axioms.size()) {
-      logger(1) << "reducing TIMED axioms" << endlog;
+  if (timed_axioms.size()) {
+    // TODO: have an option to find better indices for refinement
+    unordered_map<msat_term, size_t> prophecy_targets =
+        identify_prophecy_targets(untimed_axioms, timed_axioms);
+    prophesize_abs_ts(prophecy_targets);
 
-      bool ok = reduce_timed_axioms(untimed_axioms, timed_axioms,
-                                    timed_axioms_to_add);
-      assert(ok);
-
-    } else {
-      logger(1) << "reducing untime-able axioms" << endlog;
-      bool ok = reduce_axioms(untimed_axioms, untimed_axioms_to_add);
-      assert(ok);
-    }
-  } else {
-    untimed_axioms_to_add = untimed_axioms;
-    timed_axioms_to_add = timed_axioms;
-  }
-
-  /************************************* Fix the transition system
-   * ************************************/
-  if (timed_axioms_to_add.size()) {
-    // add prophecy variables but not axioms
-    // don't refine with untimed axioms search for them again
-    prophesize_abs_ts(timed_axioms_to_add, false);
     TermMap new_statevars;
     for (auto sv : abs_ts_.statevars()) {
       new_statevars[sv] = abs_ts_.next(sv);
@@ -317,19 +297,18 @@ bool ProphIC3::fix_bmc()
               << endlog;
     untimed_axioms.clear();
     timed_axioms.clear();
-    untimed_axioms_to_add.clear();
-    timed_axioms_to_add.clear();
     fixable = check_axioms_over_bmc(untimed_axioms, timed_axioms);
     assert(fixable);
     assert(!timed_axioms.size());
+  }
 
-    if (opts_.axiom_reduction) {
-      logger(1) << "reducing untime-able axioms" << endlog;
-      bool ok = reduce_axioms(untimed_axioms, untimed_axioms_to_add);
-      assert(ok);
-    } else {
-      untimed_axioms_to_add = untimed_axioms;
-    }
+  TermSet untimed_axioms_to_add;
+  if (opts_.axiom_reduction) {
+    logger(1) << "reducing untime-able axioms" << endlog;
+    bool ok = reduce_axioms(untimed_axioms, untimed_axioms_to_add);
+    assert(ok);
+  } else {
+    untimed_axioms_to_add = untimed_axioms;
   }
 
   // refine the system with axioms
@@ -621,32 +600,19 @@ void ProphIC3::refine_abs_ts(TermSet & untimed_axioms)
   assert(abs_ts_.only_cur(abs_ts_.prop()));
 }
 
-void ProphIC3::prophesize_abs_ts(TermSet & timed_axioms, bool add_axioms)
-{
-  if (timed_axioms.size() == 0)
-  {
-    return;
-  }
-
-  unordered_map<msat_term, size_t> indices_to_refine;
-  msat_term tmp_idx;
-  for (auto ax : timed_axioms)
-  {
-    tmp_idx = aae_.get_index(ax);
-    indices_to_refine[tmp_idx] = current_k_ - un_.get_time(tmp_idx);
-  }
-
-  TermMap hist_vars_to_refine = add_history_vars(indices_to_refine);
+void ProphIC3::prophesize_abs_ts(
+    const unordered_map<msat_term, size_t> &prophecy_targets,
+    TermSet *timed_axioms) {
+  TermMap hist_vars_to_refine = add_history_vars(prophecy_targets);
 
   // create prophecy variables for these history variables
   TermMap idx_to_proph = add_frozen_proph_vars(hist_vars_to_refine);
 
-  if (add_axioms)
-  {
+  if (timed_axioms != nullptr) {
+    msat_term tmp_idx;
     msat_term untimed_axiom;
     // add axioms to transition system using prophecy vars
-    for (auto ax : timed_axioms)
-    {
+    for (auto ax : *timed_axioms) {
       tmp_idx = aae_.get_index(ax);
       untimed_axiom = untime_axiom(ax, tmp_idx, idx_to_proph.at(tmp_idx));
       abs_ts_.add_trans(untimed_axiom);
@@ -656,11 +622,36 @@ void ProphIC3::prophesize_abs_ts(TermSet & timed_axioms, bool add_axioms)
         abs_ts_.add_trans(abs_ts_.next(untimed_axiom));
       }
     }
-    logger(1) << "Added " << timed_axioms.size() << " prophecy axioms to trans." << endlog;
+    logger(1) << "Added " << timed_axioms->size()
+              << " prophecy axioms to trans." << endlog;
   }
 
   assert(abs_ts_.only_cur(abs_ts_.init()));
   assert(abs_ts_.only_cur(abs_ts_.prop()));
+}
+
+unordered_map<msat_term, size_t>
+ProphIC3::identify_prophecy_targets(const TermSet &untimed_axioms,
+                                    const TermSet &timed_axioms) {
+  TermSet timed_axioms_to_add;
+  if (opts_.axiom_reduction) {
+    logger(1) << "reducing TIMED axioms" << endlog;
+
+    bool ok =
+        reduce_timed_axioms(untimed_axioms, timed_axioms, timed_axioms_to_add);
+    assert(ok);
+  } else {
+    timed_axioms_to_add = timed_axioms;
+  }
+
+  msat_term tmp_idx;
+  unordered_map<msat_term, size_t> prophecy_targets;
+  for (auto ax : timed_axioms_to_add) {
+    tmp_idx = aae_.get_index(ax);
+    prophecy_targets[tmp_idx] = current_k_ - un_.get_time(tmp_idx);
+  }
+
+  return prophecy_targets;
 }
 
 TermSet ProphIC3::detect_indices(msat_term term)

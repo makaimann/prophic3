@@ -87,10 +87,26 @@ namespace prophic3
     /* Helper for fix_bmc */
     void refine_abs_ts(ic3ia::TermSet & untimed_axioms);
 
-    /* Helper for fix_bmc
-     * If add_axioms is true, it adds the timed_axioms using the prophecy variable
+    /** Helper for fix_bmc
+     *  Adds history and prophecy variables to abs_ts_
+     *  @param prophecy_targets map from target term to the number of steps
+     * before a property violation
+     *  @param timed_axioms if non-null, adds these axioms by substituting the
+     * prophecy for the timed indices
      */
-    void prophesize_abs_ts(ic3ia::TermSet & timed_axioms, bool add_axioms=false);
+    void prophesize_abs_ts(
+        const std::unordered_map<msat_term, size_t> &prophecy_targets,
+        ic3ia::TermSet *timed_axioms = nullptr);
+
+    /** Find prophecy targets
+     *  @param untimed_axioms untimed axioms found by check_axioms_over_bmc
+     *  @param timed_axioms timed axioms found by check_axioms_over_bmc
+     *  @return map from untimed prophecy target to the amount of delay before a
+     * property violation
+     */
+    std::unordered_map<msat_term, size_t>
+    identify_prophecy_targets(const ic3ia::TermSet &untimed_axioms,
+                              const ic3ia::TermSet &timed_axioms);
 
     /* Returns all the original indices that occur in term */
     ic3ia::TermSet detect_indices(msat_term term);
