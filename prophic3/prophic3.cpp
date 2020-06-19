@@ -140,6 +140,14 @@ ProphIC3::ProphIC3(const ic3ia::TransitionSystem &ts,
 
 ProphIC3::~ProphIC3()
 {
+  for (auto elem : previous_models_)
+  {
+    for (msat_model m : elem.second)
+    {
+      msat_destroy_model(m);
+    }
+  }
+
   msat_destroy_env(refiner_);
   msat_destroy_env(reducer_);
 }
@@ -362,6 +370,9 @@ bool ProphIC3::check_axioms_over_bmc(TermSet &untimed_axioms,
                                              aae_.const_array_axioms(only_cur)};
 
   while (broken) {
+    // get and save the current model
+    previous_models_[current_k_].push_back(msat_get_model(refiner_));
+
     int lemma_cnt = 0;
     violated_axioms.clear();
 

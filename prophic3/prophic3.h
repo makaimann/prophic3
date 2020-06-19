@@ -63,6 +63,9 @@ namespace prophic3
      */
     ic3ia::TermList preds_;
 
+    std::unordered_map<size_t, std::vector<msat_model>> previous_models_;
+    ///< map from the property violation bound to models for previous counter examples
+
     /* Run bmc and add axioms until it reaches a bound that doesn't
      * any new axioms
      */
