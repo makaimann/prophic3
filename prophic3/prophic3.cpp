@@ -107,6 +107,36 @@ std::string format_term(msat_env e, msat_term t, std::string indentation = "") {
   return ostr.str();
 }
 
+// helpers
+
+// computes set intersection over a vector of sets
+// used in search_for_prophecy_targets
+set<pair<msat_term, size_t>>
+set_intersection_reduce(const vector<set<pair<msat_term, size_t>>> &sets) {
+
+  set<pair<msat_term, size_t>> output_set;
+  set<pair<msat_term, size_t>> tmp_set;
+
+  if (sets.size() == 0) {
+    return output_set;
+  } else if (sets.size() == 1) {
+    return sets[0];
+  }
+
+  set_intersection(sets[0].begin(), sets[0].end(), sets[1].begin(),
+                   sets[1].end(), inserter(tmp_set, tmp_set.begin()));
+  output_set = tmp_set;
+  tmp_set.clear();
+
+  for (size_t i = 2; i < sets.size(); ++i) {
+    set_intersection(output_set.begin(), output_set.end(), sets[i].begin(),
+                     sets[i].end(), inserter(tmp_set, tmp_set.begin()));
+    output_set = tmp_set;
+    tmp_set.clear();
+  }
+  return output_set;
+}
+
 ProphIC3::ProphIC3(const ic3ia::TransitionSystem &ts,
                    const ic3ia::Options &opts, ic3ia::LiveEncoder &l2s,
                    unsigned int verbosity)
@@ -753,34 +783,19 @@ unordered_map<msat_term, size_t> ProphIC3::search_for_prophecy_targets(
   cout << "Have " << candidate_targets.size() << " sets of candidate targets"
        << endl;
 
-  cout << "candidates 0" << endl;
-  for (auto c : candidate_targets[0]) {
-    cout << "\t" << msat_to_smtlib2_term(refiner_, c.first) << ":" << c.second
-         << endl;
-  }
-
-  cout << "candidates 1" << endl;
-  for (auto c : candidate_targets[1]) {
-    cout << "\t" << msat_to_smtlib2_term(refiner_, c.first) << ":" << c.second
-         << endl;
-  }
-
   cout << "Now computing set intersection" << endl;
-  set<pair<msat_term, size_t>> running_intersection;
-  cout << "intersection is " << running_intersection.size() << endl;
-  set_intersection(
-      candidate_targets[0].begin(), candidate_targets[0].end(),
-      candidate_targets[1].begin(), candidate_targets[1].end(),
-      inserter(running_intersection, running_intersection.begin()));
+  set<pair<msat_term, size_t>> intersection =
+      set_intersection_reduce(candidate_targets);
 
-  cout << "intersection is " << running_intersection.size() << endl;
-  for (auto elem : running_intersection) {
+  unordered_map<msat_term, size_t> prophecy_targets;
+  cout << "intersection is " << intersection.size() << endl;
+  for (auto elem : intersection) {
     cout << "\t" << msat_to_smtlib2_term(refiner_, elem.first) << ":"
          << elem.second << endl;
+    prophecy_targets[elem.first] = elem.second;
   }
 
-  cout << "got to part I'm working on" << endl;
-  throw exception();
+  return prophecy_targets;
 }
 
 TermSet ProphIC3::detect_indices(msat_term term)
