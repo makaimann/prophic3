@@ -313,6 +313,47 @@ bool ProphIC3::fix_bmc()
 
     if (opts_.enum_grammar_search) {
       prophecy_targets = search_for_prophecy_targets(prophecy_targets);
+
+      if (opts_.axiom_reduction) {
+        // map the delay amount to a map from prophecy targets to axioms
+        map<size_t, map<msat_term, TermSet>> sorted_map;
+        for (auto elem : prophecy_targets) {
+          TermSet single_idx({elem.first});
+          vector<TermSet> axiom_sets = {
+              aae_.equality_axioms_idx_time(
+                  single_idx, current_k_ - elem.second, current_k_),
+              aae_.store_axioms_idx_time(single_idx, current_k_ - elem.second,
+                                         current_k_),
+              aae_.const_array_axioms_idx_time(
+                  single_idx, current_k_ - elem.second, current_k_)};
+          for (auto aset : axiom_sets) {
+            for (auto ax : aset) {
+              sorted_map[elem.second][elem.first].insert(ax);
+            }
+          }
+        }
+
+        // place axiom sets in a vector
+        // relying on iteration order for sortedness
+        std::vector<ic3ia::TermSet> sorted_timed_axioms;
+        for (auto elem0 : sorted_map) {
+          for (auto elem1 : elem0.second) {
+            sorted_timed_axioms.push_back(elem1.second);
+          }
+        }
+
+        TermSet timed_axioms_to_add;
+        bool ok = reduce_timed_axioms(untimed_axioms, sorted_timed_axioms,
+                                      timed_axioms_to_add);
+
+        prophecy_targets.clear();
+        msat_term tmp_idx;
+        for (auto ax : timed_axioms_to_add) {
+          tmp_idx = aae_.get_index(ax);
+          prophecy_targets.insert(pair<msat_term, size_t>(
+              un_.untime(tmp_idx), current_k_ - un_.get_time(tmp_idx)));
+        }
+      }
     }
 
     prophesize_abs_ts(prophecy_targets);
@@ -716,6 +757,7 @@ TargetSet ProphIC3::identify_prophecy_targets(const TermSet &untimed_axioms,
 
     bool ok = reduce_timed_axioms(untimed_axioms, sorted_timed_axioms,
                                   timed_axioms_to_add);
+
     assert(ok);
   } else {
     timed_axioms_to_add = timed_axioms;
@@ -733,27 +775,8 @@ TargetSet ProphIC3::identify_prophecy_targets(const TermSet &untimed_axioms,
 }
 
 TargetSet ProphIC3::search_for_prophecy_targets(TargetSet &index_targets) {
-  // issue: running into model evaluation segfaults -- see branch model-eval-error-new-refinement
-  // seems to happen when we evaluate the model a lot using msat_model_eval
 
-  // IDEA to reduce the number of indices to check, just look for ones that match
-  // the indices from the (reduced) timed axioms
-  // search over a grammar for other names for the same thing
-  // if it's worth it, could even check that they're always equal (in an unrolling of that length)
-  // maybe for now, we can forget about keeping old counterexamples
-  // and / or we could keep old traces instead of models and just re-solve
-  // would have to keep the whole BMC formula and the assignments to (non-abstract array) values
-  // at that point, could even keep old (concrete) timed indices
-
-  // working
-  // just trying to see if we can identify good targets
-  // I know it's over the + domain for array_swap, so I'm just doing that
-  // TODO somehow be more general without impacting performance too much
-  cout << "WIP: search_for_prophecy_targets with current index_targets" << endl;
-  for (auto elem : index_targets) {
-    cout << "\t" << msat_to_smtlib2_term(refiner_, elem.first) << ":"
-         << elem.second << endl;
-  }
+  logger(1) << "Searching for better prophecy targets" << endlog;
 
   // only use original variables
   TermSet vars;
@@ -776,13 +799,7 @@ TargetSet ProphIC3::search_for_prophecy_targets(TargetSet &index_targets) {
     }
   }
 
-  cout << "addition domain" << endl;
-  for (auto t : addition_domain) {
-    cout << "\t" << msat_to_smtlib2_term(refiner_, t) << endl;
-  }
-
   vector<TargetSet> candidate_targets;
-
   // only looking at models from this time-step for now
   for (size_t i = 0; i < previous_models_[current_k_].size(); ++i) {
     msat_model m = previous_models_[current_k_][i];
@@ -805,18 +822,9 @@ TargetSet ProphIC3::search_for_prophecy_targets(TargetSet &index_targets) {
     }
   }
 
-  // assert(candidate_targets.size() == previous_models_[current_k_].size());
-  cout << "Have " << candidate_targets.size() << " sets of candidate targets"
-       << endl;
-
-  cout << "Now computing set intersection" << endl;
   TargetSet prophecy_targets = set_intersection_reduce(candidate_targets);
-
-  cout << "intersection has " << prophecy_targets.size() << " targets." << endl;
-  for (auto elem : prophecy_targets) {
-    cout << "\t" << msat_to_smtlib2_term(refiner_, elem.first) << ":"
-         << elem.second << endl;
-  }
+  logger(1) << "Found " << prophecy_targets.size() << " better targets"
+            << endlog;
 
   return prophecy_targets;
 }
