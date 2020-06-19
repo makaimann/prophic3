@@ -6,7 +6,6 @@
 #include "prophic3.h"
 
 #include <map>
-#include <vector>
 
 using namespace ic3ia;
 using namespace std;
@@ -697,8 +696,26 @@ TargetSet ProphIC3::identify_prophecy_targets(const TermSet &untimed_axioms,
   if (opts_.axiom_reduction) {
     logger(1) << "reducing TIMED axioms" << endlog;
 
-    bool ok =
-        reduce_timed_axioms(untimed_axioms, timed_axioms, timed_axioms_to_add);
+    // use map to sort by distance from safety violation
+    std::map<int, std::map<msat_term, ic3ia::TermSet>> sorted_map;
+    for (auto timed_ax : timed_axioms) {
+      msat_term tmp_idx = aae_.get_index(timed_ax);
+      int delay_amount = current_k_ - un_.get_time(tmp_idx);
+      msat_term untimed_idx = un_.untime(tmp_idx);
+      sorted_map[delay_amount][untimed_idx].insert(timed_ax);
+    }
+
+    // place axiom sets in a vector
+    // relying on iteration order for sortedness
+    std::vector<ic3ia::TermSet> sorted_timed_axioms;
+    for (auto elem0 : sorted_map) {
+      for (auto elem1 : elem0.second) {
+        sorted_timed_axioms.push_back(elem1.second);
+      }
+    }
+
+    bool ok = reduce_timed_axioms(untimed_axioms, sorted_timed_axioms,
+                                  timed_axioms_to_add);
     assert(ok);
   } else {
     timed_axioms_to_add = timed_axioms;
@@ -1166,30 +1183,12 @@ msat_term ProphIC3::untime_axiom(msat_term axiom, msat_term target, msat_term pr
   return res;
 }
 
-bool ProphIC3::reduce_timed_axioms(const ic3ia::TermSet &untimed_axioms,
-                                   const ic3ia::TermSet &timed_axioms,
+bool ProphIC3::reduce_timed_axioms(const TermSet &untimed_axioms,
+                                   const vector<TermSet> &sorted_timed_axioms,
                                    ic3ia::TermSet &out_timed_axioms) {
   msat_reset_env(reducer_);
   // bmc
   msat_assert_formula(reducer_, refinement_formula_);
-
-  // use map to sort by distance from safety violation
-  std::map<int, std::map<msat_term, ic3ia::TermSet>> sorted_map;
-  for (auto timed_ax : timed_axioms) {
-    msat_term tmp_idx = aae_.get_index(timed_ax);
-    int delay_amount = current_k_ - un_.get_time(tmp_idx);
-    msat_term untimed_idx = un_.untime(tmp_idx);
-    sorted_map[delay_amount][untimed_idx].insert(timed_ax);
-  }
-
-  // place axiom sets in a vector
-  // relying on iteration order for sortedness
-  std::vector<ic3ia::TermSet> sorted_timed_axioms;
-  for (auto elem0 : sorted_map) {
-    for (auto elem1 : elem0.second) {
-      sorted_timed_axioms.push_back(elem1.second);
-    }
-  }
 
   // add all untimed axioms
   for (auto ax : untimed_axioms)

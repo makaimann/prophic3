@@ -1,6 +1,8 @@
 #ifndef PROPHIC3_H
 #define PROPHIC3_H
 
+#include <vector>
+
 #include "mathsat.h"
 #include "utils.h"
 
@@ -144,9 +146,10 @@ protected:
 
   /* reduces timed axioms based on vector order (first is highest priority to
    * keep) */
-  bool reduce_timed_axioms(const ic3ia::TermSet &untimed_axioms,
-                           const ic3ia::TermSet &timed_axioms,
-                           ic3ia::TermSet &out_timed_axioms);
+  bool
+  reduce_timed_axioms(const ic3ia::TermSet &untimed_axioms,
+                      const std::vector<ic3ia::TermSet> &sorted_timed_axioms,
+                      ic3ia::TermSet &out_timed_axioms);
 
   bool reduce_axioms(const ic3ia::TermSet &untimed_axioms,
                      ic3ia::TermSet &out_untimed);
