@@ -111,11 +111,10 @@ std::string format_term(msat_env e, msat_term t, std::string indentation = "") {
 
 // computes set intersection over a vector of sets
 // used in search_for_prophecy_targets
-set<pair<msat_term, size_t>>
-set_intersection_reduce(const vector<set<pair<msat_term, size_t>>> &sets) {
+TargetSet set_intersection_reduce(const vector<TargetSet> &sets) {
 
-  set<pair<msat_term, size_t>> output_set;
-  set<pair<msat_term, size_t>> tmp_set;
+  TargetSet output_set;
+  TargetSet tmp_set;
 
   if (sets.size() == 0) {
     return output_set;
@@ -199,18 +198,9 @@ msat_truth_value ProphIC3::prove()
 
   // heuristic -- add prophecy variables for indices in property up front
   TermSet prop_indices = detect_indices(abs_ts_.prop());
-  // frozen proph method takes a map (used later for retaining target info)
-  TermMap prop_indices_map;
-  for (auto i : prop_indices)
-  {
-    if (prop_free_vars.find(i) == prop_free_vars.end()) {
-      // just a dummy map
-      prop_indices_map[i] = i;
-    }
-  }
-  add_frozen_proph_vars(prop_indices_map);
+  add_frozen_proph_vars(prop_indices);
 
-  logger(1) << "Created " << prop_indices_map.size();
+  logger(1) << "Created " << prop_indices.size();
   logger(1) << " prophecy variables for the property" << endlog;
 
   if (Logger::get().get_verbosity() >= 2) {
@@ -319,7 +309,7 @@ bool ProphIC3::fix_bmc()
 
   if (timed_axioms.size()) {
     // TODO: have an option to find better indices for refinement
-    unordered_map<msat_term, size_t> prophecy_targets;
+    TargetSet prophecy_targets;
     prophecy_targets = identify_prophecy_targets(untimed_axioms, timed_axioms);
 
     if (opts_.enum_grammar_search) {
@@ -651,39 +641,41 @@ void ProphIC3::refine_abs_ts(TermSet & untimed_axioms)
   assert(abs_ts_.only_cur(abs_ts_.prop()));
 }
 
-void ProphIC3::prophesize_abs_ts(
-    const unordered_map<msat_term, size_t> &prophecy_targets,
-    TermSet *timed_axioms) {
-  TermMap hist_vars_to_refine = add_history_vars(prophecy_targets);
+void ProphIC3::prophesize_abs_ts(const TargetSet &prophecy_targets) {
+  TermSet hist_vars_to_refine = add_history_vars(prophecy_targets);
 
   // create prophecy variables for these history variables
-  TermMap idx_to_proph = add_frozen_proph_vars(hist_vars_to_refine);
+  TermSet proph_vars = add_frozen_proph_vars(hist_vars_to_refine);
 
-  if (timed_axioms != nullptr) {
-    msat_term tmp_idx;
-    msat_term untimed_axiom;
-    // add axioms to transition system using prophecy vars
-    for (auto ax : *timed_axioms) {
-      tmp_idx = aae_.get_index(ax);
-      untimed_axiom = untime_axiom(ax, tmp_idx, idx_to_proph.at(tmp_idx));
-      abs_ts_.add_trans(untimed_axiom);
+  // no way to add axioms back in anymore
+  // always just search for untime-able axioms again
+  // if we want to support this again
+  // will need to keep maps from history/prophecy to the timed targets
 
-      if (!abs_ts_.contains_next(untimed_axiom))
-      {
-        abs_ts_.add_trans(abs_ts_.next(untimed_axiom));
-      }
-    }
-    logger(1) << "Added " << timed_axioms->size()
-              << " prophecy axioms to trans." << endlog;
-  }
+  // if (timed_axioms != nullptr) {
+  //   msat_term tmp_idx;
+  //   msat_term untimed_axiom;
+  //   // add axioms to transition system using prophecy vars
+  //   for (auto ax : *timed_axioms) {
+  //     tmp_idx = aae_.get_index(ax);
+  //     untimed_axiom = untime_axiom(ax, tmp_idx, idx_to_proph.at(tmp_idx));
+  //     abs_ts_.add_trans(untimed_axiom);
+
+  //     if (!abs_ts_.contains_next(untimed_axiom))
+  //     {
+  //       abs_ts_.add_trans(abs_ts_.next(untimed_axiom));
+  //     }
+  //   }
+  //   logger(1) << "Added " << timed_axioms->size()
+  //             << " prophecy axioms to trans." << endlog;
+  // }
 
   assert(abs_ts_.only_cur(abs_ts_.init()));
   assert(abs_ts_.only_cur(abs_ts_.prop()));
 }
 
-unordered_map<msat_term, size_t>
-ProphIC3::identify_prophecy_targets(const TermSet &untimed_axioms,
-                                    const TermSet &timed_axioms) {
+TargetSet ProphIC3::identify_prophecy_targets(const TermSet &untimed_axioms,
+                                              const TermSet &timed_axioms) {
   TermSet timed_axioms_to_add;
   if (opts_.axiom_reduction) {
     logger(1) << "reducing TIMED axioms" << endlog;
@@ -696,17 +688,17 @@ ProphIC3::identify_prophecy_targets(const TermSet &untimed_axioms,
   }
 
   msat_term tmp_idx;
-  unordered_map<msat_term, size_t> prophecy_targets;
+  TargetSet prophecy_targets;
   for (auto ax : timed_axioms_to_add) {
     tmp_idx = aae_.get_index(ax);
-    prophecy_targets[un_.untime(tmp_idx)] = current_k_ - un_.get_time(tmp_idx);
+    prophecy_targets.insert(pair<msat_term, size_t>(
+        un_.untime(tmp_idx), current_k_ - un_.get_time(tmp_idx)));
   }
 
   return prophecy_targets;
 }
 
-unordered_map<msat_term, size_t> ProphIC3::search_for_prophecy_targets(
-    unordered_map<msat_term, size_t> &index_targets) {
+TargetSet ProphIC3::search_for_prophecy_targets(TargetSet &index_targets) {
   // issue: running into model evaluation segfaults -- see branch model-eval-error-new-refinement
   // seems to happen when we evaluate the model a lot using msat_model_eval
 
@@ -755,7 +747,7 @@ unordered_map<msat_term, size_t> ProphIC3::search_for_prophecy_targets(
     cout << "\t" << msat_to_smtlib2_term(refiner_, t) << endl;
   }
 
-  vector<set<pair<msat_term, size_t>>> candidate_targets;
+  vector<TargetSet> candidate_targets;
 
   // only looking at models from this time-step for now
   for (size_t i = 0; i < previous_models_[current_k_].size(); ++i) {
@@ -784,15 +776,12 @@ unordered_map<msat_term, size_t> ProphIC3::search_for_prophecy_targets(
        << endl;
 
   cout << "Now computing set intersection" << endl;
-  set<pair<msat_term, size_t>> intersection =
-      set_intersection_reduce(candidate_targets);
+  TargetSet prophecy_targets = set_intersection_reduce(candidate_targets);
 
-  unordered_map<msat_term, size_t> prophecy_targets;
-  cout << "intersection is " << intersection.size() << endl;
-  for (auto elem : intersection) {
+  cout << "intersection has " << prophecy_targets.size() << " targets." << endl;
+  for (auto elem : prophecy_targets) {
     cout << "\t" << msat_to_smtlib2_term(refiner_, elem.first) << ":"
          << elem.second << endl;
-    prophecy_targets[elem.first] = elem.second;
   }
 
   return prophecy_targets;
@@ -825,17 +814,14 @@ TermSet ProphIC3::detect_indices(msat_term term)
   return out_indices;
 }
 
-TermMap ProphIC3::add_frozen_proph_vars(const ic3ia::TermMap & proph_targets)
-{
-  TermMap idx_to_proph;
+TermSet ProphIC3::add_frozen_proph_vars(const ic3ia::TermSet &proph_targets) {
+  TermSet proph_vars;
   msat_term equalities = msat_make_true(msat_env_);
 
   std::string name;
   msat_term t;
   msat_type t_type;
-  for (auto elem : proph_targets)
-  {
-    t = elem.second;
+  for (auto t : proph_targets) {
     t_type = msat_term_get_type(t);
 
     name = "proph" + std::to_string(num_proph_vars_++);
@@ -851,8 +837,8 @@ TermMap ProphIC3::add_frozen_proph_vars(const ic3ia::TermMap & proph_targets)
     // update member variable
     frozen_proph_vars_[proph] = t;
 
-    // map the original target (i.e. an index) to proph
-    idx_to_proph[elem.first] = proph;
+    // save the prophecy variable
+    proph_vars.insert(proph);
 
     msat_decl proph_decl_next =
       msat_declare_function(msat_env_, (name + ".next").c_str(), t_type);
@@ -873,11 +859,10 @@ TermMap ProphIC3::add_frozen_proph_vars(const ic3ia::TermMap & proph_targets)
                                 abs_ts_.prop()),
                    abs_ts_.live_prop());
 
-  return idx_to_proph;
+  return proph_vars;
 }
 
-TermMap ProphIC3::add_history_vars(const std::unordered_map<msat_term, size_t> targets)
-{
+TermSet ProphIC3::add_history_vars(const TargetSet &targets) {
   logger(1) << "Found " << targets.size() << " indices which need to be refined." << endlog;
   for (auto elem : targets)
   {
@@ -885,7 +870,7 @@ TermMap ProphIC3::add_history_vars(const std::unordered_map<msat_term, size_t> t
   }
 
   // just the history variables that need to be refined over
-  TermMap hist_vars_to_refine;
+  TermSet hist_vars_to_refine;
   // all created history variables (including intermediate ones)
   TermSet all_created_hist_vars;
   msat_type _type;
@@ -894,22 +879,12 @@ TermMap ProphIC3::add_history_vars(const std::unordered_map<msat_term, size_t> t
   {
     untimed_target = elem.first;
     msat_term v = hr_.hist_var(untimed_target, elem.second, all_created_hist_vars);
-    // update type maps -- need to keep track of this for proph var indices
-    try {
-      _type = msat_term_get_type(untimed_target);
-    } catch (std::out_of_range e) {
-      // HACK: sometimes rewriting causes the original type to be lost for the
-      // octagonal domain for now just work around it and assume they're
-      // integers
-      _type = msat_term_get_type(untimed_target);
-    }
-    hist_vars_to_refine[elem.first] = v;
+    hist_vars_to_refine.insert(v);
   }
 
   logger(1) << "Created the following history variables:" << endlog;
-  for (auto elem : hist_vars_to_refine)
-  {
-    logger(1) << "\t" << msat_to_smtlib2_term(msat_env_, elem.second) << endlog;
+  for (auto v : hist_vars_to_refine) {
+    logger(1) << "\t" << msat_to_smtlib2_term(msat_env_, v) << endlog;
   }
 
   const TermMap & next_hist_vars = hr_.next_hist_vars();
