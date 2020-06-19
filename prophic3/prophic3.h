@@ -111,11 +111,13 @@ namespace prophic3
     identify_prophecy_targets(const ic3ia::TermSet &untimed_axioms,
                               const ic3ia::TermSet &timed_axioms);
 
-    /** Find prophecy targets by searching over a grammar
+    /** Search for better prophecy targets by searching over a grammar
+     *  @param index_targets map from targets over indices to the delay
      *  @return map from untimed prophecy target to the amount of delay before a
      * property violation
      */
-    std::unordered_map<msat_term, size_t> search_for_prophecy_targets();
+    std::unordered_map<msat_term, size_t> search_for_prophecy_targets(
+        std::unordered_map<msat_term, size_t> &index_targets);
 
     /* Returns all the original indices that occur in term */
     ic3ia::TermSet detect_indices(msat_term term);

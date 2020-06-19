@@ -1,4 +1,5 @@
 #include "assert.h"
+#include <algorithm>
 #include <fstream>
 #include <sstream>
 
@@ -289,12 +290,12 @@ bool ProphIC3::fix_bmc()
   if (timed_axioms.size()) {
     // TODO: have an option to find better indices for refinement
     unordered_map<msat_term, size_t> prophecy_targets;
+    prophecy_targets = identify_prophecy_targets(untimed_axioms, timed_axioms);
+
     if (opts_.enum_grammar_search) {
-      prophecy_targets = search_for_prophecy_targets();
-    } else {
-      prophecy_targets =
-          identify_prophecy_targets(untimed_axioms, timed_axioms);
+      prophecy_targets = search_for_prophecy_targets(prophecy_targets);
     }
+
     prophesize_abs_ts(prophecy_targets);
 
     TermMap new_statevars;
@@ -529,6 +530,7 @@ bool ProphIC3::check_axioms_over_bmc(TermSet &untimed_axioms,
       }
       broken = msat_solve(refiner_) == MSAT_SAT;
     }
+
   } // end of while(broken) loop
 
   // NOTE: unsat core refiner is distinct from additional axiom reduction
@@ -667,13 +669,14 @@ ProphIC3::identify_prophecy_targets(const TermSet &untimed_axioms,
   unordered_map<msat_term, size_t> prophecy_targets;
   for (auto ax : timed_axioms_to_add) {
     tmp_idx = aae_.get_index(ax);
-    prophecy_targets[tmp_idx] = current_k_ - un_.get_time(tmp_idx);
+    prophecy_targets[un_.untime(tmp_idx)] = current_k_ - un_.get_time(tmp_idx);
   }
 
   return prophecy_targets;
 }
 
-unordered_map<msat_term, size_t> ProphIC3::search_for_prophecy_targets() {
+unordered_map<msat_term, size_t> ProphIC3::search_for_prophecy_targets(
+    unordered_map<msat_term, size_t> &index_targets) {
   // issue: running into model evaluation segfaults -- see branch model-eval-error-new-refinement
   // seems to happen when we evaluate the model a lot using msat_model_eval
 
@@ -689,7 +692,12 @@ unordered_map<msat_term, size_t> ProphIC3::search_for_prophecy_targets() {
   // working
   // just trying to see if we can identify good targets
   // I know it's over the + domain for array_swap, so I'm just doing that
-  cout << "WIP: search_for_prophecy_targets" << endl;
+  // TODO somehow be more general without impacting performance too much
+  cout << "WIP: search_for_prophecy_targets with current index_targets" << endl;
+  for (auto elem : index_targets) {
+    cout << "\t" << msat_to_smtlib2_term(refiner_, elem.first) << ":"
+         << elem.second << endl;
+  }
 
   // only use original variables
   TermSet vars;
@@ -712,50 +720,63 @@ unordered_map<msat_term, size_t> ProphIC3::search_for_prophecy_targets() {
     }
   }
 
+  cout << "addition domain" << endl;
   for (auto t : addition_domain) {
     cout << "\t" << msat_to_smtlib2_term(refiner_, t) << endl;
   }
 
-  cout << "WIP: collect violated indices for each model" << endl;
-  TermSet index_targets = aae_.get_index_targets(INDEX_SET);
-  msat_term f = msat_make_false(refiner_);
-  for (auto elem : previous_models_) {
-    size_t cex_length = elem.first;
-    for (auto m : elem.second) {
-      TermSet concrete_indices;
-      TermSet violated_concrete_indices;
-      for (size_t i = 0; i < elem.first; ++i) {
-        for (auto idx : index_targets) {
-          concrete_indices.insert(msat_model_eval(m, un_.at_time(idx, i)));
-        }
-      }
+  vector<set<pair<msat_term, size_t>>> candidate_targets;
 
-      cout << "concrete indices" << endl;
-      for (auto idx : concrete_indices) {
-        cout << "\t" << msat_to_smtlib2_term(refiner_, idx) << endl;
-      }
-      // end print
+  // only looking at models from this time-step for now
+  for (size_t i = 0; i < previous_models_[current_k_].size(); ++i) {
+    msat_model m = previous_models_[current_k_][i];
+    candidate_targets.push_back(set<pair<msat_term, size_t>>());
+    set<pair<msat_term, size_t>> &target_set = candidate_targets.back();
 
-      vector<TermSet> axiom_sets = {
-          aae_.array_eq_axioms(concrete_indices),
-          aae_.store_maintain_axioms(concrete_indices),
-          aae_.const_array_axioms(concrete_indices)};
-      for (auto aset : axiom_sets) {
-        for (auto ax : aset) {
-          for (size_t i = 0; i <= cex_length; ++i) {
-            if (msat_model_eval(m, un_.at_time(ax, i)) == f) {
-              violated_concrete_indices.insert(aae_.get_index(ax));
-            }
+    for (auto elem : index_targets) {
+      msat_term timed_idx = un_.at_time(elem.first, current_k_ - elem.second);
+      // heuristic: only search up to the delay of this index target
+      for (size_t delay = 0; delay <= elem.second; ++delay) {
+        for (auto candidate_target : addition_domain) {
+          msat_term timed_candidate_target =
+              un_.at_time(candidate_target, current_k_ - delay);
+          if (msat_model_eval(m, timed_idx) ==
+              msat_model_eval(m, timed_candidate_target)) {
+            target_set.insert(pair<msat_term, size_t>(candidate_target, delay));
           }
         }
       }
-
-      cout << "WIP: violated_concrete_indices" << endl;
-      for (auto idx : violated_concrete_indices) {
-        cout << "\t" << msat_to_smtlib2_term(refiner_, idx) << endl;
-      }
-
     }
+  }
+
+  // assert(candidate_targets.size() == previous_models_[current_k_].size());
+  cout << "Have " << candidate_targets.size() << " sets of candidate targets"
+       << endl;
+
+  cout << "candidates 0" << endl;
+  for (auto c : candidate_targets[0]) {
+    cout << "\t" << msat_to_smtlib2_term(refiner_, c.first) << ":" << c.second
+         << endl;
+  }
+
+  cout << "candidates 1" << endl;
+  for (auto c : candidate_targets[1]) {
+    cout << "\t" << msat_to_smtlib2_term(refiner_, c.first) << ":" << c.second
+         << endl;
+  }
+
+  cout << "Now computing set intersection" << endl;
+  set<pair<msat_term, size_t>> running_intersection;
+  cout << "intersection is " << running_intersection.size() << endl;
+  set_intersection(
+      candidate_targets[0].begin(), candidate_targets[0].end(),
+      candidate_targets[1].begin(), candidate_targets[1].end(),
+      inserter(running_intersection, running_intersection.begin()));
+
+  cout << "intersection is " << running_intersection.size() << endl;
+  for (auto elem : running_intersection) {
+    cout << "\t" << msat_to_smtlib2_term(refiner_, elem.first) << ":"
+         << elem.second << endl;
   }
 
   cout << "got to part I'm working on" << endl;
@@ -856,7 +877,7 @@ TermMap ProphIC3::add_history_vars(const std::unordered_map<msat_term, size_t> t
   msat_term untimed_target;
   for (auto elem : targets)
   {
-    untimed_target = un_.untime(elem.first);
+    untimed_target = elem.first;
     msat_term v = hr_.hist_var(untimed_target, elem.second, all_created_hist_vars);
     // update type maps -- need to keep track of this for proph var indices
     try {
