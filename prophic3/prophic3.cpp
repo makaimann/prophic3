@@ -641,7 +641,24 @@ void ProphIC3::refine_abs_ts(TermSet & untimed_axioms)
   assert(abs_ts_.only_cur(abs_ts_.prop()));
 }
 
-void ProphIC3::prophesize_abs_ts(const TargetSet &prophecy_targets) {
+void ProphIC3::prophesize_abs_ts(TargetSet prophecy_targets) {
+
+  // slight HACK
+  // remove any targets that have inputs / next states and 0 delay
+  // doesn't make sense to talk about non-current state variables
+  // at time of property violation
+  TargetSet to_remove;
+  for (auto elem : prophecy_targets) {
+    if (elem.second == 0 && !abs_ts_.only_cur(elem.first)) {
+      to_remove.insert(elem);
+    }
+  }
+
+  for (auto elem : to_remove) {
+    size_t erased = prophecy_targets.erase(elem);
+    assert(erased);
+  }
+
   TermSet hist_vars_to_refine = add_history_vars(prophecy_targets);
 
   // create prophecy variables for these history variables

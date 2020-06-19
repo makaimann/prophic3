@@ -97,7 +97,7 @@ protected:
    *  @param prophecy_targets set of pairs of target terms and delays
    * before a property violation
    */
-  void prophesize_abs_ts(const TargetSet &prophecy_targets);
+  void prophesize_abs_ts(TargetSet prophecy_targets);
 
   /** Find prophecy targets over the indices used in timed_axioms
    *  @param untimed_axioms untimed axioms found by check_axioms_over_bmc
