@@ -101,7 +101,7 @@ namespace prophic3
         const std::unordered_map<msat_term, size_t> &prophecy_targets,
         ic3ia::TermSet *timed_axioms = nullptr);
 
-    /** Find prophecy targets
+    /** Find prophecy targets over the indices used in timed_axioms
      *  @param untimed_axioms untimed axioms found by check_axioms_over_bmc
      *  @param timed_axioms timed axioms found by check_axioms_over_bmc
      *  @return map from untimed prophecy target to the amount of delay before a
@@ -110,6 +110,12 @@ namespace prophic3
     std::unordered_map<msat_term, size_t>
     identify_prophecy_targets(const ic3ia::TermSet &untimed_axioms,
                               const ic3ia::TermSet &timed_axioms);
+
+    /** Find prophecy targets by searching over a grammar
+     *  @return map from untimed prophecy target to the amount of delay before a
+     * property violation
+     */
+    std::unordered_map<msat_term, size_t> search_for_prophecy_targets();
 
     /* Returns all the original indices that occur in term */
     ic3ia::TermSet detect_indices(msat_term term);

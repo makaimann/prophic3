@@ -288,8 +288,13 @@ bool ProphIC3::fix_bmc()
 
   if (timed_axioms.size()) {
     // TODO: have an option to find better indices for refinement
-    unordered_map<msat_term, size_t> prophecy_targets =
-        identify_prophecy_targets(untimed_axioms, timed_axioms);
+    unordered_map<msat_term, size_t> prophecy_targets;
+    if (opts_.enum_grammar_search) {
+      prophecy_targets = search_for_prophecy_targets();
+    } else {
+      prophecy_targets =
+          identify_prophecy_targets(untimed_axioms, timed_axioms);
+    }
     prophesize_abs_ts(prophecy_targets);
 
     TermMap new_statevars;
@@ -365,9 +370,12 @@ bool ProphIC3::check_axioms_over_bmc(TermSet &untimed_axioms,
 
   TermSet violated_axioms;
   bool only_cur = (current_k_ == 0);
-  std::vector<TermSet> untimed_axiom_sets = {aae_.array_eq_axioms(only_cur),
-                                             aae_.store_axioms(only_cur),
-                                             aae_.const_array_axioms(only_cur)};
+  std::vector<TermSet> untimed_axiom_sets = {
+      aae_.array_eq_axioms(only_cur),
+      aae_.store_write_axioms(only_cur),
+      aae_.store_maintain_axioms(only_cur),
+      aae_.const_array_axioms(only_cur),
+      aae_.array_eq_witness_axioms(only_cur)};
 
   while (broken) {
     // get and save the current model
@@ -663,6 +671,85 @@ ProphIC3::identify_prophecy_targets(const TermSet &untimed_axioms,
   }
 
   return prophecy_targets;
+}
+
+unordered_map<msat_term, size_t> ProphIC3::search_for_prophecy_targets() {
+  // working
+  // just trying to see if we can identify good targets
+  // I know it's over the + domain, so I'm just doing that
+  cout << "WIP: search_for_prophecy_targets" << endl;
+
+  // only use original variables
+  TermSet vars;
+  for (auto v : conc_ts_.statevars()) {
+    if (msat_is_integer_type(refiner_, msat_term_get_type(v))) {
+      vars.insert(aa_.abstract(v));
+    }
+  }
+
+  for (auto v : conc_ts_.inputvars()) {
+    if (msat_is_integer_type(refiner_, msat_term_get_type(v))) {
+      vars.insert(aa_.abstract(v));
+    }
+  }
+
+  TermSet addition_domain;
+  for (auto v1 : vars) {
+    for (auto v2 : vars) {
+      addition_domain.insert(msat_make_plus(refiner_, v1, v2));
+    }
+  }
+
+  for (auto t : addition_domain) {
+    cout << "\t" << msat_to_smtlib2_term(refiner_, t) << endl;
+  }
+
+  cout << "WIP: collect violated indices for each model" << endl;
+  TermSet index_targets = aae_.get_index_targets(INDEX_SET);
+  msat_term f = msat_make_false(refiner_);
+  for (auto elem : previous_models_) {
+    size_t cex_length = elem.first;
+    for (auto m : elem.second) {
+      TermSet concrete_indices;
+      TermSet violated_concrete_indices;
+      for (size_t i = 0; i < elem.first; ++i) {
+        for (auto idx : index_targets) {
+          concrete_indices.insert(msat_model_eval(m, un_.at_time(idx, i)));
+        }
+      }
+
+      cout << "concrete indices" << endl;
+      for (auto idx : concrete_indices) {
+        cout << "\t" << msat_to_smtlib2_term(refiner_, idx) << endl;
+      }
+      // end print
+
+      vector<TermSet> axiom_sets = {
+          aae_.array_eq_axioms(concrete_indices),
+          aae_.store_maintain_axioms(concrete_indices),
+          aae_.const_array_axioms(concrete_indices)};
+      for (auto aset : axiom_sets) {
+        for (auto ax : aset) {
+          for (size_t i = 0; i <= cex_length; ++i) {
+            if (msat_model_eval(m, un_.at_time(ax, i)) == f) {
+              violated_concrete_indices.insert(aae_.get_index(ax));
+            }
+          }
+        }
+      }
+
+      cout << "WIP: violated_concrete_indices" << endl;
+      for (auto idx : violated_concrete_indices) {
+        cout << "\t" << msat_to_smtlib2_term(refiner_, idx) << endl;
+      }
+
+      cout << "got to part working on" << endl;
+      throw exception();
+    }
+  }
+
+  cout << "got to part I'm working on" << endl;
+  throw exception();
 }
 
 TermSet ProphIC3::detect_indices(msat_term term)
