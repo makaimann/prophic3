@@ -674,9 +674,21 @@ ProphIC3::identify_prophecy_targets(const TermSet &untimed_axioms,
 }
 
 unordered_map<msat_term, size_t> ProphIC3::search_for_prophecy_targets() {
+  // issue: running into model evaluation segfaults -- see branch model-eval-error-new-refinement
+  // seems to happen when we evaluate the model a lot using msat_model_eval
+
+  // IDEA to reduce the number of indices to check, just look for ones that match
+  // the indices from the (reduced) timed axioms
+  // search over a grammar for other names for the same thing
+  // if it's worth it, could even check that they're always equal (in an unrolling of that length)
+  // maybe for now, we can forget about keeping old counterexamples
+  // and / or we could keep old traces instead of models and just re-solve
+  // would have to keep the whole BMC formula and the assignments to (non-abstract array) values
+  // at that point, could even keep old (concrete) timed indices
+
   // working
   // just trying to see if we can identify good targets
-  // I know it's over the + domain, so I'm just doing that
+  // I know it's over the + domain for array_swap, so I'm just doing that
   cout << "WIP: search_for_prophecy_targets" << endl;
 
   // only use original variables
@@ -743,8 +755,6 @@ unordered_map<msat_term, size_t> ProphIC3::search_for_prophecy_targets() {
         cout << "\t" << msat_to_smtlib2_term(refiner_, idx) << endl;
       }
 
-      cout << "got to part working on" << endl;
-      throw exception();
     }
   }
 
