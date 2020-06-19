@@ -705,7 +705,8 @@ unordered_map<msat_term, size_t> ProphIC3::search_for_prophecy_targets() {
   }
 
   cout << "WIP: collect violated indices for each model" << endl;
-  TermSet index_targets = aae_.get_index_targets(INDEX_SET);
+  unordered_map<size_t, vector<TermSet>> concrete_targets;
+  TermSet index_set = aae_.get_index_targets(INDEX_SET);
   msat_term f = msat_make_false(refiner_);
   for (auto elem : previous_models_) {
     size_t cex_length = elem.first;
@@ -713,16 +714,24 @@ unordered_map<msat_term, size_t> ProphIC3::search_for_prophecy_targets() {
       TermSet concrete_indices;
       TermSet violated_concrete_indices;
       for (size_t i = 0; i < elem.first; ++i) {
-        for (auto idx : index_targets) {
-          concrete_indices.insert(msat_model_eval(m, un_.at_time(idx, i)));
+        for (auto idx : index_set) {
+          if (MSAT_ERROR_TERM(idx))
+          {
+            cout << "got error term" << endl;
+            throw exception();
+          }
+          msat_term timed_idx = un_.at_time(idx, i);
+          cout << "checking index " << msat_to_smtlib2_term(refiner_, timed_idx) << endl;
+          msat_term val = msat_model_eval(m, timed_idx);
+          if (MSAT_ERROR_TERM(val))
+          {
+            cout << "got error val" << endl;
+          }
+
+          concrete_indices.insert(val);
+          cout << "after" << endl;
         }
       }
-
-      cout << "concrete indices" << endl;
-      for (auto idx : concrete_indices) {
-        cout << "\t" << msat_to_smtlib2_term(refiner_, idx) << endl;
-      }
-      // end print
 
       vector<TermSet> axiom_sets = {
           aae_.array_eq_axioms(concrete_indices),
@@ -732,23 +741,62 @@ unordered_map<msat_term, size_t> ProphIC3::search_for_prophecy_targets() {
         for (auto ax : aset) {
           for (size_t i = 0; i <= cex_length; ++i) {
             if (msat_model_eval(m, un_.at_time(ax, i)) == f) {
-              violated_concrete_indices.insert(aae_.get_index(ax));
+              msat_term conc_idx = aae_.get_index(ax);
+              // TODO figure out if it's even worth doing this filtering step
+              //      seems to not reduce it much
+              //      I think because untimed axioms get added early on
+              // check if any values in the index set at this time could rule this out
+              bool ruled_out_by_index_set = false;
+              for (auto idx : index_set)
+              {
+                if (msat_model_eval(m, un_.at_time(idx, i)) == conc_idx)
+                {
+                  ruled_out_by_index_set = true;
+                }
+              }
+              if (!ruled_out_by_index_set)
+              {
+                violated_concrete_indices.insert(conc_idx);
+              }
             }
           }
         }
       }
 
-      cout << "WIP: violated_concrete_indices" << endl;
-      for (auto idx : violated_concrete_indices) {
-        cout << "\t" << msat_to_smtlib2_term(refiner_, idx) << endl;
-      }
-
-      cout << "got to part working on" << endl;
-      throw exception();
+      // TODO: just add directly to this set instead of copying with a push_back
+      concrete_targets[cex_length].push_back(violated_concrete_indices);
     }
   }
 
-  cout << "got to part I'm working on" << endl;
+  // // maps a term to a vector where the index is the number of steps before a property violation and
+  // // the value is the number of models it rules out
+  // unordered_map<msat_term, vector<size_t>> num_ruled_out;
+
+  // for (auto elem : previous_models_)
+  // {
+  //   size_t cex_length = elem.first;
+  //   for (size_t model_num = 0; model_num < elem.second.size(); ++model_num)
+  //   {
+  //     msat_model m = elem.second[model_num];
+  //     TermSet conc_indices = concrete_targets[cex_length][model_num];
+
+  //     // TODO: actually search back until 0 or all the models are ruled out
+  //     int bnd = (cex_length > 2) ? cex_length - 2 : 0;
+  //     for(int k = cex_length; k >= bnd; --k)
+  //     {
+  //       for (auto t : addition_domain)
+  //       {
+  //         msat_term tk = un_.at_time(t, cex_length-k);
+  //         if (conc_indices.find(msat_model_eval(m, tk)) != conc_indices.end())
+  //         {
+  //           cout << msat_to_smtlib2_term(refiner_, t) << " : " << k << endl;
+  //         }
+  //       }
+  //     }
+  //   }
+  // }
+
+  cout << "got to part working on" << endl;
   throw exception();
 }
 
