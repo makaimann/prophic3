@@ -275,8 +275,10 @@ msat_truth_value ProphIC3::prove()
       }
 
       if (res == MSAT_UNDEF) {
-        logger(1) << "IC3 returned undefined..." << endlog;
-        throw std::exception();
+        logger(0) << "IC3 returned undefined...advancing current bound and "
+                     "searching for more axioms"
+                  << endlog;
+        current_k_++;
       }
     }
   }
@@ -355,17 +357,17 @@ bool ProphIC3::fix_bmc()
             }
           }
 
-          // TermSet timed_axioms_to_add;
-          // bool ok = reduce_timed_axioms(untimed_axioms, sorted_timed_axioms,
-          //                               timed_axioms_to_add);
+          TermSet timed_axioms_to_add;
+          bool ok = reduce_timed_axioms(untimed_axioms, sorted_timed_axioms,
+                                        timed_axioms_to_add);
 
-          // prophecy_targets.clear();
-          // msat_term tmp_idx;
-          // for (auto ax : timed_axioms_to_add) {
-          //   tmp_idx = aae_.get_index(ax);
-          //   prophecy_targets.insert(pair<msat_term, size_t>(
-          //       un_.untime(tmp_idx), current_k_ - un_.get_time(tmp_idx)));
-          // }
+          prophecy_targets.clear();
+          msat_term tmp_idx;
+          for (auto ax : timed_axioms_to_add) {
+            tmp_idx = aae_.get_index(ax);
+            prophecy_targets.insert(pair<msat_term, size_t>(
+                un_.untime(tmp_idx), current_k_ - un_.get_time(tmp_idx)));
+          }
         }
       }
 
