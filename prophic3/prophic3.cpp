@@ -169,12 +169,8 @@ ProphIC3::ProphIC3(const ic3ia::TransitionSystem &ts,
 
 ProphIC3::~ProphIC3()
 {
-  for (auto elem : previous_models_)
-  {
-    for (msat_model m : elem.second)
-    {
-      msat_destroy_model(m);
-    }
+  for (msat_model m : previous_models_) {
+    msat_destroy_model(m);
   }
 
   msat_destroy_env(refiner_);
@@ -405,6 +401,10 @@ bool ProphIC3::fix_bmc()
 
     if (num_steps_no_axioms < 2) {
       current_k_++;
+      for (msat_model m : previous_models_) {
+        msat_destroy_model(m);
+      }
+      previous_models_.clear();
     }
   }
 
@@ -460,7 +460,7 @@ bool ProphIC3::check_axioms_over_bmc(TermSet &untimed_axioms,
 
   while (broken) {
     // get and save the current model
-    previous_models_[current_k_].push_back(msat_get_model(refiner_));
+    previous_models_.push_back(msat_get_model(refiner_));
 
     int lemma_cnt = 0;
     violated_axioms.clear();
@@ -824,8 +824,8 @@ TargetSet ProphIC3::search_for_prophecy_targets(TargetSet &index_targets) {
 
   vector<TargetSet> candidate_targets;
   // only looking at models from this time-step for now
-  for (size_t i = 0; i < previous_models_[current_k_].size(); ++i) {
-    msat_model m = previous_models_[current_k_][i];
+  for (size_t i = 0; i < previous_models_.size(); ++i) {
+    msat_model m = previous_models_[i];
     candidate_targets.push_back(set<pair<msat_term, size_t>>());
     set<pair<msat_term, size_t>> &target_set = candidate_targets.back();
 
