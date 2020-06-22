@@ -798,25 +798,27 @@ TargetSet ProphIC3::search_for_prophecy_targets(TargetSet &index_targets) {
 
   logger(1) << "Searching for better prophecy targets" << endlog;
 
+  // always start with the original targets
+  // copy the set because we'll add to it
+  TargetSet prophecy_targets = index_targets;
+
   // only use original variables
-  TermSet vars;
+  TermSet candidate_terms;
   for (auto v : conc_ts_.statevars()) {
     if (msat_is_integer_type(refiner_, msat_term_get_type(v))) {
-      vars.insert(aa_.abstract(v));
+      candidate_terms.insert(aa_.abstract(v));
     }
   }
 
   for (auto v : conc_ts_.inputvars()) {
     if (msat_is_integer_type(refiner_, msat_term_get_type(v))) {
-      vars.insert(aa_.abstract(v));
+      candidate_terms.insert(aa_.abstract(v));
     }
   }
 
-  // have to include the INDEX_SET or it might find no targets
-  TermSet addition_domain = aae_.get_index_targets(INDEX_SET);
-  for (auto v1 : vars) {
-    for (auto v2 : vars) {
-      addition_domain.insert(msat_make_plus(refiner_, v1, v2));
+  for (auto v1 : candidate_terms) {
+    for (auto v2 : candidate_terms) {
+      candidate_terms.insert(msat_make_plus(refiner_, v1, v2));
     }
   }
 
@@ -831,7 +833,7 @@ TargetSet ProphIC3::search_for_prophecy_targets(TargetSet &index_targets) {
       msat_term timed_idx = un_.at_time(elem.first, current_k_ - elem.second);
       // heuristic: only search up to the delay of this index target
       for (size_t delay = 0; delay <= elem.second; ++delay) {
-        for (auto candidate_target : addition_domain) {
+        for (auto candidate_target : candidate_terms) {
           msat_term timed_candidate_target =
               un_.at_time(candidate_target, current_k_ - delay);
           if (msat_model_eval(m, timed_idx) ==
@@ -843,7 +845,12 @@ TargetSet ProphIC3::search_for_prophecy_targets(TargetSet &index_targets) {
     }
   }
 
-  TargetSet prophecy_targets = set_intersection_reduce(candidate_targets);
+  // Heuristic: add any candidates that could have replaced one of the index
+  // targets in *every* previous model
+  for (auto elem : set_intersection_reduce(candidate_targets)) {
+    prophecy_targets.insert(elem);
+  }
+
   logger(1) << "Found " << prophecy_targets.size() << " better targets"
             << endlog;
 
