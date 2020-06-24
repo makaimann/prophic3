@@ -803,21 +803,22 @@ TargetSet ProphIC3::search_for_prophecy_targets(TargetSet &index_targets) {
   TargetSet prophecy_targets = index_targets;
 
   // only use original variables
-  TermSet candidate_terms;
+  TermSet vars;
   for (auto v : conc_ts_.statevars()) {
     if (msat_is_integer_type(refiner_, msat_term_get_type(v))) {
-      candidate_terms.insert(aa_.abstract(v));
+      vars.insert(aa_.abstract(v));
     }
   }
 
   for (auto v : conc_ts_.inputvars()) {
     if (msat_is_integer_type(refiner_, msat_term_get_type(v))) {
-      candidate_terms.insert(aa_.abstract(v));
+      vars.insert(aa_.abstract(v));
     }
   }
 
-  for (auto v1 : candidate_terms) {
-    for (auto v2 : candidate_terms) {
+  TermSet candidate_terms;
+  for (auto v1 : vars) {
+    for (auto v2 : vars) {
       candidate_terms.insert(msat_make_plus(refiner_, v1, v2));
     }
   }
