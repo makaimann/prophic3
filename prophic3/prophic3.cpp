@@ -1272,19 +1272,27 @@ bool ProphIC3::reduce_timed_axioms(const TermSet &untimed_axioms,
   TermList labels;
   for (auto ax_set : sorted_timed_axioms)
   {
-    msat_term l = lbl(*(ax_set.begin()));
-    labels.push_back(l);
+    assert(ax_set.size()); // expecting non-empty set of axioms
     msat_term aa = msat_make_true(msat_env_);
     for (auto ax : ax_set)
     {
       aa = msat_make_and(msat_env_, aa, ax);
     }
+    msat_term l = lbl(aa);
+    labels.push_back(l);
     // label -> constraints
     msat_assert_formula(reducer_,
                         msat_make_or(reducer_,
                                      msat_make_not(reducer_, l),
                                      aa));
   }
+
+  // all the labels should be unique!
+  // can run into this issue if enumerating targets over a grammar
+  // might get x and y + x - y which are considered different, until it's used to make
+  // axioms, and then it becomes simplified. Then, the labels are the same
+  // because the conjunction of axioms is the same
+  assert(labels.size() == TermSet(labels.begin(), labels.end()).size());
 
   msat_result s = msat_solve_with_assumptions(reducer_, &labels[0], labels.size());
   if (s != MSAT_UNSAT)
