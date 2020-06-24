@@ -313,17 +313,18 @@ bool ProphIC3::fix_bmc()
     /********************** Fix the transition system **********************/
 
     if (timed_axioms.size()) {
-      TargetSet prophecy_targets;
-      prophecy_targets =
+      TargetSet prophecy_targets =
           identify_prophecy_targets(untimed_axioms, timed_axioms);
 
       if (opts_.enum_grammar_search) {
-        prophecy_targets = search_for_prophecy_targets(prophecy_targets);
+        TargetSet found_prophecy_targets =
+            search_for_prophecy_targets(prophecy_targets);
 
-        if (opts_.axiom_reduction) {
+        // only reduce if found new targets
+        if (found_prophecy_targets.size() && opts_.axiom_reduction) {
           // map the delay amount to a map from prophecy targets to axioms
           map<size_t, map<msat_term, TermSet>> sorted_map;
-          for (auto elem : prophecy_targets) {
+          for (auto elem : found_prophecy_targets) {
             TermSet single_idx({elem.first});
             vector<TermSet> axiom_sets = {
                 aae_.equality_axioms_idx_time(
@@ -346,7 +347,23 @@ bool ProphIC3::fix_bmc()
           // place axiom sets in a vector
           // relying on iteration order for sortedness
           std::vector<ic3ia::TermSet> sorted_timed_axioms;
+
           for (auto elem0 : sorted_map) {
+            for (auto elem1 : elem0.second) {
+              sorted_timed_axioms.push_back(elem1.second);
+            }
+          }
+
+          // Heuristic: always put original targets on the end
+          // e.g. lowest priority to keep
+          // first sort them by index
+          map<size_t, map<msat_term, TermSet>> sorted_original_targets;
+          for (auto tax : timed_axioms) {
+            msat_term idx = aae_.get_index(tax);
+            size_t delay = current_k_ - un_.get_time(idx);
+            sorted_original_targets[delay][un_.untime(idx)].insert(tax);
+          }
+          for (auto elem0 : sorted_original_targets) {
             for (auto elem1 : elem0.second) {
               sorted_timed_axioms.push_back(elem1.second);
             }
@@ -794,13 +811,14 @@ TargetSet ProphIC3::identify_prophecy_targets(const TermSet &untimed_axioms,
   return prophecy_targets;
 }
 
-TargetSet ProphIC3::search_for_prophecy_targets(TargetSet &index_targets) {
+TargetSet
+ProphIC3::search_for_prophecy_targets(const TargetSet &index_targets) {
 
   logger(1) << "Searching for better prophecy targets" << endlog;
 
   // always start with the original targets
   // copy the set because we'll add to it
-  TargetSet prophecy_targets = index_targets;
+  TargetSet prophecy_targets;
 
   // only use original variables
   TermSet vars;
@@ -816,59 +834,95 @@ TargetSet ProphIC3::search_for_prophecy_targets(TargetSet &index_targets) {
     }
   }
 
-  TermSet candidate_terms;
-  for (auto v1 : vars) {
-    for (auto v2 : vars) {
-      candidate_terms.insert(msat_make_plus(refiner_, v1, v2));
-    }
-  }
-
   // add non index integer terms from the transition system to the candidate
   // terms
   TermSet non_idx_int_terms =
       aae_.get_index_targets(NO_NEXT_NON_INDEX_INT_TERMS);
+
+  // vector of progressively larger enumerated candidate terms
+  vector<TermSet> candidate_terms;
+  candidate_terms.push_back(vars);
+
+  // non index terms without addition
+  candidate_terms.push_back(TermSet());
+  TermSet &intterms = candidate_terms.back();
   for (auto t : non_idx_int_terms) {
-    // don't want to add value indices
-    // or next state versions (will be searched over current anyway)
     if (!msat_term_is_number(refiner_, t)) {
-      candidate_terms.insert(t);
+      // don't include concrete targets -- not good refinement
+      intterms.insert(t);
     }
   }
 
-  // add vars plus non index integer terms
-  for (auto v : vars) {
-    for (auto t : non_idx_int_terms) {
-      candidate_terms.insert(msat_make_plus(refiner_, v, t));
+  candidate_terms.push_back(TermSet());
+  TermSet &var_plus_var = candidate_terms.back();
+
+  for (auto v1 : vars) {
+    for (auto v2 : vars) {
+      var_plus_var.insert(msat_make_plus(refiner_, v1, v2));
     }
   }
 
-  vector<TargetSet> candidate_targets;
-  // only looking at models from this time-step for now
-  for (size_t i = 0; i < previous_models_.size(); ++i) {
-    msat_model m = previous_models_[i];
-    candidate_targets.push_back(set<pair<msat_term, size_t>>());
-    set<pair<msat_term, size_t>> &target_set = candidate_targets.back();
-
+  // make sure we didn't add any of the index targets back
+  // this will be trivially equivalent in the models
+  for (TermSet &cterms : candidate_terms) {
     for (auto elem : index_targets) {
-      msat_term timed_idx = un_.at_time(elem.first, current_k_ - elem.second);
-      // heuristic: only search up to the delay of this index target
-      for (size_t delay = 0; delay <= elem.second; ++delay) {
-        for (auto candidate_target : candidate_terms) {
-          msat_term timed_candidate_target =
-              un_.at_time(candidate_target, current_k_ - delay);
-          if (msat_model_eval(m, timed_idx) ==
-              msat_model_eval(m, timed_candidate_target)) {
-            target_set.insert(pair<msat_term, size_t>(candidate_target, delay));
+      cterms.erase(elem.first);
+    }
+  }
+
+  // TODO: have a better enumeration of the grammar
+  //       currently just stopping after var + var
+  // TermSet var_plus_int_terms;
+  // // add vars plus non index integer terms
+  // for (auto v : vars) {
+  //   for (auto t : non_idx_int_terms) {
+  //     var_plus_int_terms.insert(msat_make_plus(refiner_, v, t));
+  //   }
+  // }
+  // candidate_terms.push_back(var_plus_int_terms);
+
+  // outer-loop increases the size of the terms in the grammar search
+  // inner-loop is over all the saved models from previous axiom enumeration
+  // and it saves any terms in the grammar enumeration that match one of the
+  // index targets in each model
+
+  for (auto cterms : candidate_terms) {
+    // candidate targets for each previous model
+    // it will end up being the same size as previous_models
+    vector<TargetSet> candidate_targets;
+    // only looking at models from this time-step for now
+    for (size_t i = 0; i < previous_models_.size(); ++i) {
+      msat_model m = previous_models_[i];
+      candidate_targets.push_back(set<pair<msat_term, size_t>>());
+      set<pair<msat_term, size_t>> &target_set = candidate_targets.back();
+
+      for (auto elem : index_targets) {
+        msat_term timed_idx = un_.at_time(elem.first, current_k_ - elem.second);
+        // heuristic: only search up to the delay of this index target
+        for (size_t delay = 0; delay <= elem.second; ++delay) {
+          for (auto candidate_target : cterms) {
+            msat_term timed_candidate_target =
+                un_.at_time(candidate_target, current_k_ - delay);
+            if (msat_model_eval(m, timed_idx) ==
+                msat_model_eval(m, timed_candidate_target)) {
+              target_set.insert(
+                  pair<msat_term, size_t>(candidate_target, delay));
+            }
           }
         }
       }
     }
-  }
 
-  // Heuristic: add any candidates that could have replaced one of the index
-  // targets in *every* previous model
-  for (auto elem : set_intersection_reduce(candidate_targets)) {
-    prophecy_targets.insert(elem);
+    // Heuristic: add any candidates that could have replaced one of the index
+    // targets in *every* previous model
+    for (auto elem : set_intersection_reduce(candidate_targets)) {
+      prophecy_targets.insert(elem);
+    }
+
+    if (prophecy_targets.size()) {
+      // if it found other targets already, stop searching grammar
+      break;
+    }
   }
 
   logger(1) << "Found " << prophecy_targets.size() << " better targets"
@@ -1289,9 +1343,10 @@ bool ProphIC3::reduce_timed_axioms(const TermSet &untimed_axioms,
 
   // all the labels should be unique!
   // can run into this issue if enumerating targets over a grammar
-  // might get x and y + x - y which are considered different, until it's used to make
-  // axioms, and then it becomes simplified. Then, the labels are the same
-  // because the conjunction of axioms is the same
+  // might get x and y + x - y which are considered different, until it's used
+  // to make axioms, and then it becomes simplified. Then, the labels are the
+  // same because the conjunction of axioms is the same if this is really
+  // unavoidable, we could just use numbered labels instead of using term ids
   assert(labels.size() == TermSet(labels.begin(), labels.end()).size());
 
   msat_result s = msat_solve_with_assumptions(reducer_, &labels[0], labels.size());

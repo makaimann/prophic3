@@ -115,7 +115,7 @@ protected:
    *  @return set of pairs of target terms and number of steps before a
    *          property violation
    */
-  TargetSet search_for_prophecy_targets(TargetSet &index_targets);
+  TargetSet search_for_prophecy_targets(const TargetSet &index_targets);
 
   /* Returns all the original indices that occur in term */
   ic3ia::TermSet detect_indices(msat_term term);
