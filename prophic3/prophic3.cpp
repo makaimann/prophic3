@@ -313,7 +313,6 @@ bool ProphIC3::fix_bmc()
     /********************** Fix the transition system **********************/
 
     if (timed_axioms.size()) {
-      // TODO: have an option to find better indices for refinement
       TargetSet prophecy_targets;
       prophecy_targets =
           identify_prophecy_targets(untimed_axioms, timed_axioms);
@@ -356,6 +355,7 @@ bool ProphIC3::fix_bmc()
           TermSet timed_axioms_to_add;
           bool ok = reduce_timed_axioms(untimed_axioms, sorted_timed_axioms,
                                         timed_axioms_to_add);
+          assert(ok);
 
           prophecy_targets.clear();
           msat_term tmp_idx;
@@ -820,6 +820,25 @@ TargetSet ProphIC3::search_for_prophecy_targets(TargetSet &index_targets) {
   for (auto v1 : vars) {
     for (auto v2 : vars) {
       candidate_terms.insert(msat_make_plus(refiner_, v1, v2));
+    }
+  }
+
+  // add non index integer terms from the transition system to the candidate
+  // terms
+  TermSet non_idx_int_terms =
+      aae_.get_index_targets(NO_NEXT_NON_INDEX_INT_TERMS);
+  for (auto t : non_idx_int_terms) {
+    // don't want to add value indices
+    // or next state versions (will be searched over current anyway)
+    if (!msat_term_is_number(refiner_, t)) {
+      candidate_terms.insert(t);
+    }
+  }
+
+  // add vars plus non index integer terms
+  for (auto v : vars) {
+    for (auto t : non_idx_int_terms) {
+      candidate_terms.insert(msat_make_plus(refiner_, v, t));
     }
   }
 

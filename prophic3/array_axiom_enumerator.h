@@ -27,8 +27,9 @@ enum IndexTarget {
   // prophecy variables only
   PROPH,
   // integer terms from transition relation
-  // that are not indices
-  NON_INDEX_INT_TERMS
+  // that are not indices and don't contain next
+  // used in grammar search
+  NO_NEXT_NON_INDEX_INT_TERMS
 };
 
 class ArrayAxiomEnumerator {

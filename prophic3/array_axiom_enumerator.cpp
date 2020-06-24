@@ -65,7 +65,7 @@ msat_term ArrayAxiomEnumerator::bound_lambda(msat_term lambda, size_t width)
 TermSet ArrayAxiomEnumerator::octagonal_addition_domain_terms() const {
   TermSet octagonal_domain;
   // copy the set because we want to modify a copy
-  TermSet args = index_targets_.at(NON_INDEX_INT_TERMS);
+  TermSet args = index_targets_.at(NO_NEXT_NON_INDEX_INT_TERMS);
   // add indices to the map
   for (auto idx : index_targets_.at(STATE_INDEX_SET_NO_WITNESSES)) {
     args.insert(idx);
@@ -485,7 +485,8 @@ void ArrayAxiomEnumerator::collect_int_terms(msat_term term) {
 
   struct Data {
     TermSet &terms;
-    Data(TermSet &t) : terms(t) {}
+    const TransitionSystem &ts;
+    Data(TermSet &t, const TransitionSystem &ats) : terms(t), ts(ats) {}
   };
 
   auto visit = [](msat_env e, msat_term t, int preorder,
@@ -494,15 +495,16 @@ void ArrayAxiomEnumerator::collect_int_terms(msat_term term) {
     if (!preorder) {
       return MSAT_VISIT_SKIP;
     } else {
-      if (msat_is_integer_type(e, msat_term_get_type(t))) {
+      if (msat_is_integer_type(e, msat_term_get_type(t)) &&
+          !d->ts.contains_next(t)) {
         d->terms.insert(t);
       }
     }
     return MSAT_VISIT_PROCESS;
   };
 
-  TermSet &non_idx_int_terms = index_targets_[NON_INDEX_INT_TERMS];
-  Data data(non_idx_int_terms);
+  TermSet &non_idx_int_terms = index_targets_[NO_NEXT_NON_INDEX_INT_TERMS];
+  Data data(non_idx_int_terms, ts_);
   msat_visit_term(msat_env_, term, visit, &data);
 
   // remove indices from the sets
