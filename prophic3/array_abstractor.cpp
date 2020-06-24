@@ -40,8 +40,21 @@ msat_term ArrayAbstractor::abstract(msat_term conc_term) const {
                  {
                    if (is_variable(e, t) || msat_term_is_array_const(e, t))
                    {
-                     assert(d->super->abstraction_cache_.find(t) != d->super->abstraction_cache_.end());
-                     d->cache[t] = d->super->abstraction_cache_.at(t);
+                     msat_term abstract_term;
+                     if (d->super->abstraction_cache_.find(t) !=
+                         d->super->abstraction_cache_.end()) {
+                       d->cache[t] = d->super->abstraction_cache_.at(t);
+                     } else {
+                       // no known mapping
+                       // just use an identity mapping
+                       // this situation could happen for non-array variables
+                       // that are not actually used in the transition system
+                       d->cache[t] = t;
+                       // this should not be an array -- those should be
+                       // abstracted
+                       assert(!msat_is_array_type(e, msat_term_get_type(t),
+                                                  nullptr, nullptr));
+                     }
                    }
                    else if (msat_term_is_array_read(e, t))
                    {
