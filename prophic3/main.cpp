@@ -76,6 +76,17 @@ int main(int argc, const char **argv)
       return 1;
     }
 
+    if (opts.trace.empty() && !opts.trace_dir.empty()) {
+      size_t last_slash = opts.filename.find_last_of('/');
+      if (last_slash == string::npos) {
+        opts.trace = opts.trace_dir + opts.filename;
+      } else {
+        opts.trace = opts.trace_dir + "/" +
+                     opts.filename.substr(last_slash + 1,
+                                          opts.filename.size() - last_slash);
+      }
+    }
+
     if (!opts.trace.empty()) {
       logger(1) << "dumping SMT traces to " << opts.trace << ".*.smt2"
                 << endlog;
@@ -143,6 +154,7 @@ int main(int argc, const char **argv)
           inv = msat_make_and(env, inv, clause);
         }
         std::string inv_filename = opts.trace + ".inv";
+        cout << "inv_filename = " << inv_filename << endl;
         FILE * f = fopen(inv_filename.c_str(), "w");
         msat_to_smtlib2_file(env, inv, f);
         fclose(f);

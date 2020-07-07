@@ -32,6 +32,7 @@ struct Options {
     bool nopreds;
     std::string filename;
     std::string trace;
+    std::string trace_dir;
     int seed;
     bool stack;
     bool minpreds;
