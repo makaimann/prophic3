@@ -216,7 +216,7 @@ msat_truth_value ProphIC3::prove()
     {
       ofstream f;
       std::string filename = opts_.trace;
-      filename += "_abs_system_" + std::to_string(iter_cnt) + ".vmt";
+      filename += "_abs_system.vmt";
       f.open(filename);
       abs_ts_.to_vmt(f);
       f.close();
