@@ -123,6 +123,30 @@ int main(int argc, const char **argv)
       bool safe = (res == MSAT_TRUE);
       std::vector<TermList> wit;
       int loopback = the_prover->witness(wit);
+      if (safe && !opts.trace.empty())
+      {
+        msat_term inv = msat_make_true(env);
+        for (auto clause_list : wit)
+        {
+          if (clause_list.size() == 0)
+          {
+            cout << "got an empty clause" << endl;
+            throw std::exception();
+          }
+
+          msat_term clause = msat_make_false(env);
+          for (auto c : clause_list)
+          {
+            clause = msat_make_or(env, clause, c);
+          }
+
+          inv = msat_make_and(env, inv, clause);
+        }
+        std::string inv_filename = opts.trace + ".inv";
+        FILE * f = fopen(inv_filename.c_str(), "w");
+        msat_to_smtlib2_file(env, inv, f);
+        fclose(f);
+      }
       if (loopback == Prover::CEX_ERROR) {
         std::cout << "ERROR computing witness" << std::endl;
       } else {
