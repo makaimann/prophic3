@@ -233,7 +233,7 @@ msat_truth_value ProphIC3::prove()
 
       ofstream fconc;
       std::string conc_filename = opts_.trace;
-      conc_filename += "_conc_system_" + std::to_string(iter_cnt) + ".vmt";
+      conc_filename += "_conc_system.vmt";
       fconc.open(conc_filename);
       refined_conc_ts.to_vmt(fconc);
       fconc.close();
