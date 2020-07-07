@@ -236,6 +236,12 @@ Options get_options(int argc, const char **argv)
             ok = getint(++i, ret.bmc_max_k);
         } else if (a == "-check-witness") {
           ok = getbool(++i, ret.check_witness);
+        } else if (a == "-witness-check-script") {
+          if (++i < argc) {
+            ret.witness_check_script = argv[i];
+          } else {
+            ok = false;
+          }
         } else if (a == "-solver-approx") {
           ok = getbool(++i, ret.solver_approx);
         } else if (a == "-no-eq-uf") {
@@ -292,6 +298,8 @@ Options get_options(int argc, const char **argv)
                     << "\n   -bmc-k N : max k value for BMC"
                     << "\n   -check-witness B : check the correctness "
                     << "of witnesses"
+                    << "\n   -witness-check-script OUT : generate a  witness "
+                    << "check script in OUT"
                     << "\n   -solver-approx B : use approximate SMT queries "
                     << "in IC3."
                     << "\n   -no-eq-uf : use actual equalities between "
