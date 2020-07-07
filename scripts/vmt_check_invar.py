@@ -2,6 +2,17 @@ from mathsat import *
 import vmt
 import sys, argparse, subprocess
 
+def get_free_vars(env, term):
+    free_vars = set()
+    def visit(e, t, preorder):
+        if preorder and msat_term_arity(t) == 0 and \
+           msat_decl_get_tag(e, msat_term_get_decl(t)) == MSAT_TAG_UNKNOWN and \
+           not msat_term_is_number(e, t):
+            free_vars.add(t)
+        return MSAT_VISIT_PROCESS
+    msat_visit_term(env, term, visit)
+    return free_vars
+
 
 def getopts():
     p = argparse.ArgumentParser()
@@ -62,6 +73,9 @@ def main():
         model = vmt.read(env, src)
     with open(opts.invar) as src:
         invar = msat_from_smtlib2(env, src.read())
+
+    for fv in get_free_vars(env, invar):
+        assert model.is_statevar(fv), "Invariant should be entirely over state variables"
 
     if not opts.no_init:
         msg('checking Init |= Invar...')
