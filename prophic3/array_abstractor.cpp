@@ -217,6 +217,11 @@ msat_term ArrayAbstractor::concrete(msat_term abs_term) const {
         // construct_abstract_term
         if (msat_term_is_equal(e, t)) {
           d->cache[t] = msat_make_eq(e, args[0], args[1]);
+        } else if (msat_term_is_term_ite(e, t)) {
+          // special-case for ite (this gets typed for its output)
+          // need to update it
+          assert(args.size() == 3);
+          d->cache[t] = msat_make_term_ite(e, args[0], args[1], args[2]);
         } else {
           d->cache[t] = msat_make_term(e, dec, &args[0]);
         }
