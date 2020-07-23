@@ -139,13 +139,17 @@ int main(int argc, const char **argv)
         msat_term inv = msat_make_true(env);
         for (auto clause_list : wit)
         {
+          msat_term clause;
           if (clause_list.size() == 0)
           {
             cout << "got an empty clause" << endl;
-            throw std::exception();
+            clause = msat_make_true(env);
+          }
+          else
+          {
+            clause = msat_make_false(env);
           }
 
-          msat_term clause = msat_make_false(env);
           for (auto c : clause_list)
           {
             clause = msat_make_or(env, clause, c);
