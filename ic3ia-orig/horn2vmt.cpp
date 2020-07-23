@@ -266,7 +266,8 @@ void collect_vars(msat_env env, msat_term formula, TermSet &out)
            void *data) -> msat_visit_status
         {
             TermSet *out = static_cast<TermSet *>(data);
-            if (preorder && msat_term_is_constant(e, t)) {
+            if (preorder && msat_term_is_constant(e, t) &&
+                !msat_term_is_number(e, t)) {
                 out->insert(t);
             }
             return MSAT_VISIT_PROCESS;
@@ -750,10 +751,9 @@ bool HornRewriter::operator()(const std::vector<HornClause> &src)
     }
 
     if (opts_.single_predicate) {
-        bool changed =
-            apply_rule(this, &HornRewriter::make_single, cur, res_, tmp);
+        apply_rule(this, &HornRewriter::make_single, cur, res_, tmp);
         debug_print("make_single1", env_, *cur);
-        if (changed && opts_.collapse_same_arity) {
+        if (opts_.collapse_same_arity) {
             apply_rule(this, &HornRewriter::collapse, cur, res_, tmp);
         }
         debug_print("make_single", env_, *cur);
@@ -1875,6 +1875,22 @@ void HornManager::init(msat_env env, const std::vector<HornClause> &src)
     size_t curstatevars = statevars.size();
     add_extra_init_vars(menv, statevars, &init, &trans, &bad);
     add_extra_prop_vars(menv, statevars, &init, &trans, &bad);
+
+    {
+        TermSet extra;
+        collect_vars(menv, trans, extra);
+        for (auto &p : statevars) {
+            extra.erase(p.first);
+            extra.erase(p.second);
+        }
+        VarProvider vp(env);
+        const char *name = "xtv";
+        for (auto v : extra) {
+            assert(!msat_term_is_number(menv, v));
+            auto n = vp.fresh_var(name, msat_term_get_type(v));
+            statevars[v] = n;
+        }
+    }
     
     logger(1) << ";; converting to model with " << statevars.size()
               << " state vars (" << curstatevars << " original, "
