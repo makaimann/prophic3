@@ -1,4 +1,4 @@
-(set-info :original "./flarge_enc/vizel/llvm/str_copy.bc")
+(set-info :original "./vizel/llvm/str_copy.bc")
 (set-info :authors "SeaHorn v.0.1.0-rc3")
 (set-logic HORN)
 (declare-fun verifier.error (Bool Bool Bool) Bool)

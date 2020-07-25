@@ -1,4 +1,4 @@
-(set-info :original "./flarge_enc/vizel/llvm/array_sum_const.bc")
+(set-info :original "./vizel/llvm/array_sum_const.bc")
 (set-info :authors "SeaHorn v.0.1.0-rc3")
 (set-logic HORN)
 (declare-fun verifier.error (Bool Bool Bool) Bool)
