@@ -1,0 +1,1194 @@
+; chc-comp19-benchmarks/./lia-lin-arr/chc-lia-lin-arr-0142_000.smt2
+(set-logic HORN)
+
+(declare-fun |ULTIMATE.start_L6-2| ( Int (Array Int Int) (Array Int Int) (Array Int (Array Int Int)) (Array Int (Array Int Int)) Int Int (Array Int Int) (Array Int Int) Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Bool ) Bool)
+(declare-fun |ULTIMATE.start_ULTIMATE.startENTRY| ( Int (Array Int Int) (Array Int Int) (Array Int (Array Int Int)) (Array Int (Array Int Int)) Int Int (Array Int Int) (Array Int Int) Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Bool ) Bool)
+(declare-fun |ULTIMATE.start_ULTIMATE.startFINAL| ( Int (Array Int Int) (Array Int Int) (Array Int (Array Int Int)) (Array Int (Array Int Int)) Int Int (Array Int Int) (Array Int Int) Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Bool ) Bool)
+(declare-fun |ULTIMATE.start_L-1| ( Int (Array Int Int) (Array Int Int) (Array Int (Array Int Int)) (Array Int (Array Int Int)) Int Int (Array Int Int) (Array Int Int) Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Bool ) Bool)
+(declare-fun |ULTIMATE.start_L26-3| ( Int (Array Int Int) (Array Int Int) (Array Int (Array Int Int)) (Array Int (Array Int Int)) Int Int (Array Int Int) (Array Int Int) Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Bool ) Bool)
+(declare-fun |ULTIMATE.start_L19-2| ( Int (Array Int Int) (Array Int Int) (Array Int (Array Int Int)) (Array Int (Array Int Int)) Int Int (Array Int Int) (Array Int Int) Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Bool ) Bool)
+(declare-fun |ULTIMATE.start_L35| ( Int (Array Int Int) (Array Int Int) (Array Int (Array Int Int)) (Array Int (Array Int Int)) Int Int (Array Int Int) (Array Int Int) Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Bool ) Bool)
+(declare-fun |ULTIMATE.start_L26-2| ( Int (Array Int Int) (Array Int Int) (Array Int (Array Int Int)) (Array Int (Array Int Int)) Int Int (Array Int Int) (Array Int Int) Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Bool ) Bool)
+(declare-fun |ULTIMATE.start_ULTIMATE.startEXIT| ( Int (Array Int Int) (Array Int Int) (Array Int (Array Int Int)) (Array Int (Array Int Int)) Int Int (Array Int Int) (Array Int Int) Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Bool ) Bool)
+(declare-fun |ULTIMATE.start_L19-4| ( Int (Array Int Int) (Array Int Int) (Array Int (Array Int Int)) (Array Int (Array Int Int)) Int Int (Array Int Int) (Array Int Int) Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Bool ) Bool)
+(declare-fun |ULTIMATE.start_L7| ( Int (Array Int Int) (Array Int Int) (Array Int (Array Int Int)) (Array Int (Array Int Int)) Int Int (Array Int Int) (Array Int Int) Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Bool ) Bool)
+(declare-fun |ULTIMATE.start_L19-3| ( Int (Array Int Int) (Array Int Int) (Array Int (Array Int Int)) (Array Int (Array Int Int)) Int Int (Array Int Int) (Array Int Int) Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Bool ) Bool)
+(declare-fun |ULTIMATE.start_L6| ( Int (Array Int Int) (Array Int Int) (Array Int (Array Int Int)) (Array Int (Array Int Int)) Int Int (Array Int Int) (Array Int Int) Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Bool ) Bool)
+
+(assert
+  (forall ( (A Int) (B (Array Int Int)) (C (Array Int Int)) (D (Array Int (Array Int Int))) (E (Array Int (Array Int Int))) (F Int) (G Int) (H (Array Int Int)) (I (Array Int Int)) (J Int) (K Int) (L Int) (M Int) (N Int) (O Int) (P Int) (Q Int) (R Int) (S Int) (T Int) (U Int) (V Int) (W Int) (X Int) (Y Int) (Z Int) (A1 Int) (B1 Int) (C1 Bool) (D1 (Array Int Int)) (E1 Int) (F1 Int) ) 
+    (=>
+      (and
+        (ULTIMATE.start_ULTIMATE.startENTRY
+  A
+  D1
+  C
+  D
+  E
+  E1
+  G
+  H
+  I
+  F1
+  K
+  L
+  M
+  N
+  O
+  P
+  Q
+  R
+  S
+  T
+  U
+  V
+  W
+  X
+  Y
+  Z
+  A1
+  B1
+  C1)
+        (or C1 (and (= J 0) (= F 0) (= B (store D1 0 0))))
+      )
+      (ULTIMATE.start_L-1
+  A
+  B
+  C
+  D
+  E
+  F
+  G
+  H
+  I
+  J
+  K
+  L
+  M
+  N
+  O
+  P
+  Q
+  R
+  S
+  T
+  U
+  V
+  W
+  X
+  Y
+  Z
+  A1
+  B1
+  C1)
+    )
+  )
+)
+(assert
+  (forall ( (A Int) (B (Array Int Int)) (C (Array Int Int)) (D (Array Int (Array Int Int))) (E (Array Int (Array Int Int))) (F Int) (G Int) (H (Array Int Int)) (I (Array Int Int)) (J Int) (K Int) (L Int) (M Int) (N Int) (O Int) (P Int) (Q Int) (R Int) (S Int) (T Int) (U Int) (V Int) (W Int) (X Int) (Y Int) (Z Int) (A1 Int) (B1 Int) (C1 Bool) (D1 (Array Int Int)) (E1 (Array Int Int)) (F1 Int) (G1 Int) (H1 Int) (I1 Int) (J1 Int) (K1 Int) (L1 Int) (M1 Int) (N1 Int) (O1 Int) (P1 Int) (Q1 Int) (R1 Int) (S1 Int) ) 
+    (=>
+      (and
+        (ULTIMATE.start_L-1
+  A
+  D1
+  C
+  D
+  E
+  F
+  G
+  E1
+  I
+  J
+  K
+  F1
+  M
+  G1
+  H1
+  I1
+  J1
+  K1
+  L1
+  T
+  M1
+  N1
+  O1
+  P1
+  Y
+  Q1
+  R1
+  S1
+  C1)
+        (or C1
+    (and (not (<= A Z))
+         (= Q 0)
+         (not (= Z 0))
+         (= 0 U)
+         (= (select D1 Z) 0)
+         (= H (store E1 Z 11))
+         (= (store D1 Z 1) B)))
+      )
+      (ULTIMATE.start_L19-3
+  A
+  B
+  C
+  D
+  E
+  F
+  G
+  H
+  I
+  J
+  K
+  L
+  M
+  N
+  O
+  P
+  Q
+  R
+  S
+  T
+  U
+  V
+  W
+  X
+  Y
+  Z
+  A1
+  B1
+  C1)
+    )
+  )
+)
+(assert
+  (forall ( (A Int) (B (Array Int Int)) (C (Array Int Int)) (D (Array Int (Array Int Int))) (E (Array Int (Array Int Int))) (F Int) (G Int) (H (Array Int Int)) (I (Array Int Int)) (J Int) (K Int) (L Int) (M Int) (N Int) (O Int) (P Int) (Q Int) (R Int) (S Int) (T Int) (U Int) (V Int) (W Int) (X Int) (Y Int) (Z Int) (A1 Int) (B1 Int) (C1 Bool) ) 
+    (=>
+      (and
+        (ULTIMATE.start_L19-3
+  A
+  B
+  C
+  D
+  E
+  F
+  G
+  H
+  I
+  J
+  K
+  L
+  M
+  N
+  O
+  P
+  Q
+  R
+  S
+  T
+  U
+  V
+  W
+  X
+  Y
+  Z
+  A1
+  B1
+  C1)
+        (= C1 true)
+      )
+      (ULTIMATE.start_L19-4
+  A
+  B
+  C
+  D
+  E
+  F
+  G
+  H
+  I
+  J
+  K
+  L
+  M
+  N
+  O
+  P
+  Q
+  R
+  S
+  T
+  U
+  V
+  W
+  X
+  Y
+  Z
+  A1
+  B1
+  C1)
+    )
+  )
+)
+(assert
+  (forall ( (A Int) (B (Array Int Int)) (C (Array Int Int)) (D (Array Int (Array Int Int))) (E (Array Int (Array Int Int))) (F Int) (G Int) (H (Array Int Int)) (I (Array Int Int)) (J Int) (K Int) (L Int) (M Int) (N Int) (O Int) (P Int) (Q Int) (R Int) (S Int) (T Int) (U Int) (V Int) (W Int) (X Int) (Y Int) (Z Int) (A1 Int) (B1 Int) (C1 Bool) ) 
+    (=>
+      (and
+        (ULTIMATE.start_L19-3
+  A
+  B
+  C
+  D
+  E
+  F
+  G
+  H
+  I
+  J
+  K
+  L
+  M
+  N
+  O
+  P
+  Q
+  R
+  S
+  T
+  U
+  V
+  W
+  X
+  Y
+  Z
+  A1
+  B1
+  C1)
+        (or C1 (<= 11 Q))
+      )
+      (ULTIMATE.start_L19-4
+  A
+  B
+  C
+  D
+  E
+  F
+  G
+  H
+  I
+  J
+  K
+  L
+  M
+  N
+  O
+  P
+  Q
+  R
+  S
+  T
+  U
+  V
+  W
+  X
+  Y
+  Z
+  A1
+  B1
+  C1)
+    )
+  )
+)
+(assert
+  (forall ( (A Int) (B (Array Int Int)) (C (Array Int Int)) (D (Array Int (Array Int Int))) (E (Array Int (Array Int Int))) (F Int) (G Int) (H (Array Int Int)) (I (Array Int Int)) (J Int) (K Int) (L Int) (M Int) (N Int) (O Int) (P Int) (Q Int) (R Int) (S Int) (T Int) (U Int) (V Int) (W Int) (X Int) (Y Int) (Z Int) (A1 Int) (B1 Int) (C1 Bool) (D1 (Array Int (Array Int Int))) (E1 Int) ) 
+    (=>
+      (and
+        (ULTIMATE.start_L19-3
+  A
+  B
+  C
+  D1
+  E
+  F
+  G
+  H
+  I
+  J
+  K
+  E1
+  M
+  N
+  O
+  P
+  Q
+  R
+  S
+  T
+  U
+  V
+  W
+  X
+  Y
+  Z
+  A1
+  B1
+  C1)
+        (let ((a!1 (= D (store D1 Z (store (select D1 Z) (+ Q U) E1)))))
+  (or C1 (and (<= E1 127) (not (<= 11 Q)) (<= (- 128) E1) a!1)))
+      )
+      (ULTIMATE.start_L19-2
+  A
+  B
+  C
+  D
+  E
+  F
+  G
+  H
+  I
+  J
+  K
+  L
+  M
+  N
+  O
+  P
+  Q
+  R
+  S
+  T
+  U
+  V
+  W
+  X
+  Y
+  Z
+  A1
+  B1
+  C1)
+    )
+  )
+)
+(assert
+  (forall ( (A Int) (B (Array Int Int)) (C (Array Int Int)) (D (Array Int (Array Int Int))) (E (Array Int (Array Int Int))) (F Int) (G Int) (H (Array Int Int)) (I (Array Int Int)) (J Int) (K Int) (L Int) (M Int) (N Int) (O Int) (P Int) (Q Int) (R Int) (S Int) (T Int) (U Int) (V Int) (W Int) (X Int) (Y Int) (Z Int) (A1 Int) (B1 Int) (C1 Bool) (D1 (Array Int (Array Int Int))) (E1 Int) (F1 Int) (G1 Int) (H1 Int) (I1 Int) (J1 Int) ) 
+    (=>
+      (and
+        (ULTIMATE.start_L19-4
+  A
+  B
+  C
+  D1
+  E
+  F
+  G
+  H
+  I
+  J
+  K
+  L
+  M
+  N
+  E1
+  F1
+  G1
+  H1
+  S
+  T
+  U
+  V
+  W
+  I1
+  Y
+  Z
+  A1
+  J1
+  C1)
+        (let ((a!1 (= (store D1 Z (store (select D1 Z) (+ 10 U) 0)) D)))
+(let ((a!2 (and (= Q 0)
+                (= B1 U)
+                (= R 0)
+                (= P Z)
+                (= (select (select D Z) (+ R U)) O)
+                a!1)))
+  (or C1 a!2)))
+      )
+      (ULTIMATE.start_L26-2
+  A
+  B
+  C
+  D
+  E
+  F
+  G
+  H
+  I
+  J
+  K
+  L
+  M
+  N
+  O
+  P
+  Q
+  R
+  S
+  T
+  U
+  V
+  W
+  X
+  Y
+  Z
+  A1
+  B1
+  C1)
+    )
+  )
+)
+(assert
+  (forall ( (A Int) (B (Array Int Int)) (C (Array Int Int)) (D (Array Int (Array Int Int))) (E (Array Int (Array Int Int))) (F Int) (G Int) (H (Array Int Int)) (I (Array Int Int)) (J Int) (K Int) (L Int) (M Int) (N Int) (O Int) (P Int) (Q Int) (R Int) (S Int) (T Int) (U Int) (V Int) (W Int) (X Int) (Y Int) (Z Int) (A1 Int) (B1 Int) (C1 Bool) (D1 Int) (E1 Int) ) 
+    (=>
+      (and
+        (ULTIMATE.start_L19-2
+  A
+  B
+  C
+  D
+  E
+  F
+  G
+  H
+  I
+  J
+  K
+  L
+  M
+  N
+  O
+  P
+  D1
+  R
+  E1
+  T
+  U
+  V
+  W
+  X
+  Y
+  Z
+  A1
+  B1
+  C1)
+        (or C1 (= D1 (+ (- 1) Q)))
+      )
+      (ULTIMATE.start_L19-3
+  A
+  B
+  C
+  D
+  E
+  F
+  G
+  H
+  I
+  J
+  K
+  L
+  M
+  N
+  O
+  P
+  Q
+  R
+  S
+  T
+  U
+  V
+  W
+  X
+  Y
+  Z
+  A1
+  B1
+  C1)
+    )
+  )
+)
+(assert
+  (forall ( (A Int) (B (Array Int Int)) (C (Array Int Int)) (D (Array Int (Array Int Int))) (E (Array Int (Array Int Int))) (F Int) (G Int) (H (Array Int Int)) (I (Array Int Int)) (J Int) (K Int) (L Int) (M Int) (N Int) (O Int) (P Int) (Q Int) (R Int) (S Int) (T Int) (U Int) (V Int) (W Int) (X Int) (Y Int) (Z Int) (A1 Int) (B1 Int) (C1 Bool) ) 
+    (=>
+      (and
+        (ULTIMATE.start_L26-2
+  A
+  B
+  C
+  D
+  E
+  F
+  G
+  H
+  I
+  J
+  K
+  L
+  M
+  N
+  O
+  P
+  Q
+  R
+  S
+  T
+  U
+  V
+  W
+  X
+  Y
+  Z
+  A1
+  B1
+  C1)
+        (= C1 true)
+      )
+      (ULTIMATE.start_L26-3
+  A
+  B
+  C
+  D
+  E
+  F
+  G
+  H
+  I
+  J
+  K
+  L
+  M
+  N
+  O
+  P
+  Q
+  R
+  S
+  T
+  U
+  V
+  W
+  X
+  Y
+  Z
+  A1
+  B1
+  C1)
+    )
+  )
+)
+(assert
+  (forall ( (A Int) (B (Array Int Int)) (C (Array Int Int)) (D (Array Int (Array Int Int))) (E (Array Int (Array Int Int))) (F Int) (G Int) (H (Array Int Int)) (I (Array Int Int)) (J Int) (K Int) (L Int) (M Int) (N Int) (O Int) (P Int) (Q Int) (R Int) (S Int) (T Int) (U Int) (V Int) (W Int) (X Int) (Y Int) (Z Int) (A1 Int) (B1 Int) (C1 Bool) ) 
+    (=>
+      (and
+        (ULTIMATE.start_L26-2
+  A
+  B
+  C
+  D
+  E
+  F
+  G
+  H
+  I
+  J
+  K
+  L
+  M
+  N
+  O
+  P
+  Q
+  R
+  S
+  T
+  U
+  V
+  W
+  X
+  Y
+  Z
+  A1
+  B1
+  C1)
+        (or C1 (not (<= (mod O 256) 57)) (not (<= 48 (mod O 256))))
+      )
+      (ULTIMATE.start_L26-3
+  A
+  B
+  C
+  D
+  E
+  F
+  G
+  H
+  I
+  J
+  K
+  L
+  M
+  N
+  O
+  P
+  Q
+  R
+  S
+  T
+  U
+  V
+  W
+  X
+  Y
+  Z
+  A1
+  B1
+  C1)
+    )
+  )
+)
+(assert
+  (forall ( (A Int) (B (Array Int Int)) (C (Array Int Int)) (D (Array Int (Array Int Int))) (E (Array Int (Array Int Int))) (F Int) (G Int) (H (Array Int Int)) (I (Array Int Int)) (J Int) (K Int) (L Int) (M Int) (N Int) (O Int) (P Int) (Q Int) (R Int) (S Int) (T Int) (U Int) (V Int) (W Int) (X Int) (Y Int) (Z Int) (A1 Int) (B1 Int) (C1 Bool) (D1 Int) (E1 Int) (F1 Int) (G1 Int) (H1 Int) (I1 Int) ) 
+    (=>
+      (and
+        (ULTIMATE.start_L26-2
+  A
+  B
+  C
+  D
+  E
+  F
+  G
+  H
+  I
+  J
+  K
+  L
+  M
+  D1
+  E1
+  P
+  F1
+  G1
+  S
+  T
+  U
+  H1
+  W
+  X
+  Y
+  Z
+  I1
+  B1
+  C1)
+        (let ((a!1 (+ (mod V 4294967296) (mod (* 10 (mod F1 4294967296)) 4294967296))))
+(let ((a!2 (= Q
+              (ite (<= (mod a!1 4294967296) 2147483647)
+                   (mod a!1 4294967296)
+                   (+ (- 4294967296) (mod a!1 4294967296))))))
+(let ((a!3 (and (<= (mod E1 256) 57)
+                (<= 48 (mod E1 256))
+                (= G1 (+ (- 1) R))
+                (= V (+ (- 48) (mod E1 256)))
+                a!2
+                (= (select (select D Z) (+ U R)) O))))
+  (or C1 a!3))))
+      )
+      (ULTIMATE.start_L26-2
+  A
+  B
+  C
+  D
+  E
+  F
+  G
+  H
+  I
+  J
+  K
+  L
+  M
+  N
+  O
+  P
+  Q
+  R
+  S
+  T
+  U
+  V
+  W
+  X
+  Y
+  Z
+  A1
+  B1
+  C1)
+    )
+  )
+)
+(assert
+  (forall ( (A Int) (B (Array Int Int)) (C (Array Int Int)) (D (Array Int (Array Int Int))) (E (Array Int (Array Int Int))) (F Int) (G Int) (H (Array Int Int)) (I (Array Int Int)) (J Int) (K Int) (L Int) (M Int) (N Int) (O Int) (P Int) (Q Int) (R Int) (S Int) (T Int) (U Int) (V Int) (W Int) (X Int) (Y Int) (Z Int) (A1 Int) (B1 Int) (C1 Bool) (D1 Int) (E1 Int) ) 
+    (=>
+      (and
+        (ULTIMATE.start_L26-3
+  A
+  B
+  C
+  D
+  E
+  F
+  G
+  H
+  I
+  J
+  K
+  L
+  D1
+  N
+  O
+  P
+  Q
+  R
+  S
+  T
+  U
+  V
+  W
+  X
+  E1
+  Z
+  A1
+  B1
+  C1)
+        (let ((a!1 (and (= Y (ite (<= 0 Q) 1 0)) (= M Y))))
+  (or C1 a!1))
+      )
+      (ULTIMATE.start_L6 A B C D E F G H I J K L M N O P Q R S T U V W X Y Z A1 B1 C1)
+    )
+  )
+)
+(assert
+  (forall ( (A Int) (B (Array Int Int)) (C (Array Int Int)) (D (Array Int (Array Int Int))) (E (Array Int (Array Int Int))) (F Int) (G Int) (H (Array Int Int)) (I (Array Int Int)) (J Int) (K Int) (L Int) (M Int) (N Int) (O Int) (P Int) (Q Int) (R Int) (S Int) (T Int) (U Int) (V Int) (W Int) (X Int) (Y Int) (Z Int) (A1 Int) (B1 Int) (C1 Bool) ) 
+    (=>
+      (and
+        (ULTIMATE.start_L6 A B C D E F G H I J K L M N O P Q R S T U V W X Y Z A1 B1 C1)
+        (or C1 (= 0 M))
+      )
+      (ULTIMATE.start_L7 A B C D E F G H I J K L M N O P Q R S T U V W X Y Z A1 B1 C1)
+    )
+  )
+)
+(assert
+  (forall ( (A Int) (B (Array Int Int)) (C (Array Int Int)) (D (Array Int (Array Int Int))) (E (Array Int (Array Int Int))) (F Int) (G Int) (H (Array Int Int)) (I (Array Int Int)) (J Int) (K Int) (L Int) (M Int) (N Int) (O Int) (P Int) (Q Int) (R Int) (S Int) (T Int) (U Int) (V Int) (W Int) (X Int) (Y Int) (Z Int) (A1 Int) (B1 Int) (C1 Bool) ) 
+    (=>
+      (and
+        (ULTIMATE.start_L6 A B C D E F G H I J K L M N O P Q R S T U V W X Y Z A1 B1 C1)
+        (or C1 (not (= 0 M)))
+      )
+      (ULTIMATE.start_L6-2
+  A
+  B
+  C
+  D
+  E
+  F
+  G
+  H
+  I
+  J
+  K
+  L
+  M
+  N
+  O
+  P
+  Q
+  R
+  S
+  T
+  U
+  V
+  W
+  X
+  Y
+  Z
+  A1
+  B1
+  C1)
+    )
+  )
+)
+(assert
+  (forall ( (A Int) (B (Array Int Int)) (C (Array Int Int)) (D (Array Int (Array Int Int))) (E (Array Int (Array Int Int))) (F Int) (G Int) (H (Array Int Int)) (I (Array Int Int)) (J Int) (K Int) (L Int) (M Int) (N Int) (O Int) (P Int) (Q Int) (R Int) (S Int) (T Int) (U Int) (V Int) (W Int) (X Int) (Y Int) (Z Int) (A1 Int) (B1 Int) (C1 Bool) (D1 Bool) ) 
+    (=>
+      (and
+        (ULTIMATE.start_L7 A B C D E F G H I J K L M N O P Q R S T U V W X Y Z A1 B1 D1)
+        (= C1 true)
+      )
+      (ULTIMATE.start_ULTIMATE.startEXIT
+  A
+  B
+  C
+  D
+  E
+  F
+  G
+  H
+  I
+  J
+  K
+  L
+  M
+  N
+  O
+  P
+  Q
+  R
+  S
+  T
+  U
+  V
+  W
+  X
+  Y
+  Z
+  A1
+  B1
+  C1)
+    )
+  )
+)
+(assert
+  (forall ( (A Int) (B (Array Int Int)) (C (Array Int Int)) (D (Array Int (Array Int Int))) (E (Array Int (Array Int Int))) (F Int) (G Int) (H (Array Int Int)) (I (Array Int Int)) (J Int) (K Int) (L Int) (M Int) (N Int) (O Int) (P Int) (Q Int) (R Int) (S Int) (T Int) (U Int) (V Int) (W Int) (X Int) (Y Int) (Z Int) (A1 Int) (B1 Int) (C1 Bool) ) 
+    (=>
+      (and
+        (ULTIMATE.start_L7 A B C D E F G H I J K L M N O P Q R S T U V W X Y Z A1 B1 C1)
+        (= C1 true)
+      )
+      (ULTIMATE.start_L6-2
+  A
+  B
+  C
+  D
+  E
+  F
+  G
+  H
+  I
+  J
+  K
+  L
+  M
+  N
+  O
+  P
+  Q
+  R
+  S
+  T
+  U
+  V
+  W
+  X
+  Y
+  Z
+  A1
+  B1
+  C1)
+    )
+  )
+)
+(assert
+  (forall ( (A Int) (B (Array Int Int)) (C (Array Int Int)) (D (Array Int (Array Int Int))) (E (Array Int (Array Int Int))) (F Int) (G Int) (H (Array Int Int)) (I (Array Int Int)) (J Int) (K Int) (L Int) (M Int) (N Int) (O Int) (P Int) (Q Int) (R Int) (S Int) (T Int) (U Int) (V Int) (W Int) (X Int) (Y Int) (Z Int) (A1 Int) (B1 Int) (C1 Bool) (D1 (Array Int Int)) (E1 Int) (F1 Int) (G1 Int) ) 
+    (=>
+      (and
+        (ULTIMATE.start_L6-2
+  A
+  D1
+  C
+  D
+  E
+  F
+  G
+  H
+  I
+  J
+  K
+  L
+  M
+  N
+  O
+  P
+  Q
+  R
+  S
+  T
+  E1
+  V
+  F1
+  X
+  Y
+  G1
+  A1
+  B1
+  C1)
+        (or C1 (and (= W 0) (= (store D1 G1 0) B)))
+      )
+      (ULTIMATE.start_L35
+  A
+  B
+  C
+  D
+  E
+  F
+  G
+  H
+  I
+  J
+  K
+  L
+  M
+  N
+  O
+  P
+  Q
+  R
+  S
+  T
+  U
+  V
+  W
+  X
+  Y
+  Z
+  A1
+  B1
+  C1)
+    )
+  )
+)
+(assert
+  (forall ( (A Int) (B (Array Int Int)) (C (Array Int Int)) (D (Array Int (Array Int Int))) (E (Array Int (Array Int Int))) (F Int) (G Int) (H (Array Int Int)) (I (Array Int Int)) (J Int) (K Int) (L Int) (M Int) (N Int) (O Int) (P Int) (Q Int) (R Int) (S Int) (T Int) (U Int) (V Int) (W Int) (X Int) (Y Int) (Z Int) (A1 Int) (B1 Int) (C1 Bool) (D1 Int) ) 
+    (=>
+      (and
+        (ULTIMATE.start_L35
+  A
+  B
+  C
+  D
+  E
+  F
+  G
+  H
+  I
+  J
+  K
+  L
+  M
+  N
+  O
+  P
+  Q
+  R
+  S
+  D1
+  U
+  V
+  W
+  X
+  Y
+  Z
+  A1
+  B1
+  C1)
+        (or C1 (= T W))
+      )
+      (ULTIMATE.start_ULTIMATE.startFINAL
+  A
+  B
+  C
+  D
+  E
+  F
+  G
+  H
+  I
+  J
+  K
+  L
+  M
+  N
+  O
+  P
+  Q
+  R
+  S
+  T
+  U
+  V
+  W
+  X
+  Y
+  Z
+  A1
+  B1
+  C1)
+    )
+  )
+)
+(assert
+  (forall ( (A Int) (B (Array Int Int)) (C (Array Int Int)) (D (Array Int (Array Int Int))) (E (Array Int (Array Int Int))) (F Int) (G Int) (H (Array Int Int)) (I (Array Int Int)) (J Int) (K Int) (L Int) (M Int) (N Int) (O Int) (P Int) (Q Int) (R Int) (S Int) (T Int) (U Int) (V Int) (W Int) (X Int) (Y Int) (Z Int) (A1 Int) (B1 Int) (C1 Bool) ) 
+    (=>
+      (and
+        (ULTIMATE.start_ULTIMATE.startFINAL
+  A
+  B
+  C
+  D
+  E
+  F
+  G
+  H
+  I
+  J
+  K
+  L
+  M
+  N
+  O
+  P
+  Q
+  R
+  S
+  T
+  U
+  V
+  W
+  X
+  Y
+  Z
+  A1
+  B1
+  C1)
+        true
+      )
+      (ULTIMATE.start_ULTIMATE.startEXIT
+  A
+  B
+  C
+  D
+  E
+  F
+  G
+  H
+  I
+  J
+  K
+  L
+  M
+  N
+  O
+  P
+  Q
+  R
+  S
+  T
+  U
+  V
+  W
+  X
+  Y
+  Z
+  A1
+  B1
+  C1)
+    )
+  )
+)
+(assert
+  (forall ( (A Int) (B (Array Int Int)) (C (Array Int Int)) (D (Array Int (Array Int Int))) (E (Array Int (Array Int Int))) (F Int) (G Int) (H (Array Int Int)) (I (Array Int Int)) (J Int) (K Int) (L Int) (M Int) (N Int) (O Int) (P Int) (Q Int) (R Int) (S Int) (T Int) (U Int) (V Int) (W Int) (X Int) (Y Int) (Z Int) (A1 Int) (B1 Int) (C1 Bool) ) 
+    (=>
+      (and
+        (and (= I H) (= B C) (= K J) (= F G) (not C1) (= D E))
+      )
+      (ULTIMATE.start_ULTIMATE.startENTRY
+  A
+  B
+  C
+  D
+  E
+  F
+  G
+  H
+  I
+  J
+  K
+  L
+  M
+  N
+  O
+  P
+  Q
+  R
+  S
+  T
+  U
+  V
+  W
+  X
+  Y
+  Z
+  A1
+  B1
+  C1)
+    )
+  )
+)
+(assert
+  (forall ( (A Int) (B (Array Int Int)) (C (Array Int Int)) (D (Array Int (Array Int Int))) (E (Array Int (Array Int Int))) (F Int) (G Int) (H (Array Int Int)) (I (Array Int Int)) (J Int) (K Int) (L Int) (M Int) (N Int) (O Int) (P Int) (Q Int) (R Int) (S Int) (T Int) (U Int) (V Int) (W Int) (X Int) (Y Int) (Z Int) (A1 Int) (B1 Int) (C1 Bool) ) 
+    (=>
+      (and
+        (ULTIMATE.start_ULTIMATE.startEXIT
+  A
+  B
+  C
+  D
+  E
+  F
+  G
+  H
+  I
+  J
+  K
+  L
+  M
+  N
+  O
+  P
+  Q
+  R
+  S
+  T
+  U
+  V
+  W
+  X
+  Y
+  Z
+  A1
+  B1
+  C1)
+        (= C1 true)
+      )
+      false
+    )
+  )
+)
+
+(check-sat)
+(exit)

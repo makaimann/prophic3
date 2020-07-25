@@ -1,0 +1,203 @@
+; quic3/./data/sanfoundry_27_true-unreach-call_ground_000.smt2
+(set-logic HORN)
+
+(declare-fun |main@bb9.i| ( Int Int Int (Array Int Int) Int ) Bool)
+(declare-fun |main@bb23.i| ( Int (Array Int Int) Int Int Int ) Bool)
+(declare-fun |main@verifier.error.split| ( ) Bool)
+(declare-fun |main@bb44.i| ( Int (Array Int Int) Int Int Int ) Bool)
+(declare-fun |main@entry| ( Int Int ) Bool)
+
+(assert
+  (forall ( (A Int) (B Int) ) 
+    (=>
+      (and
+        true
+      )
+      (main@entry A B)
+    )
+  )
+)
+(assert
+  (forall ( (A Int) (B Int) (C Bool) (D (Array Int Int)) (E (Array Int Int)) (F Bool) (G Bool) (H Int) (I Int) (J Int) (K Int) (L (Array Int Int)) (M Int) ) 
+    (=>
+      (and
+        (main@entry I B)
+        (and (= A B)
+     (not (<= J 0))
+     (or (not G) (not F) (= E D))
+     (or (not G) (not F) (= L E))
+     (or (not G) (not F) (= H 0))
+     (or (not G) (not F) (= K H))
+     (or (not F) (and G F))
+     (= C true)
+     (= F true)
+     (= C (not (<= M 0))))
+      )
+      (main@bb9.i I J K L M)
+    )
+  )
+)
+(assert
+  (forall ( (A Bool) (B Bool) (C Int) (D (Array Int Int)) (E Int) (F Int) (G Int) (H (Array Int Int)) (I Int) (J (Array Int Int)) (K Bool) (L Bool) (M Int) (N Int) (O Int) (P Int) (Q (Array Int Int)) (R Int) ) 
+    (=>
+      (and
+        (main@bb9.i N O G D R)
+        (and (or (not L) (<= O 0) (not (<= E 0)))
+     (or (not L) B (not A))
+     (or (not L) (not K) (= J H))
+     (or (not L) (not K) (= Q J))
+     (or (not L) (not K) (= M I))
+     (or (not L) (not K) (= P M))
+     (or (not K) (and L K))
+     (or (not L) (= H (store D E F)))
+     (or (not L) (= C N))
+     (or (not L) (= E (+ O G)))
+     (or (not L) (= I (+ 1 G)))
+     (or (not L) (not (<= O 0)))
+     (or (not L) (and L A))
+     (= K true)
+     (= B (not (<= R G))))
+      )
+      (main@bb9.i N O P Q R)
+    )
+  )
+)
+(assert
+  (forall ( (A Int) (B Int) (C Bool) (D Bool) (E Int) (F Int) (G Bool) (H Bool) (I Int) (J Int) (K (Array Int Int)) (L Int) (M Int) (N Int) ) 
+    (=>
+      (and
+        (main@bb9.i A J B K N)
+        (and (or (not H) (not D) (not C))
+     (or (not H) (not G) (= F 1))
+     (or (not H) (not G) (= I E))
+     (or (not H) (not G) (= L F))
+     (or (not H) (not G) (= M I))
+     (or (not G) (and H G))
+     (or (not H) (= E (select K J)))
+     (or (not H) (and H C))
+     (= G true)
+     (= D (not (<= N B))))
+      )
+      (main@bb23.i J K L M N)
+    )
+  )
+)
+(assert
+  (forall ( (A Bool) (B Bool) (C Int) (D Int) (E Int) (F Int) (G Bool) (H Int) (I Bool) (J Int) (K Bool) (L Bool) (M Int) (N Int) (O Int) (P Int) (Q Int) (R Bool) (S Bool) (T Int) (U Int) (V (Array Int Int)) (W Int) (X Int) (Y Int) ) 
+    (=>
+      (and
+        (main@bb23.i U V N H Y)
+        (let ((a!1 (or (not K) (= G (not (<= D H))))))
+  (and (or (not K) (<= U 0) (not (<= C 0)))
+       (or (not K) B (not A))
+       (or (not L) (not K) (= P M))
+       (or (not L) (not K) (= M H))
+       (or (not L) (not K) (not G))
+       (or (not I) (<= U 0) (not (<= E 0)))
+       (or (not I) (not K) G)
+       (or (not S) (and S I) (and L K))
+       (or (not S) (not I) (= J F))
+       (or (not S) (not I) (= P J))
+       (or (not S) (not R) (= Q O))
+       (or (not S) (not R) (= T P))
+       (or (not S) (not R) (= W Q))
+       (or (not S) (not R) (= X T))
+       a!1
+       (or (not K) (= C (+ U N)))
+       (or (not K) (= D (select V C)))
+       (or (not K) (not (<= U 0)))
+       (or (not K) (and K A))
+       (or (not L) K)
+       (or (not I) (= E (+ U N)))
+       (or (not I) (= F (select V E)))
+       (or (not I) (not (<= U 0)))
+       (or (not I) (and I K))
+       (or (not R) (and S R))
+       (or (not S) (= O (+ 1 N)))
+       (= R true)
+       (= B (not (<= Y N)))))
+      )
+      (main@bb23.i U V W X Y)
+    )
+  )
+)
+(assert
+  (forall ( (A Int) (B Bool) (C Bool) (D Bool) (E Int) (F Int) (G (Array Int Int)) (H Int) (I Int) (J Int) ) 
+    (=>
+      (and
+        (main@bb23.i F G A H J)
+        (and (or (not D) (not C) (= E 0))
+     (or (not D) (not C) (= I E))
+     (or (not D) (not C) (not B))
+     (or (not C) (and D C))
+     (= C true)
+     (= B (not (<= J A))))
+      )
+      (main@bb44.i F G H I J)
+    )
+  )
+)
+(assert
+  (forall ( (A Bool) (B Bool) (C Int) (D Int) (E Bool) (F Bool) (G Int) (H Int) (I Bool) (J Bool) (K Int) (L Int) (M (Array Int Int)) (N Int) (O Int) (P Int) ) 
+    (=>
+      (and
+        (main@bb44.i L M N G P)
+        (let ((a!1 (or (not E) (= F (not (<= D N))))))
+  (and (or (not E) (<= L 0) (not (<= C 0)))
+       (or (not J) (not F) (not E))
+       (or (not J) (not I) (= K H))
+       (or (not J) (not I) (= O K))
+       a!1
+       (or (not E) (= C (+ L G)))
+       (or (not E) (= D (select M C)))
+       (or (not E) (not (<= L 0)))
+       (or (not E) (and E B))
+       (or (not I) (and J I))
+       (or (not J) (= H (+ 1 G)))
+       (or (not J) (and J E))
+       (= A true)
+       (= I true)
+       (= A (not (<= P G)))))
+      )
+      (main@bb44.i L M N O P)
+    )
+  )
+)
+(assert
+  (forall ( (A Int) (B Bool) (C Bool) (D Int) (E Int) (F (Array Int Int)) (G Int) (H Int) (I Int) (J Bool) (K Bool) (L Bool) (M Bool) (N Bool) ) 
+    (=>
+      (and
+        (main@bb44.i E F H D A)
+        (let ((a!1 (or (not J) (= K (not (<= I H))))))
+  (and (or (not J) (<= E 0) (not (<= G 0)))
+       (or (not L) K (not J))
+       a!1
+       (or (not J) (= G (+ E D)))
+       (or (not J) (= I (select F G)))
+       (or (not J) (not (<= E 0)))
+       (or (not J) (and C J))
+       (or (not L) (and L J))
+       (or (not M) (and M L))
+       (or (not N) (and N M))
+       (= B true)
+       (= N true)
+       (= B (not (<= A D)))))
+      )
+      main@verifier.error.split
+    )
+  )
+)
+(assert
+  (forall ( (CHC_COMP_UNUSED Bool) ) 
+    (=>
+      (and
+        main@verifier.error.split
+        true
+      )
+      false
+    )
+  )
+)
+
+(check-sat)
+(exit)
