@@ -1,7 +1,7 @@
 (set-logic HORN)
 (declare-fun inv ((Array Int Int) Int Int) Bool)
 (declare-fun fail () Bool)
-(assert (forall ((N Int) (a (Array Int Int))) (=> (> N 150) (inv a 0 N))))
+(assert (forall ((N Int) (a (Array Int Int))) (=> (> N 0) (inv a 0 N))))
 (assert (forall ((a (Array Int Int)) (i Int) (a1 (Array Int Int)) (i1 Int) (N Int))
   (let ((a!1 (and (inv a i N)
                   (< i N)
