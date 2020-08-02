@@ -130,6 +130,20 @@ int main(int argc, const char **argv)
       final_ts = &(prophic3->get_abs_ts());
     }
 
+    if (res == MSAT_FALSE) {
+      // cout << "The property is false" << endl;
+      cout << "unsat" << endl; // similar to spacer
+      ret_status = 1;
+    } else if (res == MSAT_TRUE) {
+      // cout << "The property is true" << endl;
+      cout << "sat" << endl; // similar to spacer
+      ret_status = 0;
+    } else {
+      // cout << "Failed to prove or disprove the property..." << endl;
+      cout << "unknown" << endl; // similar to spacer
+      ret_status = 2;
+    }
+
     if (opts.witness && res != MSAT_UNDEF) {
       bool safe = (res == MSAT_TRUE);
       std::vector<TermList> wit;
@@ -192,22 +206,6 @@ int main(int argc, const char **argv)
         }
       }
     }
-
-    if (res == MSAT_FALSE) {
-      // cout << "The property is false" << endl;
-      cout << "unsat" << endl; // similar to spacer
-      ret_status = 1;
-    } else if (res == MSAT_TRUE) {
-      // cout << "The property is true" << endl;
-      cout << "sat" << endl; // similar to spacer
-      ret_status = 0;
-    } else {
-      // cout << "Failed to prove or disprove the property..." << endl;
-      cout << "unknown" << endl; // similar to spacer
-      ret_status = 2;
-    }
-
-
   } catch (std::exception &e) {
     std::cerr << e.what() << std::endl;
     ret_status = 3;
