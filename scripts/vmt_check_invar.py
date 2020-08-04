@@ -23,7 +23,7 @@ def type_repr(env, typ):
         assert typestr[-1] == ">"
         idxtypestr = type_repr(env, res[1])
         elemtypestr = type_repr(env, res[2])
-        return f"(Array {idxtypestr} {elemtypestr})"
+        return "(Array %s %s)"%(idxtypestr, elemtypestr)
     else:
         return typestr
 
@@ -72,7 +72,7 @@ def univ_proph_inv(env, model, inv):
     for p in proph_vars:
         s = msat_to_smtlib2_term(env, p)
         if len(s) <= 5 or s[:5]!= "proph":
-            raise ValueError(f"Unexpected free variable: {s}")
+            raise ValueError("Unexpected free variable: %s"%s)
         subst_keys.append(p)
         subst_vals.append(msat_make_variable(env, "q" + s, msat_term_get_type(p)))
     print("Found the following prophecy variables:")
@@ -126,7 +126,7 @@ def main():
 
     for fv in get_free_vars(env, invar):
         assert model.is_statevar(fv), \
-        f"Invariant should be entirely over state variables but got {msat_to_smtlib2_term(env, fv)}"
+        "Invariant should be entirely over state variables but got %s"%msat_to_smtlib2_term(env, fv)
 
     if not opts.no_init:
         msg('checking Init |= Invar...')
