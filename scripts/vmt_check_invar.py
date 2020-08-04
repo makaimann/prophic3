@@ -7,11 +7,25 @@ def get_free_vars(env, term):
     def visit(e, t, preorder):
         if preorder and msat_term_arity(t) == 0 and \
            msat_decl_get_tag(e, msat_term_get_decl(t)) == MSAT_TAG_UNKNOWN and \
-           not msat_term_is_number(e, t):
+           not msat_term_is_number(e, t) and \
+           not msat_term_is_variable(env, t):
             free_vars.add(t)
         return MSAT_VISIT_PROCESS
     msat_visit_term(env, term, visit)
     return free_vars
+
+
+def type_repr(env, typ):
+    typestr = msat_type_repr(typ)
+    res = msat_is_array_type(env, typ)
+    if res[0]:
+        assert typestr[0] == "<"
+        assert typestr[-1] == ">"
+        idxtypestr = type_repr(env, res[1])
+        elemtypestr = type_repr(env, res[2])
+        return f"(Array {idxtypestr} {elemtypestr})"
+    else:
+        return typestr
 
 
 def getopts():
@@ -24,12 +38,14 @@ def getopts():
     p.add_argument("--no-init", action="store_true")
     p.add_argument("--no-trans", action="store_true")
     p.add_argument("--no-prop", action="store_true")
+    p.add_argument("--univ-proph", action="store_true",
+                   help="universally quantify over prophecy variables")
     return p.parse_args()
 
 
 def err(msg):
     sys.stderr.write('\nERROR: ')
-    sys.stderr.write(msg)
+    sys.stderr.write(str(msg))
     sys.stderr.write('\n')
     sys.stderr.flush()
     exit(1)
@@ -38,6 +54,35 @@ def err(msg):
 def msg(m):
     sys.stdout.write(m)
     sys.stdout.flush()
+
+
+def univ_proph_inv(env, model, inv):
+    '''
+    Take the invariant, and universally quantify out any prophecy variables.
+    Will raise an error if there are variables not in the transition system
+    that don't have the naming scheme proph{i}
+    '''
+    free_vars = get_free_vars(env, model.trans)
+    free_vars = free_vars.union(get_free_vars(env, model.init))
+    inv_free_vars = get_free_vars(env, inv)
+
+    proph_vars = inv_free_vars - free_vars
+    subst_keys = []
+    subst_vals = []
+    for p in proph_vars:
+        s = msat_to_smtlib2_term(env, p)
+        if len(s) <= 5 or s[:5]!= "proph":
+            raise ValueError(f"Unexpected free variable: {s}")
+        subst_keys.append(p)
+        subst_vals.append(msat_make_variable(env, "q" + s, msat_term_get_type(p)))
+    print("Found the following prophecy variables:")
+    print([msat_to_smtlib2_term(env, t) for t in proph_vars])
+    univ_invar = msat_apply_substitution(env, inv, subst_keys, subst_vals)
+
+    for var in subst_vals:
+        univ_invar = msat_make_forall(env, var, univ_invar)
+
+    return univ_invar
 
 
 def check(opts, env, formula):
@@ -51,7 +96,9 @@ def check(opts, env, formula):
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         data = msat_to_smtlib2(env, formula).replace('.def_', '_def_')
         logic = "(set-logic %s)\n" % opts.logic if opts.logic else ""
-        out, e = p.communicate(logic + data + '(check-sat)\n')
+        inputstr = logic + defs + data + '\n(check-sat)\n'
+        out, e = p.communicate(inputstr.encode())
+        print('out', out)
         if e:
             err(e)
             return MSAT_UNKNOWN
@@ -74,8 +121,12 @@ def main():
     with open(opts.invar) as src:
         invar = msat_from_smtlib2(env, src.read())
 
+    if opts.univ_proph:
+        invar = univ_proph_inv(env, model, invar)
+
     for fv in get_free_vars(env, invar):
-        assert model.is_statevar(fv), "Invariant should be entirely over state variables"
+        assert model.is_statevar(fv), \
+        f"Invariant should be entirely over state variables but got {msat_to_smtlib2_term(env, fv)}"
 
     if not opts.no_init:
         msg('checking Init |= Invar...')
