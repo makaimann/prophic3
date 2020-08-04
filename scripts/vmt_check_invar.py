@@ -96,9 +96,8 @@ def check(opts, env, formula):
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         data = msat_to_smtlib2(env, formula).replace('.def_', '_def_')
         logic = "(set-logic %s)\n" % opts.logic if opts.logic else ""
-        inputstr = logic + defs + data + '\n(check-sat)\n'
+        inputstr = logic + data + '\n(check-sat)\n'
         out, e = p.communicate(inputstr.encode())
-        print('out', out)
         if e:
             err(e)
             return MSAT_UNKNOWN
