@@ -128,27 +128,10 @@ int main(int argc, const char **argv)
       res = prophic3->prove();
       the_prover = prophic3;
       final_ts = &(prophic3->get_abs_ts());
-    }
 
-    if (res == MSAT_FALSE) {
-      // cout << "The property is false" << endl;
-      cout << "unsat" << endl; // similar to spacer
-      ret_status = 1;
-    } else if (res == MSAT_TRUE) {
-      // cout << "The property is true" << endl;
-      cout << "sat" << endl; // similar to spacer
-      ret_status = 0;
-    } else {
-      // cout << "Failed to prove or disprove the property..." << endl;
-      cout << "unknown" << endl; // similar to spacer
-      ret_status = 2;
-    }
-
-    if (opts.witness && res != MSAT_UNDEF) {
-      bool safe = (res == MSAT_TRUE);
       std::vector<TermList> wit;
-      int loopback = the_prover->witness(wit);
-      if (safe && !opts.trace.empty())
+      prophic3->witness(wit);
+      if (res == MSAT_TRUE && !opts.trace.empty())
       {
         msat_term inv = msat_make_true(env);
         for (auto clause_list : wit)
@@ -176,7 +159,37 @@ int main(int argc, const char **argv)
         FILE * f = fopen(inv_filename.c_str(), "w");
         msat_to_smtlib2_file(env, inv, f);
         fclose(f);
+
+        ArrayAbstractor & aa = prophic3->get_array_abstractor();
+        msat_term conc_inv = aa.concrete(inv);
+        std::string conc_inv_filename = opts.trace + ".conc_inv";
+        cout << "conc_inv_filename = " << conc_inv_filename << endl;
+        FILE * cf = fopen(conc_inv_filename.c_str(), "w");
+        msat_to_smtlib2_file(env, conc_inv, cf);
+        fclose(cf);
+
       }
+
+    }
+
+    if (res == MSAT_FALSE) {
+      // cout << "The property is false" << endl;
+      cout << "unsat" << endl; // similar to spacer
+      ret_status = 1;
+    } else if (res == MSAT_TRUE) {
+      // cout << "The property is true" << endl;
+      cout << "sat" << endl; // similar to spacer
+      ret_status = 0;
+    } else {
+      // cout << "Failed to prove or disprove the property..." << endl;
+      cout << "unknown" << endl; // similar to spacer
+      ret_status = 2;
+    }
+
+    if (opts.witness && res != MSAT_UNDEF) {
+      bool safe = (res == MSAT_TRUE);
+      std::vector<TermList> wit;
+      int loopback = the_prover->witness(wit);
       if (loopback == Prover::CEX_ERROR) {
         std::cout << "ERROR computing witness" << std::endl;
       } else {

@@ -30,6 +30,7 @@ public:
 
   int witness(std::vector<ic3ia::TermList> &out);
   ic3ia::TransitionSystem &get_abs_ts() { return abs_ts_; };
+  ArrayAbstractor & get_array_abstractor() { return aa_; };
 
 protected:
   msat_env msat_env_;
