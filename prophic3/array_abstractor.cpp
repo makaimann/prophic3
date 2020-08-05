@@ -359,6 +359,20 @@ void ArrayAbstractor::abstract_array_terms()
 {
   TermSet arrays;
 
+  for (auto sv : conc_ts_.statevars()) {
+    if (msat_is_array_type(msat_env_, msat_term_get_type(sv), nullptr,
+                           nullptr)) {
+      arrays.insert(sv);
+    }
+  }
+
+  for (auto iv : conc_ts_.inputvars()) {
+    if (msat_is_array_type(msat_env_, msat_term_get_type(iv), nullptr,
+                           nullptr)) {
+      arrays.insert(iv);
+    }
+  }
+
   detect_arrays(msat_env_, conc_ts_.init(), arrays);
   detect_arrays(msat_env_, conc_ts_.trans(), arrays);
   detect_arrays(msat_env_, conc_ts_.prop(), arrays);
