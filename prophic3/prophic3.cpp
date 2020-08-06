@@ -138,8 +138,7 @@ TargetSet set_intersection_reduce(const vector<TargetSet> &sets) {
 ProphIC3::ProphIC3(const ic3ia::TransitionSystem &ts,
                    const ic3ia::Options &opts, ic3ia::LiveEncoder &l2s,
                    unsigned int verbosity)
-    : msat_env_(ts.get_env()), conc_ts_(ts),
-      aa_(conc_ts_, opts.use_uf_for_arr_eq),
+    : msat_env_(ts.get_env()), conc_ts_(ts), aa_(conc_ts_, opts),
       abs_ts_(aa_.abstract_transition_system()), un_(abs_ts_),
       aae_(abs_ts_, un_, aa_), hr_(abs_ts_), opts_(opts), l2s_(l2s) {
   ic3ia::Logger & l = ic3ia::Logger::get();

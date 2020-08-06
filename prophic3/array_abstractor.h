@@ -36,7 +36,8 @@ void detect_integer_values(msat_env env, msat_term term,
 
 class ArrayAbstractor {
 public:
-  ArrayAbstractor(const ic3ia::TransitionSystem &ts, bool use_eq_uf);
+  ArrayAbstractor(const ic3ia::TransitionSystem &ts,
+                  const ic3ia::Options &opts);
   ~ArrayAbstractor();
 
   const ic3ia::TransitionSystem &abstract_transition_system() const {
@@ -134,6 +135,7 @@ public:
     msat_env msat_env_;
 
     const ic3ia::TransitionSystem &conc_ts_;
+    const ic3ia::Options &opts_;
     // sets whether array equality is abstracted with a UF
     // or if it's an equality between the abstract arrays (of uninterpreted sort)
     bool use_eq_uf_;

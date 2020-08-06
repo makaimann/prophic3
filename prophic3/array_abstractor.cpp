@@ -8,9 +8,9 @@ using namespace ic3ia;
 
 namespace prophic3 {
 
-ArrayAbstractor::ArrayAbstractor(const TransitionSystem &ts, bool use_eq_uf)
-    : msat_env_(ts.get_env()), conc_ts_(ts), use_eq_uf_(use_eq_uf),
-      abs_ts_(msat_env_) {
+ArrayAbstractor::ArrayAbstractor(const TransitionSystem &ts,
+                                 const Options &opts)
+    : msat_env_(ts.get_env()), conc_ts_(ts), opts_(opts), abs_ts_(msat_env_) {
   do_abstraction();
 }
 
@@ -72,7 +72,7 @@ msat_term ArrayAbstractor::abstract(msat_term conc_term) const {
                      msat_decl write = d->super->get_write(abs_arr);
                      msat_term cached_args[3] = {abs_arr, abs_idx, abs_elem};
                      d->cache[t] = msat_make_uf(e, write, &cached_args[0]);
-                   } else if (d->super->use_eq_uf_ &&
+                   } else if (d->super->opts_.use_uf_for_arr_eq &&
                               msat_term_is_equal(e, t) &&
                               msat_is_array_type(
                                   e,
@@ -244,7 +244,7 @@ msat_term ArrayAbstractor::make_eq(msat_env env, msat_term lhs, msat_term rhs) c
   msat_term eq;
   // just a regular equality if not abstracting arrays or
   // we don't have an original type stored
-  if (!use_eq_uf_) {
+  if (!opts_.use_uf_for_arr_eq) {
     eq = msat_make_eq(env, lhs, rhs);
   } else {
     msat_type _type = get_orig_type(lhs);
@@ -269,7 +269,9 @@ msat_term ArrayAbstractor::make_eq(msat_env env, msat_term lhs, msat_term rhs) c
 void ArrayAbstractor::do_abstraction()
 {
   abstract_array_terms();
-  abstract_large_integer_values();
+  if (opts_.abstract_large_vals) {
+    abstract_large_integer_values();
+  }
 
   // add all old state elements unless they've been removed
   // new_state_vars_ already contains state mapping for new state vars
@@ -319,8 +321,7 @@ void ArrayAbstractor::do_abstraction()
 
   // replace array equalities with uninterpreted functions
   // use the same uf for all curr/next combinations
-  if (use_eq_uf_)
-  {
+  if (opts_.use_uf_for_arr_eq) {
     // modifies abs_ts_
     construct_abstract_array_equalities();
   }
@@ -798,7 +799,7 @@ msat_term ArrayAbstractor::construct_abstract_term(msat_term term) {
 }
 
 void ArrayAbstractor::construct_abstract_array_equalities() {
-  assert(use_eq_uf_);
+  assert(opts_.use_uf_for_arr_eq);
 
   // first, gather all the equalities
   TermSet equalities;
@@ -813,7 +814,8 @@ void ArrayAbstractor::construct_abstract_array_equalities() {
 
     msat_term lhs = msat_term_get_arg(e, 0);
     msat_term rhs = msat_term_get_arg(e, 1);
-    // make eq will use an abstract equality because of use_eq_uf_ option
+    // make eq will use an abstract equality because of opts_.use_uf_for_arr_eq
+    // option
     msat_term abs_eq = make_eq(msat_env_, lhs, rhs);
     eq_substitution_map[e] = abs_eq;
   }
