@@ -23,6 +23,8 @@ extern char nondet_char();
 
 int main()
 {
+    int SIZE = nondet_int();
+    assume(SIZE > 0);
     char a[SIZE];
     char b[SIZE];
     int k;

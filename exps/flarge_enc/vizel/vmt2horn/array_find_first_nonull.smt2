@@ -1,0 +1,6 @@
+(set-logic HORN)
+(declare-fun state (Int Int (Array Int Int) Int Int) Bool)
+(assert (forall ((|.x.14| Int) (|main@%_7_0| Int) (|main@%_0_0| (Array Int Int)) (|main@%_1_0| Int) (|main@%_4_0| Int) (|.x.15| Int) (|.xtv.1| Int) (|.xtv.2| (Array Int Int)) (|.xtv.3| Int) (|.xtv.4| Int)) (=> (= .x.14 0) (state |.x.14| |main@%_7_0| |main@%_0_0| |main@%_1_0| |main@%_4_0|))))
+(assert (forall ((|.x.14| Int) (|main@%_7_0| Int) (|main@%_0_0| (Array Int Int)) (|main@%_1_0| Int) (|main@%_4_0| Int) (|.x.15| Int) (|.xtv.1| Int) (|.xtv.2| (Array Int Int)) (|.xtv.3| Int) (|.xtv.4| Int)) (=> (and (state |.x.14| |main@%_7_0| |main@%_0_0| |main@%_1_0| |main@%_4_0|) (let ((.def_20 (<= main@%_1_0 0))) (let ((.def_32 (<= main@%_4_0 0))) (let ((.def_34 (not .def_32))) (and (= .x.15 1) (and (= .x.14 0) (and .def_34 (and (= (+ main@%_7_0 (+ (* (- 1) main@%_4_0) (* (- 1) (ite .def_20 (- 1) 0)))) 0) (and (or (not (<= main@%_7_0 0)) .def_32) (and .def_34 (and (not .def_20) (= (select main@%_0_0 main@%_7_0) 0)))))))))))) (state |.x.15| |.xtv.1| |.xtv.2| |.xtv.3| |.xtv.4|))))
+(assert (forall ((|.x.14| Int) (|main@%_7_0| Int) (|main@%_0_0| (Array Int Int)) (|main@%_1_0| Int) (|main@%_4_0| Int) (|.x.15| Int) (|.xtv.1| Int) (|.xtv.2| (Array Int Int)) (|.xtv.3| Int) (|.xtv.4| Int)) (=> (state |.x.14| |main@%_7_0| |main@%_0_0| |main@%_1_0| |main@%_4_0|) (not (= .x.14 1)))))
+(check-sat)

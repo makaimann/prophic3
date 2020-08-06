@@ -1,4 +1,4 @@
-(set-info :original "./flarge_enc/vizel/llvm/standard_compare_true-unreach-call_ground.bc")
+(set-info :original "./vizel/llvm/standard_compare_true-unreach-call_ground.bc")
 (set-info :authors "SeaHorn v.0.1.0-rc3")
 (set-logic HORN)
 (declare-fun verifier.error (Bool Bool Bool) Bool)
@@ -24,19 +24,19 @@
               Int)
              Bool)
 (declare-fun @nd_0 () Int)
-(declare-fun main@%shadow.mem.0_0 () (Array Int Int))
 (declare-fun main@%shadow.mem1.0_0 () (Array Int Int))
+(declare-fun main@%shadow.mem.0_0 () (Array Int Int))
 (declare-fun main@%.02.i3_0 () Int)
 (declare-fun @nd_char_0 () Int)
 (declare-fun main@%_4_0 () Bool)
 (declare-fun main@%.01.i2_0 () Int)
 (declare-fun main@%.13.i1_0 () Int)
-(declare-fun main@%_16_0 () (Array Int Int))
 (declare-fun main@%_12_0 () (Array Int Int))
+(declare-fun main@%_16_0 () (Array Int Int))
 (declare-fun main@%_5_0 () Bool)
-(declare-fun main@%shadow.mem.1_0 () (Array Int Int))
-(declare-fun main@%_7_0 () Int)
 (declare-fun main@%shadow.mem1.1_0 () (Array Int Int))
+(declare-fun main@%_7_0 () Int)
+(declare-fun main@%shadow.mem.1_0 () (Array Int Int))
 (declare-fun main@%_6_0 () Int)
 (declare-fun main@%assume.flag.0_0 () Bool)
 (declare-fun main@%_3_0 () Int)
@@ -51,36 +51,36 @@
          (main@%_3_0 Int)
          (main@%assume.flag.0_0 Bool)
          (main@%_6_0 Int)
-         (main@%shadow.mem1.1_0 (Array Int Int))
-         (main@%_7_0 Int)
          (main@%shadow.mem.1_0 (Array Int Int))
+         (main@%_7_0 Int)
+         (main@%shadow.mem1.1_0 (Array Int Int))
          (main@%_5_0 Bool)
-         (main@%_12_0 (Array Int Int))
          (main@%_16_0 (Array Int Int))
+         (main@%_12_0 (Array Int Int))
          (main@%.13.i1_0 Int)
          (main@%.01.i2_0 Int)
          (main@%_4_0 Bool)
          (main@%.02.i3_0 Int)
-         (main@%shadow.mem1.0_0 (Array Int Int))
-         (main@%shadow.mem.0_0 (Array Int Int)))
+         (main@%shadow.mem.0_0 (Array Int Int))
+         (main@%shadow.mem1.0_0 (Array Int Int)))
   (main 0
         main@%.0.i_0
         main@%_3_0
         main@%assume.flag.0_0
         main@%_6_0
-        main@%shadow.mem1.1_0
-        main@%_7_0
         main@%shadow.mem.1_0
+        main@%_7_0
+        main@%shadow.mem1.1_0
         main@%_5_0
-        main@%_12_0
         main@%_16_0
+        main@%_12_0
         main@%.13.i1_0
         main@%.01.i2_0
         main@%_4_0
         @nd_char_0
         main@%.02.i3_0
-        main@%shadow.mem1.0_0
         main@%shadow.mem.0_0
+        main@%shadow.mem1.0_0
         @nd_0)))
 (assert (forall ((@nd_char_0 Int)
          (main@%shadow.mem1.0_2 (Array Int Int))
@@ -94,18 +94,18 @@
          (main@%_3_0 Int)
          (main@%assume.flag.0_0 Bool)
          (main@%_6_0 Int)
-         (main@%shadow.mem1.1_0 (Array Int Int))
-         (main@%_7_0 Int)
          (main@%shadow.mem.1_0 (Array Int Int))
+         (main@%_7_0 Int)
+         (main@%shadow.mem1.1_0 (Array Int Int))
          (main@%_5_0 Bool)
-         (main@%_12_0 (Array Int Int))
          (main@%_16_0 (Array Int Int))
+         (main@%_12_0 (Array Int Int))
          (main@%.13.i1_0 Int)
          (main@%.01.i2_0 Int)
          (main@%_4_0 Bool)
          (main@%.02.i3_0 Int)
-         (main@%shadow.mem1.0_0 (Array Int Int))
          (main@%shadow.mem.0_0 (Array Int Int))
+         (main@%shadow.mem1.0_0 (Array Int Int))
          (main@entry_0 Bool)
          (main@%_0_0 (Array Int Int))
          (main@%_1_0 (Array Int Int))
@@ -122,19 +122,19 @@
                  main@%_3_0
                  main@%assume.flag.0_0
                  main@%_6_0
-                 main@%shadow.mem1.1_0
-                 main@%_7_0
                  main@%shadow.mem.1_0
+                 main@%_7_0
+                 main@%shadow.mem1.1_0
                  main@%_5_0
-                 main@%_12_0
                  main@%_16_0
+                 main@%_12_0
                  main@%.13.i1_0
                  main@%.01.i2_0
                  main@%_4_0
                  @nd_char_0
                  main@%.02.i3_0
-                 main@%shadow.mem1.0_0
                  main@%shadow.mem.0_0
+                 main@%shadow.mem1.0_0
                  @nd_0)
            true
            (= main@%_2_0 @nd_0)
@@ -160,19 +160,19 @@
             main@%_3_1
             main@%assume.flag.0_0
             main@%_6_1
-            main@%shadow.mem1.1_0
-            main@%_7_1
             main@%shadow.mem.1_0
+            main@%_7_1
+            main@%shadow.mem1.1_0
             main@%_5_1
-            main@%_12_0
             main@%_16_0
+            main@%_12_0
             main@%.13.i1_0
             main@%.01.i2_0
             main@%_4_1
             @nd_char_0
             main@%.02.i3_2
-            main@%shadow.mem1.0_2
             main@%shadow.mem.0_2
+            main@%shadow.mem1.0_2
             @nd_0))))
 (assert (forall ((main@%_27_0 Bool)
          (main@%assume.flag.0_2 Bool)
@@ -186,18 +186,18 @@
          (main@%_3_0 Int)
          (main@%assume.flag.0_0 Bool)
          (main@%_6_0 Int)
-         (main@%shadow.mem1.1_0 (Array Int Int))
-         (main@%_7_0 Int)
          (main@%shadow.mem.1_0 (Array Int Int))
+         (main@%_7_0 Int)
+         (main@%shadow.mem1.1_0 (Array Int Int))
          (main@%_5_0 Bool)
-         (main@%_12_0 (Array Int Int))
          (main@%_16_0 (Array Int Int))
+         (main@%_12_0 (Array Int Int))
          (main@%.13.i1_0 Int)
          (main@%.01.i2_0 Int)
          (main@%_4_0 Bool)
          (main@%.02.i3_0 Int)
-         (main@%shadow.mem1.0_0 (Array Int Int))
          (main@%shadow.mem.0_0 (Array Int Int))
+         (main@%shadow.mem1.0_0 (Array Int Int))
          (main@entry_0 Bool)
          (main@%_0_0 (Array Int Int))
          (main@%_1_0 (Array Int Int))
@@ -220,19 +220,19 @@
                  main@%_3_0
                  main@%assume.flag.0_0
                  main@%_6_0
-                 main@%shadow.mem1.1_0
-                 main@%_7_0
                  main@%shadow.mem.1_0
+                 main@%_7_0
+                 main@%shadow.mem1.1_0
                  main@%_5_0
-                 main@%_12_0
                  main@%_16_0
+                 main@%_12_0
                  main@%.13.i1_0
                  main@%.01.i2_0
                  main@%_4_0
                  @nd_char_0
                  main@%.02.i3_0
-                 main@%shadow.mem1.0_0
                  main@%shadow.mem.0_0
+                 main@%shadow.mem1.0_0
                  @nd_0)
            true
            (= main@%_2_0 @nd_0)
@@ -266,19 +266,19 @@
             main@%_3_1
             main@%assume.flag.0_2
             main@%_6_1
-            main@%shadow.mem1.1_2
-            main@%_7_1
             main@%shadow.mem.1_2
+            main@%_7_1
+            main@%shadow.mem1.1_2
             main@%_5_1
-            main@%_12_0
             main@%_16_0
+            main@%_12_0
             main@%.13.i1_0
             main@%.01.i2_0
             main@%_4_1
             @nd_char_0
             main@%.02.i3_0
-            main@%shadow.mem1.0_0
             main@%shadow.mem.0_0
+            main@%shadow.mem1.0_0
             @nd_0))))
 (assert (forall ((main@%_9_0 Int)
          (@nd_char_0 Int)
@@ -296,18 +296,18 @@
          (main@%_3_0 Int)
          (main@%assume.flag.0_0 Bool)
          (main@%_6_0 Int)
-         (main@%shadow.mem1.1_0 (Array Int Int))
-         (main@%_7_0 Int)
          (main@%shadow.mem.1_0 (Array Int Int))
+         (main@%_7_0 Int)
+         (main@%shadow.mem1.1_0 (Array Int Int))
          (main@%_5_0 Bool)
-         (main@%_12_0 (Array Int Int))
          (main@%_16_0 (Array Int Int))
+         (main@%_12_0 (Array Int Int))
          (main@%.13.i1_0 Int)
          (main@%.01.i2_0 Int)
          (main@%_4_0 Bool)
          (main@%.02.i3_0 Int)
-         (main@%shadow.mem1.0_0 (Array Int Int))
          (main@%shadow.mem.0_0 (Array Int Int))
+         (main@%shadow.mem1.0_0 (Array Int Int))
          (main@_bb_0 Bool)
          (main@%shadow.mem1.0_1 (Array Int Int))
          (main@%shadow.mem.0_1 (Array Int Int))
@@ -321,19 +321,19 @@
                         main@%_3_0
                         main@%assume.flag.0_0
                         main@%_6_0
-                        main@%shadow.mem1.1_0
-                        main@%_7_0
                         main@%shadow.mem.1_0
+                        main@%_7_0
+                        main@%shadow.mem1.1_0
                         main@%_5_0
-                        main@%_12_0
                         main@%_16_0
+                        main@%_12_0
                         main@%.13.i1_0
                         main@%.01.i2_0
                         main@%_4_0
                         @nd_char_0
                         main@%.02.i3_0
-                        main@%shadow.mem1.0_0
                         main@%shadow.mem.0_0
+                        main@%shadow.mem1.0_0
                         @nd_0)
                   true
                   (= main@%_9_0 @nd_char_0)
@@ -341,19 +341,19 @@
                   (or (<= main@%_6_0 0) (> main@%_11_0 0))
                   (> main@%_6_0 0)
                   (= main@%_12_1
-                     (store main@%shadow.mem1.0_0 main@%_11_0 main@%_10_0))
+                     (store main@%shadow.mem.0_0 main@%_11_0 main@%_10_0))
                   (= main@%_13_0 @nd_char_0)
                   (= main@%_15_0 (+ main@%_7_0 (* main@%.02.i3_0 1)))
                   (or (<= main@%_7_0 0) (> main@%_15_0 0))
                   (> main@%_7_0 0)
                   (= main@%_16_1
-                     (store main@%shadow.mem.0_0 main@%_15_0 main@%_14_0))
+                     (store main@%shadow.mem1.0_0 main@%_15_0 main@%_14_0))
                   (= main@%_17_0 (+ main@%.02.i3_0 1))
                   (= main@%_18_0 (< main@%_17_0 main@%_3_0))
                   (=> main@_bb_1 (and main@_bb_1 main@_bb_0))
                   (=> (and main@_bb_1 main@_bb_0) main@%_18_0)
-                  (= main@%shadow.mem1.0_1 main@%_12_1)
-                  (= main@%shadow.mem.0_1 main@%_16_1)
+                  (= main@%shadow.mem1.0_1 main@%_16_1)
+                  (= main@%shadow.mem.0_1 main@%_12_1)
                   (= main@%.02.i3_1 main@%_17_0)
                   (=> (and main@_bb_1 main@_bb_0)
                       (= main@%shadow.mem1.0_2 main@%shadow.mem1.0_1))
@@ -368,19 +368,19 @@
               main@%_3_0
               main@%assume.flag.0_0
               main@%_6_0
-              main@%shadow.mem1.1_0
-              main@%_7_0
               main@%shadow.mem.1_0
+              main@%_7_0
+              main@%shadow.mem1.1_0
               main@%_5_0
-              main@%_12_1
               main@%_16_1
+              main@%_12_1
               main@%.13.i1_0
               main@%.01.i2_0
               main@%_4_0
               @nd_char_0
               main@%.02.i3_2
-              main@%shadow.mem1.0_2
               main@%shadow.mem.0_2
+              main@%shadow.mem1.0_2
               @nd_0)))))
 (assert (forall ((main@%.01.i2_2 Int)
          (main@%.13.i1_2 Int)
@@ -397,18 +397,18 @@
          (main@%_3_0 Int)
          (main@%assume.flag.0_0 Bool)
          (main@%_6_0 Int)
-         (main@%shadow.mem1.1_0 (Array Int Int))
-         (main@%_7_0 Int)
          (main@%shadow.mem.1_0 (Array Int Int))
+         (main@%_7_0 Int)
+         (main@%shadow.mem1.1_0 (Array Int Int))
          (main@%_5_0 Bool)
-         (main@%_12_0 (Array Int Int))
          (main@%_16_0 (Array Int Int))
+         (main@%_12_0 (Array Int Int))
          (main@%.13.i1_0 Int)
          (main@%.01.i2_0 Int)
          (main@%_4_0 Bool)
          (main@%.02.i3_0 Int)
-         (main@%shadow.mem1.0_0 (Array Int Int))
          (main@%shadow.mem.0_0 (Array Int Int))
+         (main@%shadow.mem1.0_0 (Array Int Int))
          (main@_bb_0 Bool)
          (main@%_12_1 (Array Int Int))
          (main@%_16_1 (Array Int Int))
@@ -423,19 +423,19 @@
                         main@%_3_0
                         main@%assume.flag.0_0
                         main@%_6_0
-                        main@%shadow.mem1.1_0
-                        main@%_7_0
                         main@%shadow.mem.1_0
+                        main@%_7_0
+                        main@%shadow.mem1.1_0
                         main@%_5_0
-                        main@%_12_0
                         main@%_16_0
+                        main@%_12_0
                         main@%.13.i1_0
                         main@%.01.i2_0
                         main@%_4_0
                         @nd_char_0
                         main@%.02.i3_0
-                        main@%shadow.mem1.0_0
                         main@%shadow.mem.0_0
+                        main@%shadow.mem1.0_0
                         @nd_0)
                   true
                   (= main@%_9_0 @nd_char_0)
@@ -443,13 +443,13 @@
                   (or (<= main@%_6_0 0) (> main@%_11_0 0))
                   (> main@%_6_0 0)
                   (= main@%_12_1
-                     (store main@%shadow.mem1.0_0 main@%_11_0 main@%_10_0))
+                     (store main@%shadow.mem.0_0 main@%_11_0 main@%_10_0))
                   (= main@%_13_0 @nd_char_0)
                   (= main@%_15_0 (+ main@%_7_0 (* main@%.02.i3_0 1)))
                   (or (<= main@%_7_0 0) (> main@%_15_0 0))
                   (> main@%_7_0 0)
                   (= main@%_16_1
-                     (store main@%shadow.mem.0_0 main@%_15_0 main@%_14_0))
+                     (store main@%shadow.mem1.0_0 main@%_15_0 main@%_14_0))
                   (= main@%_17_0 (+ main@%.02.i3_0 1))
                   (= main@%_18_0 (< main@%_17_0 main@%_3_0))
                   (=> main@._crit_edge5_0 (and main@._crit_edge5_0 main@_bb_0))
@@ -470,19 +470,19 @@
               main@%_3_0
               main@%assume.flag.0_0
               main@%_6_0
-              main@%shadow.mem1.1_0
-              main@%_7_0
               main@%shadow.mem.1_0
+              main@%_7_0
+              main@%shadow.mem1.1_0
               main@%_5_0
-              main@%_12_1
               main@%_16_1
+              main@%_12_1
               main@%.13.i1_2
               main@%.01.i2_2
               main@%_4_0
               @nd_char_0
               main@%.02.i3_0
-              main@%shadow.mem1.0_0
               main@%shadow.mem.0_0
+              main@%shadow.mem1.0_0
               @nd_0)))))
 (assert (forall ((main@%_27_0 Bool)
          (main@%assume.flag.0_2 Bool)
@@ -500,18 +500,18 @@
          (main@%_3_0 Int)
          (main@%assume.flag.0_0 Bool)
          (main@%_6_0 Int)
-         (main@%shadow.mem1.1_0 (Array Int Int))
-         (main@%_7_0 Int)
          (main@%shadow.mem.1_0 (Array Int Int))
+         (main@%_7_0 Int)
+         (main@%shadow.mem1.1_0 (Array Int Int))
          (main@%_5_0 Bool)
-         (main@%_12_0 (Array Int Int))
          (main@%_16_0 (Array Int Int))
+         (main@%_12_0 (Array Int Int))
          (main@%.13.i1_0 Int)
          (main@%.01.i2_0 Int)
          (main@%_4_0 Bool)
          (main@%.02.i3_0 Int)
-         (main@%shadow.mem1.0_0 (Array Int Int))
          (main@%shadow.mem.0_0 (Array Int Int))
+         (main@%shadow.mem1.0_0 (Array Int Int))
          (main@_bb_0 Bool)
          (main@._crit_edge_0 Bool)
          (main@%shadow.mem1.1_1 (Array Int Int))
@@ -533,19 +533,19 @@
                         main@%_3_0
                         main@%assume.flag.0_0
                         main@%_6_0
-                        main@%shadow.mem1.1_0
-                        main@%_7_0
                         main@%shadow.mem.1_0
+                        main@%_7_0
+                        main@%shadow.mem1.1_0
                         main@%_5_0
-                        main@%_12_0
                         main@%_16_0
+                        main@%_12_0
                         main@%.13.i1_0
                         main@%.01.i2_0
                         main@%_4_0
                         @nd_char_0
                         main@%.02.i3_0
-                        main@%shadow.mem1.0_0
                         main@%shadow.mem.0_0
+                        main@%shadow.mem1.0_0
                         @nd_0)
                   true
                   (= main@%_9_0 @nd_char_0)
@@ -553,13 +553,13 @@
                   (or (<= main@%_6_0 0) (> main@%_11_0 0))
                   (> main@%_6_0 0)
                   (= main@%_12_1
-                     (store main@%shadow.mem1.0_0 main@%_11_0 main@%_10_0))
+                     (store main@%shadow.mem.0_0 main@%_11_0 main@%_10_0))
                   (= main@%_13_0 @nd_char_0)
                   (= main@%_15_0 (+ main@%_7_0 (* main@%.02.i3_0 1)))
                   (or (<= main@%_7_0 0) (> main@%_15_0 0))
                   (> main@%_7_0 0)
                   (= main@%_16_1
-                     (store main@%shadow.mem.0_0 main@%_15_0 main@%_14_0))
+                     (store main@%shadow.mem1.0_0 main@%_15_0 main@%_14_0))
                   (= main@%_17_0 (+ main@%.02.i3_0 1))
                   (= main@%_18_0 (< main@%_17_0 main@%_3_0))
                   (=> main@._crit_edge5_0 (and main@._crit_edge5_0 main@_bb_0))
@@ -568,8 +568,8 @@
                       (and main@._crit_edge_0 main@._crit_edge5_0))
                   (=> (and main@._crit_edge_0 main@._crit_edge5_0)
                       (not main@%_4_0))
-                  (= main@%shadow.mem1.1_1 main@%_12_1)
-                  (= main@%shadow.mem.1_1 main@%_16_1)
+                  (= main@%shadow.mem1.1_1 main@%_16_1)
+                  (= main@%shadow.mem.1_1 main@%_12_1)
                   (= main@%.01.i.lcssa_0 false)
                   (=> (and main@._crit_edge_0 main@._crit_edge5_0)
                       (= main@%shadow.mem1.1_2 main@%shadow.mem1.1_1))
@@ -593,19 +593,19 @@
               main@%_3_0
               main@%assume.flag.0_2
               main@%_6_0
-              main@%shadow.mem1.1_2
-              main@%_7_0
               main@%shadow.mem.1_2
+              main@%_7_0
+              main@%shadow.mem1.1_2
               main@%_5_0
-              main@%_12_1
               main@%_16_1
+              main@%_12_1
               main@%.13.i1_0
               main@%.01.i2_0
               main@%_4_0
               @nd_char_0
               main@%.02.i3_0
-              main@%shadow.mem1.0_0
               main@%shadow.mem.0_0
+              main@%shadow.mem1.0_0
               @nd_0)))))
 (assert (forall ((main@%_20_0 Int)
          (main@%_21_0 Int)
@@ -621,18 +621,18 @@
          (main@%_3_0 Int)
          (main@%assume.flag.0_0 Bool)
          (main@%_6_0 Int)
-         (main@%shadow.mem1.1_0 (Array Int Int))
-         (main@%_7_0 Int)
          (main@%shadow.mem.1_0 (Array Int Int))
+         (main@%_7_0 Int)
+         (main@%shadow.mem1.1_0 (Array Int Int))
          (main@%_5_0 Bool)
-         (main@%_12_0 (Array Int Int))
          (main@%_16_0 (Array Int Int))
+         (main@%_12_0 (Array Int Int))
          (main@%.13.i1_0 Int)
          (main@%.01.i2_0 Int)
          (main@%_4_0 Bool)
          (main@%.02.i3_0 Int)
-         (main@%shadow.mem1.0_0 (Array Int Int))
          (main@%shadow.mem.0_0 (Array Int Int))
+         (main@%shadow.mem1.0_0 (Array Int Int))
          (main@_bb2_0 Bool)
          (main@%.01.i2_1 Int)
          (main@%.13.i1_1 Int)
@@ -644,19 +644,19 @@
                         main@%_3_0
                         main@%assume.flag.0_0
                         main@%_6_0
-                        main@%shadow.mem1.1_0
-                        main@%_7_0
                         main@%shadow.mem.1_0
+                        main@%_7_0
+                        main@%shadow.mem1.1_0
                         main@%_5_0
-                        main@%_12_0
                         main@%_16_0
+                        main@%_12_0
                         main@%.13.i1_0
                         main@%.01.i2_0
                         main@%_4_0
                         @nd_char_0
                         main@%.02.i3_0
-                        main@%shadow.mem1.0_0
                         main@%shadow.mem.0_0
+                        main@%shadow.mem1.0_0
                         @nd_0)
                   true
                   (= main@%_20_0 (+ main@%_6_0 (* main@%.13.i1_0 1)))
@@ -686,19 +686,19 @@
               main@%_3_0
               main@%assume.flag.0_0
               main@%_6_0
-              main@%shadow.mem1.1_0
-              main@%_7_0
               main@%shadow.mem.1_0
+              main@%_7_0
+              main@%shadow.mem1.1_0
               main@%_5_0
-              main@%_12_0
               main@%_16_0
+              main@%_12_0
               main@%.13.i1_2
               main@%.01.i2_2
               main@%_4_0
               @nd_char_0
               main@%.02.i3_0
-              main@%shadow.mem1.0_0
               main@%shadow.mem.0_0
+              main@%shadow.mem1.0_0
               @nd_0)))))
 (assert (forall ((main@%_27_0 Bool)
          (main@%assume.flag.0_2 Bool)
@@ -716,18 +716,18 @@
          (main@%_3_0 Int)
          (main@%assume.flag.0_0 Bool)
          (main@%_6_0 Int)
-         (main@%shadow.mem1.1_0 (Array Int Int))
-         (main@%_7_0 Int)
          (main@%shadow.mem.1_0 (Array Int Int))
+         (main@%_7_0 Int)
+         (main@%shadow.mem1.1_0 (Array Int Int))
          (main@%_5_0 Bool)
-         (main@%_12_0 (Array Int Int))
          (main@%_16_0 (Array Int Int))
+         (main@%_12_0 (Array Int Int))
          (main@%.13.i1_0 Int)
          (main@%.01.i2_0 Int)
          (main@%_4_0 Bool)
          (main@%.02.i3_0 Int)
-         (main@%shadow.mem1.0_0 (Array Int Int))
          (main@%shadow.mem.0_0 (Array Int Int))
+         (main@%shadow.mem1.0_0 (Array Int Int))
          (main@._crit_edge_0 Bool)
          (main@%shadow.mem1.1_1 (Array Int Int))
          (main@%shadow.mem.1_1 (Array Int Int))
@@ -750,19 +750,19 @@
                         main@%_3_0
                         main@%assume.flag.0_0
                         main@%_6_0
-                        main@%shadow.mem1.1_0
-                        main@%_7_0
                         main@%shadow.mem.1_0
+                        main@%_7_0
+                        main@%shadow.mem1.1_0
                         main@%_5_0
-                        main@%_12_0
                         main@%_16_0
+                        main@%_12_0
                         main@%.13.i1_0
                         main@%.01.i2_0
                         main@%_4_0
                         @nd_char_0
                         main@%.02.i3_0
-                        main@%shadow.mem1.0_0
                         main@%shadow.mem.0_0
+                        main@%shadow.mem1.0_0
                         @nd_0)
                   true
                   (= main@%_20_0 (+ main@%_6_0 (* main@%.13.i1_0 1)))
@@ -787,8 +787,8 @@
                   (= main@%phitmp_0 (= main@%.01..i.lcssa_1 0))
                   (=> main@._crit_edge_0
                       (and main@._crit_edge_0 main@._crit_edge.loopexit_0))
-                  (= main@%shadow.mem1.1_1 main@%_12_0)
-                  (= main@%shadow.mem.1_1 main@%_16_0)
+                  (= main@%shadow.mem1.1_1 main@%_16_0)
+                  (= main@%shadow.mem.1_1 main@%_12_0)
                   (= main@%.01.i.lcssa_0 main@%phitmp_0)
                   (=> (and main@._crit_edge_0 main@._crit_edge.loopexit_0)
                       (= main@%shadow.mem1.1_2 main@%shadow.mem1.1_1))
@@ -812,19 +812,19 @@
               main@%_3_0
               main@%assume.flag.0_2
               main@%_6_0
-              main@%shadow.mem1.1_2
-              main@%_7_0
               main@%shadow.mem.1_2
+              main@%_7_0
+              main@%shadow.mem1.1_2
               main@%_5_0
-              main@%_12_0
               main@%_16_0
+              main@%_12_0
               main@%.13.i1_0
               main@%.01.i2_0
               main@%_4_0
               @nd_char_0
               main@%.02.i3_0
-              main@%shadow.mem1.0_0
               main@%shadow.mem.0_0
+              main@%shadow.mem1.0_0
               @nd_0)))))
 (assert (forall ((main@%_30_0 Bool)
          (main@%_32_0 Int)
@@ -840,18 +840,18 @@
          (main@%_3_0 Int)
          (main@%assume.flag.0_0 Bool)
          (main@%_6_0 Int)
-         (main@%shadow.mem1.1_0 (Array Int Int))
-         (main@%_7_0 Int)
          (main@%shadow.mem.1_0 (Array Int Int))
+         (main@%_7_0 Int)
+         (main@%shadow.mem1.1_0 (Array Int Int))
          (main@%_5_0 Bool)
-         (main@%_12_0 (Array Int Int))
          (main@%_16_0 (Array Int Int))
+         (main@%_12_0 (Array Int Int))
          (main@%.13.i1_0 Int)
          (main@%.01.i2_0 Int)
          (main@%_4_0 Bool)
          (main@%.02.i3_0 Int)
-         (main@%shadow.mem1.0_0 (Array Int Int))
          (main@%shadow.mem.0_0 (Array Int Int))
+         (main@%shadow.mem1.0_0 (Array Int Int))
          (main@_bb3_0 Bool)
          (main@%assume.flag.0_1 Bool)
          (main@%.0.i_1 Int)
@@ -863,19 +863,19 @@
                         main@%_3_0
                         main@%assume.flag.0_0
                         main@%_6_0
-                        main@%shadow.mem1.1_0
-                        main@%_7_0
                         main@%shadow.mem.1_0
+                        main@%_7_0
+                        main@%shadow.mem1.1_0
                         main@%_5_0
-                        main@%_12_0
                         main@%_16_0
+                        main@%_12_0
                         main@%.13.i1_0
                         main@%.01.i2_0
                         main@%_4_0
                         @nd_char_0
                         main@%.02.i3_0
-                        main@%shadow.mem1.0_0
                         main@%shadow.mem.0_0
+                        main@%shadow.mem1.0_0
                         @nd_0)
                   true
                   (= main@%_30_0 (< main@%.0.i_0 main@%_3_0))
@@ -883,11 +883,11 @@
                   (= main@%_32_0 (+ main@%_6_0 (* main@%.0.i_0 1)))
                   (or (<= main@%_6_0 0) (> main@%_32_0 0))
                   (> main@%_6_0 0)
-                  (= main@%_33_0 (select main@%shadow.mem1.1_0 main@%_32_0))
+                  (= main@%_33_0 (select main@%shadow.mem.1_0 main@%_32_0))
                   (= main@%_34_0 (+ main@%_7_0 (* main@%.0.i_0 1)))
                   (or (<= main@%_7_0 0) (> main@%_34_0 0))
                   (> main@%_7_0 0)
-                  (= main@%_35_0 (select main@%shadow.mem.1_0 main@%_34_0))
+                  (= main@%_35_0 (select main@%shadow.mem1.1_0 main@%_34_0))
                   (= main@%_36_0 (= main@%_33_0 main@%_35_0))
                   (= main@%_37_0 (+ main@%.0.i_0 1))
                   (=> main@_bb3_1 (and main@_bb3_1 main@_bb3_0))
@@ -905,19 +905,19 @@
               main@%_3_0
               main@%assume.flag.0_2
               main@%_6_0
-              main@%shadow.mem1.1_0
-              main@%_7_0
               main@%shadow.mem.1_0
+              main@%_7_0
+              main@%shadow.mem1.1_0
               main@%_5_0
-              main@%_12_0
               main@%_16_0
+              main@%_12_0
               main@%.13.i1_0
               main@%.01.i2_0
               main@%_4_0
               @nd_char_0
               main@%.02.i3_0
-              main@%shadow.mem1.0_0
               main@%shadow.mem.0_0
+              main@%shadow.mem1.0_0
               @nd_0)))))
 (assert (forall ((main@%_30_0 Bool)
          (main@%_32_0 Int)
@@ -931,18 +931,18 @@
          (main@%_3_0 Int)
          (main@%assume.flag.0_0 Bool)
          (main@%_6_0 Int)
-         (main@%shadow.mem1.1_0 (Array Int Int))
-         (main@%_7_0 Int)
          (main@%shadow.mem.1_0 (Array Int Int))
+         (main@%_7_0 Int)
+         (main@%shadow.mem1.1_0 (Array Int Int))
          (main@%_5_0 Bool)
-         (main@%_12_0 (Array Int Int))
          (main@%_16_0 (Array Int Int))
+         (main@%_12_0 (Array Int Int))
          (main@%.13.i1_0 Int)
          (main@%.01.i2_0 Int)
          (main@%_4_0 Bool)
          (main@%.02.i3_0 Int)
-         (main@%shadow.mem1.0_0 (Array Int Int))
          (main@%shadow.mem.0_0 (Array Int Int))
+         (main@%shadow.mem1.0_0 (Array Int Int))
          (main@_bb3_0 Bool)
          (main@%_31_0 Bool)
          (main@%_37_0 Int)
@@ -953,19 +953,19 @@
                         main@%_3_0
                         main@%assume.flag.0_0
                         main@%_6_0
-                        main@%shadow.mem1.1_0
-                        main@%_7_0
                         main@%shadow.mem.1_0
+                        main@%_7_0
+                        main@%shadow.mem1.1_0
                         main@%_5_0
-                        main@%_12_0
                         main@%_16_0
+                        main@%_12_0
                         main@%.13.i1_0
                         main@%.01.i2_0
                         main@%_4_0
                         @nd_char_0
                         main@%.02.i3_0
-                        main@%shadow.mem1.0_0
                         main@%shadow.mem.0_0
+                        main@%shadow.mem1.0_0
                         @nd_0)
                   true
                   (= main@%_30_0 (< main@%.0.i_0 main@%_3_0))
@@ -973,11 +973,11 @@
                   (= main@%_32_0 (+ main@%_6_0 (* main@%.0.i_0 1)))
                   (or (<= main@%_6_0 0) (> main@%_32_0 0))
                   (> main@%_6_0 0)
-                  (= main@%_33_0 (select main@%shadow.mem1.1_0 main@%_32_0))
+                  (= main@%_33_0 (select main@%shadow.mem.1_0 main@%_32_0))
                   (= main@%_34_0 (+ main@%_7_0 (* main@%.0.i_0 1)))
                   (or (<= main@%_7_0 0) (> main@%_34_0 0))
                   (> main@%_7_0 0)
-                  (= main@%_35_0 (select main@%shadow.mem.1_0 main@%_34_0))
+                  (= main@%_35_0 (select main@%shadow.mem1.1_0 main@%_34_0))
                   (= main@%_36_0 (= main@%_33_0 main@%_35_0))
                   (= main@%_37_0 (+ main@%.0.i_0 1))
                   (=> main@verifier.error_0
@@ -993,38 +993,38 @@
               main@%_3_0
               main@%assume.flag.0_0
               main@%_6_0
-              main@%shadow.mem1.1_0
-              main@%_7_0
               main@%shadow.mem.1_0
+              main@%_7_0
+              main@%shadow.mem1.1_0
               main@%_5_0
-              main@%_12_0
               main@%_16_0
+              main@%_12_0
               main@%.13.i1_0
               main@%.01.i2_0
               main@%_4_0
               @nd_char_0
               main@%.02.i3_0
-              main@%shadow.mem1.0_0
               main@%shadow.mem.0_0
+              main@%shadow.mem1.0_0
               @nd_0)))))
 (assert (not (main 4
            main@%.0.i_0
            main@%_3_0
            main@%assume.flag.0_0
            main@%_6_0
-           main@%shadow.mem1.1_0
-           main@%_7_0
            main@%shadow.mem.1_0
+           main@%_7_0
+           main@%shadow.mem1.1_0
            main@%_5_0
-           main@%_12_0
            main@%_16_0
+           main@%_12_0
            main@%.13.i1_0
            main@%.01.i2_0
            main@%_4_0
            @nd_char_0
            main@%.02.i3_0
-           main@%shadow.mem1.0_0
            main@%shadow.mem.0_0
+           main@%shadow.mem1.0_0
            @nd_0)))
 (check-sat)
 

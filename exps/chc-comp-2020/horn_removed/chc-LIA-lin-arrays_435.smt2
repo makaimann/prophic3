@@ -1,0 +1,47 @@
+; sv-comp/./ALIA/liquid-haskell/vector0.hs.fq.out.4_000.smt2
+(set-logic HORN)
+
+
+(assert
+  (forall ( (A Int) (B Int) (C Int) (D (Array Int Bool)) (E Int) (F (Array Int Int)) (G (Array Int Int)) (H Int) (I Int) (J Int) (K Int) (L Int) (M Int) (N Int) (O Int) (P Int) (Q Int) (R Int) (S Int) (T Int) (U Int) (V Int) (W (Array Int Int)) (X Int) (Y Int) ) 
+    (=>
+      (and
+        (and (= (select D L) (not (<= J K)))
+     (= (select D E) (not (<= M N)))
+     (= (select W X) (select G Y))
+     (= (select G Y) (+ 1 (select G I)))
+     (= (select G U) (+ 1 (select G T)))
+     (= (select G T) 0)
+     (= (select G I) (+ 1 (select G H)))
+     (= (select G H) (+ 1 (select G U)))
+     (= (select F C) C)
+     (= (select F B) B)
+     (= (select F A) A)
+     (= S 4)
+     (= R 3)
+     (= Q 2)
+     (= P 1)
+     (= N 3)
+     (= M (select W X))
+     (= K 0)
+     (= J (select W X))
+     (= E O)
+     (select D V)
+     (not (select D E))
+     (>= (select W X) 0)
+     (>= (select G Y) 0)
+     (>= (select G U) 0)
+     (>= (select G T) 0)
+     (>= (select G I) 0)
+     (>= (select G H) 0)
+     (>= M 0)
+     (>= J 0)
+     (= (select D O) (not (<= M N))))
+      )
+      false
+    )
+  )
+)
+
+(check-sat)
+(exit)

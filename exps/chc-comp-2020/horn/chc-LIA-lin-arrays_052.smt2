@@ -1,0 +1,125 @@
+; hcai-bench/./svcomp/O3/linear_search_false-unreach-call_000.smt2
+(set-logic HORN)
+
+(declare-fun |main@.lr.ph.i.preheader| ( (Array Int Int) Int ) Bool)
+(declare-fun |main@linear_search.exit.split| ( ) Bool)
+(declare-fun |main@.lr.ph.i| ( (Array Int Int) Int Int Int Int (Array Int Int) ) Bool)
+
+(assert
+  (forall ( (A (Array Int Int)) (B Int) ) 
+    (=>
+      (and
+        true
+      )
+      (main@.lr.ph.i.preheader A B)
+    )
+  )
+)
+(assert
+  (forall ( (A (Array Int Int)) (B Int) (C Int) (D Int) (E (Array Int Int)) (F Int) (G (Array Int Int)) (H Int) (I Bool) (J Bool) (K Int) (L (Array Int Int)) (M Int) (N Int) (O Int) (P Int) (Q (Array Int Int)) ) 
+    (=>
+      (and
+        (main@.lr.ph.i.preheader A C)
+        (and (= H (+ P (* 4 F)))
+     (= O (+ 1 D))
+     (= E (store A M 0))
+     (= L (store E M O))
+     (= Q (store G H 3))
+     (not (<= P 0))
+     (or (not J) (not I) (= K 0))
+     (or (not J) (not I) (= N K))
+     (or (<= P 0) (not (<= H 0)))
+     (or (not I) (and J I))
+     (= I true)
+     (= B C))
+      )
+      (main@.lr.ph.i L M N O P Q)
+    )
+  )
+)
+(assert
+  (forall ( (A Int) (B Int) (C Bool) (D Bool) (E Int) (F Bool) (G Int) (H Bool) (I Int) (J Bool) (K Bool) (L Int) (M (Array Int Int)) (N Int) (O Int) (P Int) (Q Int) (R (Array Int Int)) ) 
+    (=>
+      (and
+        (main@.lr.ph.i M N E P Q R)
+        (let ((a!1 (ite (>= I 0)
+                (or (not (<= P I)) (not (>= P 0)))
+                (and (not (<= P I)) (not (<= 0 P))))))
+  (and (= A (+ Q (* 4 E)))
+       (= B (select R A))
+       (not (<= Q 0))
+       (or (not K) (not D) (not C))
+       (or (not K) (not J) (= L I))
+       (or (not K) (not J) (= O L))
+       (or (not K) (not J) H)
+       (or (<= Q 0) (not (<= A 0)))
+       (or (not J) (and K J))
+       (or (not K) (= F (= G 20)))
+       (or (not K) (= H a!1))
+       (or (not K) (= G (+ 1 E)))
+       (or (not K) (= I (ite F (- 1) G)))
+       (or (not K) (and K C))
+       (= J true)
+       (= D (= B 3))))
+      )
+      (main@.lr.ph.i M N O P Q R)
+    )
+  )
+)
+(assert
+  (forall ( (A Int) (B (Array Int Int)) (C Int) (D Int) (E Bool) (F Int) (G Int) (H Bool) (I Int) (J Bool) (K Int) (L Bool) (M Bool) (N Int) (O Bool) (P Bool) (Q Int) (R (Array Int Int)) (S Int) (T Int) (U Int) (V Bool) (W Bool) (X Bool) (Y Bool) (Z Bool) ) 
+    (=>
+      (and
+        (main@.lr.ph.i R S K G A B)
+        (let ((a!1 (ite (>= T 0)
+                (or (not (<= U T)) (not (>= U 0)))
+                (and (not (<= U T)) (not (<= 0 U)))))
+      (a!2 (ite (>= I 0)
+                (or (not (<= G I)) (not (>= G 0)))
+                (and (not (<= G I)) (not (<= 0 G))))))
+  (and (= C (+ A (* 4 K)))
+       (= D (select B C))
+       (not (<= A 0))
+       (or (not Y) (and P O) (and L M))
+       (or (not L) (not M) (= N I))
+       (or (not L) (not M) (= T N))
+       (or (not L) (not M) (not H))
+       (or (not L) (not O) (not J))
+       (or (not P) (not O) (= Q K))
+       (or (not P) (not O) (= T Q))
+       (or (not P) (not O) J)
+       (or (not (<= C 0)) (<= A 0))
+       (or (not Y) (= W a!1))
+       (or (not Y) (= X (not W)))
+       (or (not Y) (= U (select R S)))
+       (or (not Y) (not V))
+       (or (not Y) X)
+       (or (not Z) (and Z Y))
+       (or (not L) (= E (= F 20)))
+       (or (not L) (= H a!2))
+       (or (not L) (= F (+ 1 K)))
+       (or (not L) (= I (ite E (- 1) F)))
+       (or (not L) (and L O))
+       (or L (not M))
+       (or (not P) O)
+       (= Z true)
+       (= J (= D 3))))
+      )
+      main@linear_search.exit.split
+    )
+  )
+)
+(assert
+  (forall ( (CHC_COMP_UNUSED Bool) ) 
+    (=>
+      (and
+        main@linear_search.exit.split
+        true
+      )
+      false
+    )
+  )
+)
+
+(check-sat)
+(exit)

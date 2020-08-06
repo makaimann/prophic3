@@ -1,4 +1,4 @@
-(set-info :original "./flarge_enc/vizel/llvm/standard_init_N_nd_assert_loop.bc")
+(set-info :original "./vizel/llvm/standard_init_N_nd_assert_loop.bc")
 (set-info :authors "SeaHorn v.0.1.0-rc3")
 (set-logic HORN)
 (declare-fun verifier.error (Bool Bool Bool) Bool)

@@ -76,6 +76,17 @@ int main(int argc, const char **argv)
       return 1;
     }
 
+    if (opts.trace.empty() && !opts.trace_dir.empty()) {
+      size_t last_slash = opts.filename.find_last_of('/');
+      if (last_slash == string::npos) {
+        opts.trace = opts.trace_dir + opts.filename;
+      } else {
+        opts.trace = opts.trace_dir + "/" +
+                     opts.filename.substr(last_slash + 1,
+                                          opts.filename.size() - last_slash);
+      }
+    }
+
     if (!opts.trace.empty()) {
       logger(1) << "dumping SMT traces to " << opts.trace << ".*.smt2"
                 << endlog;
@@ -117,6 +128,62 @@ int main(int argc, const char **argv)
       res = prophic3->prove();
       the_prover = prophic3;
       final_ts = &(prophic3->get_abs_ts());
+
+      std::vector<TermList> wit;
+      prophic3->witness(wit);
+      if (res == MSAT_TRUE && !opts.trace.empty())
+      {
+        msat_term inv = msat_make_true(env);
+        for (auto clause_list : wit)
+        {
+          msat_term clause;
+          if (clause_list.size() == 0)
+          {
+            cout << "got an empty clause" << endl;
+            clause = msat_make_true(env);
+          }
+          else
+          {
+            clause = msat_make_false(env);
+          }
+
+          for (auto c : clause_list)
+          {
+            clause = msat_make_or(env, clause, c);
+          }
+
+          inv = msat_make_and(env, inv, clause);
+        }
+        std::string inv_filename = opts.trace + ".inv";
+        cout << "inv_filename = " << inv_filename << endl;
+        FILE * f = fopen(inv_filename.c_str(), "w");
+        msat_to_smtlib2_file(env, inv, f);
+        fclose(f);
+
+        ArrayAbstractor & aa = prophic3->get_array_abstractor();
+        msat_term conc_inv = aa.concrete(inv);
+        std::string conc_inv_filename = opts.trace + ".conc_inv";
+        cout << "conc_inv_filename = " << conc_inv_filename << endl;
+        FILE * cf = fopen(conc_inv_filename.c_str(), "w");
+        msat_to_smtlib2_file(env, conc_inv, cf);
+        fclose(cf);
+
+      }
+
+    }
+
+    if (res == MSAT_FALSE) {
+      // cout << "The property is false" << endl;
+      cout << "unsat" << endl; // similar to spacer
+      ret_status = 1;
+    } else if (res == MSAT_TRUE) {
+      // cout << "The property is true" << endl;
+      cout << "sat" << endl; // similar to spacer
+      ret_status = 0;
+    } else {
+      // cout << "Failed to prove or disprove the property..." << endl;
+      cout << "unknown" << endl; // similar to spacer
+      ret_status = 2;
     }
 
     if (opts.witness && res != MSAT_UNDEF) {
@@ -152,22 +219,6 @@ int main(int argc, const char **argv)
         }
       }
     }
-
-    if (res == MSAT_FALSE) {
-      // cout << "The property is false" << endl;
-      cout << "unsat" << endl; // similar to spacer
-      ret_status = 1;
-    } else if (res == MSAT_TRUE) {
-      // cout << "The property is true" << endl;
-      cout << "sat" << endl; // similar to spacer
-      ret_status = 0;
-    } else {
-      // cout << "Failed to prove or disprove the property..." << endl;
-      cout << "unknown" << endl; // similar to spacer
-      ret_status = 2;
-    }
-
-
   } catch (std::exception &e) {
     std::cerr << e.what() << std::endl;
     ret_status = 3;

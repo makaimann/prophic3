@@ -40,8 +40,21 @@ msat_term ArrayAbstractor::abstract(msat_term conc_term) const {
                  {
                    if (is_variable(e, t) || msat_term_is_array_const(e, t))
                    {
-                     assert(d->super->abstraction_cache_.find(t) != d->super->abstraction_cache_.end());
-                     d->cache[t] = d->super->abstraction_cache_.at(t);
+                     msat_term abstract_term;
+                     if (d->super->abstraction_cache_.find(t) !=
+                         d->super->abstraction_cache_.end()) {
+                       d->cache[t] = d->super->abstraction_cache_.at(t);
+                     } else {
+                       // no known mapping
+                       // just use an identity mapping
+                       // this situation could happen for non-array variables
+                       // that are not actually used in the transition system
+                       d->cache[t] = t;
+                       // this should not be an array -- those should be
+                       // abstracted
+                       assert(!msat_is_array_type(e, msat_term_get_type(t),
+                                                  nullptr, nullptr));
+                     }
                    }
                    else if (msat_term_is_array_read(e, t))
                    {
@@ -204,6 +217,11 @@ msat_term ArrayAbstractor::concrete(msat_term abs_term) const {
         // construct_abstract_term
         if (msat_term_is_equal(e, t)) {
           d->cache[t] = msat_make_eq(e, args[0], args[1]);
+        } else if (msat_term_is_term_ite(e, t)) {
+          // special-case for ite (this gets typed for its output)
+          // need to update it
+          assert(args.size() == 3);
+          d->cache[t] = msat_make_term_ite(e, args[0], args[1], args[2]);
         } else {
           d->cache[t] = msat_make_term(e, dec, &args[0]);
         }
@@ -340,6 +358,20 @@ void ArrayAbstractor::do_abstraction()
 void ArrayAbstractor::abstract_array_terms()
 {
   TermSet arrays;
+
+  for (auto sv : conc_ts_.statevars()) {
+    if (msat_is_array_type(msat_env_, msat_term_get_type(sv), nullptr,
+                           nullptr)) {
+      arrays.insert(sv);
+    }
+  }
+
+  for (auto iv : conc_ts_.inputvars()) {
+    if (msat_is_array_type(msat_env_, msat_term_get_type(iv), nullptr,
+                           nullptr)) {
+      arrays.insert(iv);
+    }
+  }
 
   detect_arrays(msat_env_, conc_ts_.init(), arrays);
   detect_arrays(msat_env_, conc_ts_.trans(), arrays);

@@ -65,9 +65,9 @@ msat_term ArrayAxiomEnumerator::bound_lambda(msat_term lambda, size_t width)
 TermSet ArrayAxiomEnumerator::octagonal_addition_domain_terms() const {
   TermSet octagonal_domain;
   // copy the set because we want to modify a copy
-  TermSet args = non_idx_int_terms_;
+  TermSet args = index_targets_.at(NO_NEXT_NON_INDEX_INT_TERMS);
   // add indices to the map
-  for (auto idx : curr_indices_no_witnesses_) {
+  for (auto idx : index_targets_.at(STATE_INDEX_SET_NO_WITNESSES)) {
     args.insert(idx);
   }
 
@@ -85,64 +85,131 @@ TermSet ArrayAxiomEnumerator::octagonal_addition_domain_terms() const {
 
 // public facing axiom enumeration
 
-ic3ia::TermSet ArrayAxiomEnumerator::array_eq_axioms(bool only_cur) {
-  const ic3ia::TermMap & witnesses = abstractor_.witnesses();
-  TermSet *indices;
-  TermSet state_indices;
-  if (only_cur) {
-    // filter axioms
-    for (auto idx : all_indices_) {
-      if (ts_.only_cur(idx)) {
-        state_indices.insert(idx);
-      }
-    }
-    indices = &state_indices;
-  } else {
-    indices = &all_indices_;
+ic3ia::TermSet ArrayAxiomEnumerator::array_eq_witness_axioms(bool only_cur) {
+  TermSet axioms;
+  for (auto e : array_equalities_) {
+    eq_witness_axiom(axioms, e);
   }
+
+  if (only_cur) {
+    // filter out axioms that have inputs or next state variables
+    remove_non_cur_state_axioms(axioms);
+  }
+
+  return axioms;
+}
+
+ic3ia::TermSet ArrayAxiomEnumerator::array_eq_axioms(bool only_cur) {
+  TermSet *indices;
+  if (only_cur) {
+    indices = &index_targets_.at(STATE_INDEX_SET_AND_PROPH);
+  } else {
+    indices = &index_targets_.at(INDEX_SET_AND_PROPH);
+  }
+  assert(indices);
+  TermSet axioms = array_eq_axioms(*indices);
+
+  if (only_cur) {
+    // filter out axioms that have inputs or next state variables
+    remove_non_cur_state_axioms(axioms);
+  }
+  return axioms;
+}
+
+ic3ia::TermSet ArrayAxiomEnumerator::array_eq_axioms(const TermSet &indices) {
   ic3ia::TermSet axioms;
   for (auto e : array_equalities_) {
-    if (only_cur && !ts_.only_cur(e)) {
-      // skip equalities that have inputs or next in them
-      continue;
-    }
-    enumerate_eq_uf_axioms(axioms, e, *indices);
+    enumerate_equality_axioms(axioms, e, indices);
+  }
+  return axioms;
+}
+
+ic3ia::TermSet ArrayAxiomEnumerator::const_array_axioms(bool only_cur) {
+  TermSet *indices;
+  if (only_cur) {
+    indices = &index_targets_.at(STATE_INDEX_SET_AND_PROPH);
+  } else {
+    indices = &index_targets_.at(INDEX_SET_AND_PROPH);
+  }
+  assert(indices);
+  TermSet axioms = const_array_axioms(*indices);
+
+  if (only_cur) {
+    // filter out axioms that have inputs or next state variables
+    remove_non_cur_state_axioms(axioms);
   }
 
   return axioms;
 }
 
-ic3ia::TermSet ArrayAxiomEnumerator::const_array_axioms()
-{
-  ic3ia::TermSet axioms;
+ic3ia::TermSet
+ArrayAxiomEnumerator::const_array_axioms(const TermSet &indices) {
+  TermSet axioms;
   for (msat_term ca : abstractor_.const_arrs()) {
-    enumerate_const_array_axioms(axioms, ca, curr_indices_);
+    enumerate_const_array_axioms(axioms, ca, indices);
   }
   return axioms;
 }
 
-ic3ia::TermSet ArrayAxiomEnumerator::store_axioms()
-{
-  ic3ia::TermSet axioms;
-  const ic3ia::TermSet & stores = abstractor_.stores();
-  for (auto st : stores) {
-    enumerate_store_equalities(axioms, st, all_indices_);
+ic3ia::TermSet ArrayAxiomEnumerator::store_write_axioms(bool only_cur) {
+  TermSet axioms;
+
+  for (auto store : abstractor_.stores()) {
+    enumerate_store_write_axioms(axioms, store);
+  }
+
+  if (only_cur) {
+    // filter out axioms that have inputs or next state variables
+    remove_non_cur_state_axioms(axioms);
+  }
+
+  return axioms;
+}
+
+ic3ia::TermSet ArrayAxiomEnumerator::store_maintain_axioms(bool only_cur) {
+  TermSet *indices;
+  if (only_cur) {
+    indices = &index_targets_.at(STATE_INDEX_SET_AND_PROPH);
+  } else {
+    indices = &index_targets_.at(INDEX_SET_AND_PROPH);
+  }
+  assert(indices);
+  TermSet axioms = store_maintain_axioms(*indices);
+
+  if (only_cur) {
+    // filter out axioms that have inputs or next state variables
+    remove_non_cur_state_axioms(axioms);
+  }
+
+  return axioms;
+}
+
+ic3ia::TermSet
+ArrayAxiomEnumerator::store_maintain_axioms(const TermSet &indices) {
+  TermSet axioms;
+  for (auto st : abstractor_.stores()) {
+    enumerate_store_maintain_axioms(axioms, st, indices);
   }
   return axioms;
 }
 
-ic3ia::TermSet ArrayAxiomEnumerator::lambda_alldiff_axioms()
-{
+ic3ia::TermSet ArrayAxiomEnumerator::lambda_alldiff_axioms(bool only_cur) {
   TermSet axioms;
   TermSet & lambdas = abstractor_.lambdas();
   std::string typestr;
+  msat_term ax;
   for (auto l : lambdas)
   {
-    for (auto i : all_indices_) {
+    for (auto i : index_targets_[INDEX_SET]) {
       if (ts_.cur(i) != l)
       {
-        axioms.insert(msat_make_not(msat_env_,
-                                    msat_make_eq(msat_env_, i, l)));
+        ax = msat_make_not(msat_env_, msat_make_eq(msat_env_, i, l));
+        if (!only_cur || ts_.only_cur(ax)) {
+          // if called with only_cur
+          // it won't add axioms unless they are made entirely of current
+          // state variables
+          axioms.insert(ax);
+        }
       }
     }
   }
@@ -151,20 +218,19 @@ ic3ia::TermSet ArrayAxiomEnumerator::lambda_alldiff_axioms()
 }
 
 TermSet ArrayAxiomEnumerator::equality_axioms_idx_time(const TermSet &indices,
-                                                       size_t j, Unroller &un,
-                                                       size_t k) {
+                                                       size_t j, size_t k) {
 
   TermSet axioms;
   // unrolled indices
   TermSet timed_indices;
 
   for (auto idx : indices) {
-    timed_indices.insert(un.at_time(idx, j));
+    timed_indices.insert(un_.at_time(idx, j));
   }
 
   for (auto e : array_equalities_) {
     for (size_t i = 0; i < k; i++) {
-      msat_term e_i = un.at_time(e, i);
+      msat_term e_i = un_.at_time(e, i);
 
       // don't enumerate witness axioms because those are just over the
       // witness index not parameterized by an index e.g. using
@@ -177,40 +243,41 @@ TermSet ArrayAxiomEnumerator::equality_axioms_idx_time(const TermSet &indices,
 }
 
 TermSet ArrayAxiomEnumerator::store_axioms_idx_time(const TermSet &indices,
-                                                    size_t j, Unroller &un,
-                                                    size_t k) {
+                                                    size_t j, size_t k) {
   TermSet axioms;
   // unrolled indices
   TermSet timed_indices;
 
   for (auto idx : indices) {
-    timed_indices.insert(un.at_time(idx, j));
+    timed_indices.insert(un_.at_time(idx, j));
   }
 
   const TermSet &stores = abstractor_.stores();
   for (auto st : stores) {
     for (size_t i = 0; i < k; i++) {
-      msat_term st_i = un.at_time(st, i);
-      enumerate_store_equalities(axioms, st_i, timed_indices);
+      msat_term st_i = un_.at_time(st, i);
+      // don't need to add the store maintain axiom (doesn't depend on indices)
+      enumerate_store_maintain_axioms(axioms, st_i, timed_indices);
     }
   }
   return axioms;
 }
 
-TermSet ArrayAxiomEnumerator::const_array_axioms_idx_time(
-    const TermSet &indices, size_t j, Unroller &un, size_t k) {
+TermSet
+ArrayAxiomEnumerator::const_array_axioms_idx_time(const TermSet &indices,
+                                                  size_t j, size_t k) {
   TermSet axioms;
   // unrolled indices
   TermSet timed_indices;
 
   for (auto idx : indices) {
-    timed_indices.insert(un.at_time(idx, j));
+    timed_indices.insert(un_.at_time(idx, j));
   }
 
   for (msat_term ca : abstractor_.const_arrs()) {
     for (size_t i = 0; i < k; i++)
     {
-      msat_term ca_i = un.at_time(ca, i);
+      msat_term ca_i = un_.at_time(ca, i);
       enumerate_const_array_axioms(axioms, ca_i, timed_indices);
     }
   }
@@ -219,15 +286,10 @@ TermSet ArrayAxiomEnumerator::const_array_axioms_idx_time(
 
 void ArrayAxiomEnumerator::add_index(msat_type orig_idx_type, msat_term i) {
   // TODO: what if the index is an input -- could happen
-  all_indices_.insert(i);
-  if (ts_.only_cur(i))
-  {
-    all_indices_.insert(ts_.next(i));
-  }
-  if (!ts_.contains_next(i))
-  {
-    curr_indices_.insert(i);
-  }
+  index_targets_[INDEX_SET_AND_PROPH].insert(i);
+  index_targets_[STATE_INDEX_SET_AND_PROPH].insert(i);
+  index_targets_[NO_NEXT_INDEX_SET_AND_PROPH].insert(i);
+  index_targets_[PROPH].insert(i);
 }
 
 msat_term ArrayAxiomEnumerator::get_index(msat_term ax) const
@@ -236,9 +298,25 @@ msat_term ArrayAxiomEnumerator::get_index(msat_term ax) const
 }
 
 // protected helper functions
-void ArrayAxiomEnumerator::enumerate_store_equalities(TermSet &axioms,
-                                                      msat_term store,
-                                                      TermSet &indices) {
+void ArrayAxiomEnumerator::enumerate_store_write_axioms(TermSet &axioms,
+                                                        msat_term store) {
+  msat_decl read = abstractor_.get_read(store);
+  msat_term arr = msat_term_get_arg(store, 0);
+  msat_term idx = msat_term_get_arg(store, 1);
+  msat_term val = msat_term_get_arg(store, 2);
+
+  // temporary variable to be used throughout function
+  msat_term ax;
+  msat_term args0[2] = {store, idx};
+
+  // value at write index
+  ax = msat_make_eq(msat_env_, msat_make_uf(msat_env_, read, &args0[0]), val);
+  axioms.insert(ax);
+  axioms_to_index_[ax] = idx;
+}
+
+void ArrayAxiomEnumerator::enumerate_store_maintain_axioms(
+    TermSet &axioms, msat_term store, const TermSet &indices) {
 
   msat_decl read = abstractor_.get_read(store);
   msat_term arr = msat_term_get_arg(store, 0);
@@ -249,11 +327,6 @@ void ArrayAxiomEnumerator::enumerate_store_equalities(TermSet &axioms,
   msat_term ax;
   msat_term args0[2] = {store, idx};
   msat_term args1[2] = {arr, idx};
-
-  // value at write index
-  ax = msat_make_eq(msat_env_, msat_make_uf(msat_env_, read, &args0[0]), val);
-  axioms.insert(ax);
-  axioms_to_index_[ax] = idx;
 
   msat_term antecedent;
   msat_term consequent;
@@ -275,7 +348,7 @@ void ArrayAxiomEnumerator::enumerate_store_equalities(TermSet &axioms,
 }
 
 void ArrayAxiomEnumerator::enumerate_const_array_axioms(
-    TermSet &axioms, msat_term conc_const_arr, TermSet &indices) {
+    TermSet &axioms, msat_term conc_const_arr, const TermSet &indices) {
   // temporary variable to be used throughout function
   msat_term ax;
 
@@ -296,7 +369,7 @@ void ArrayAxiomEnumerator::enumerate_const_array_axioms(
 
 void ArrayAxiomEnumerator::enumerate_eq_uf_axioms(ic3ia::TermSet &axioms,
                                                   msat_term abs_eq,
-                                                  ic3ia::TermSet &indices) {
+                                                  const TermSet &indices) {
 
   enumerate_equality_axioms(axioms, abs_eq, indices);
   eq_witness_axiom(axioms, abs_eq);
@@ -304,7 +377,7 @@ void ArrayAxiomEnumerator::enumerate_eq_uf_axioms(ic3ia::TermSet &axioms,
 
 void ArrayAxiomEnumerator::enumerate_equality_axioms(TermSet &axioms,
                                                      msat_term abs_eq,
-                                                     TermSet &indices) {
+                                                     const TermSet &indices) {
   // temporary variable to be used throughout function
   msat_term ax;
 
@@ -363,6 +436,18 @@ void ArrayAxiomEnumerator::eq_witness_axiom(TermSet &axioms, msat_term abs_eq) {
   axioms_to_index_[ax] = witness;
 }
 
+void ArrayAxiomEnumerator::remove_non_cur_state_axioms(TermSet &axioms) {
+  // filter out axioms that have inputs or next state variables
+  TermList to_remove;
+  for (auto a : axioms) {
+    if (!ts_.only_cur(a)) {
+      to_remove.push_back(a);
+    }
+  }
+  for (auto a : to_remove) {
+    axioms.erase(a);
+  }
+}
 void ArrayAxiomEnumerator::collect_equalities(msat_term term, TermSet &s) {
   struct Data
   {
@@ -396,11 +481,12 @@ void ArrayAxiomEnumerator::collect_equalities(msat_term term, TermSet &s) {
 void ArrayAxiomEnumerator::collect_int_terms(msat_term term) {
   // assume all_indices_ is already populated
   // used to remove indices from these terms
-  assert(all_indices_.size());
+  assert(index_targets_[INDEX_SET].size());
 
   struct Data {
     TermSet &terms;
-    Data(TermSet &t) : terms(t) {}
+    const TransitionSystem &ts;
+    Data(TermSet &t, const TransitionSystem &ats) : terms(t), ts(ats) {}
   };
 
   auto visit = [](msat_env e, msat_term t, int preorder,
@@ -409,32 +495,21 @@ void ArrayAxiomEnumerator::collect_int_terms(msat_term term) {
     if (!preorder) {
       return MSAT_VISIT_SKIP;
     } else {
-      if (msat_is_integer_type(e, msat_term_get_type(t))) {
+      if (msat_is_integer_type(e, msat_term_get_type(t)) &&
+          !d->ts.contains_next(t)) {
         d->terms.insert(t);
       }
     }
     return MSAT_VISIT_PROCESS;
   };
 
-  Data data(non_idx_int_terms_);
+  TermSet &non_idx_int_terms = index_targets_[NO_NEXT_NON_INDEX_INT_TERMS];
+  Data data(non_idx_int_terms, ts_);
   msat_visit_term(msat_env_, term, visit, &data);
 
   // remove indices from the sets
-  for (auto idx : all_indices_) {
-    non_idx_int_terms_.erase(idx);
-  }
-
-  // remove next state variables from the sets
-  // will unroll states at each time anyway, don't want to duplicate
-  TermSet to_remove;
-  for (auto t : non_idx_int_terms_) {
-    if (ts_.contains_next(t)) {
-      to_remove.insert(t);
-    }
-  }
-
-  for (auto t : to_remove) {
-    non_idx_int_terms_.erase(t);
+  for (auto idx : index_targets_[INDEX_SET]) {
+    non_idx_int_terms.erase(idx);
   }
 }
 

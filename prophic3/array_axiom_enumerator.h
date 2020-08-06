@@ -9,38 +9,68 @@
 #include "array_abstractor.h"
 
 namespace prophic3 {
+
+// categories for different type of indices to enumerate array axioms over
+enum IndexTarget {
+  // only indices made up of states
+  STATE_INDEX_SET = 0,
+  // all indices except the witnesses
+  STATE_INDEX_SET_NO_WITNESSES,
+  // full index set
+  INDEX_SET,
+  // state indices plus prophecy variables
+  STATE_INDEX_SET_AND_PROPH,
+  // current state and input indices plus prophecy variables
+  NO_NEXT_INDEX_SET_AND_PROPH,
+  // index set plus prophecy variables
+  INDEX_SET_AND_PROPH,
+  // prophecy variables only
+  PROPH,
+  // integer terms from transition relation
+  // that are not indices and don't contain next
+  // used in grammar search
+  NO_NEXT_NON_INDEX_INT_TERMS
+};
+
 class ArrayAxiomEnumerator {
 public:
-  ArrayAxiomEnumerator(const ic3ia::TransitionSystem &ts,
-                                 ArrayAbstractor &aa)
-      : ts_(ts), abstractor_(aa) {
+  ArrayAxiomEnumerator(const ic3ia::TransitionSystem &ts, ic3ia::Unroller &u,
+                       ArrayAbstractor &aa)
+      : ts_(ts), un_(u), abstractor_(aa) {
     msat_env_ = ts.get_env();
 
     // sort the indices
     // convenient to store them grouped by current and all for 1-step and 2-step
     // lemmas
-    msat_term base_idx; // gets assigned the actual var if it's wrapped in ubv_to_int
     for (auto idx : abstractor_.indices()) {
+
+      index_targets_[INDEX_SET].insert(idx);
 
       // save state variable indices
       if (ts.only_cur(idx))
       {
-        all_indices_.insert(ts.next(idx));
+        index_targets_[STATE_INDEX_SET].insert(idx);
+        index_targets_[STATE_INDEX_SET_NO_WITNESSES].insert(idx);
+        index_targets_[INDEX_SET].insert(ts.next(idx));
       }
 
       if (!ts.contains_next(idx))
       {
-        curr_indices_.insert(idx);
-        curr_indices_no_witnesses_.insert(idx);
+        index_targets_[NO_NEXT_INDEX_SET_AND_PROPH].insert(idx);
       }
-      all_indices_.insert(idx);
     }
 
-    // remove witnesses from curr_indices_no_witnesses_
+    // remove witnesses from INDEX_SET_NO_WITNESSES
     for (auto witelem : abstractor_.witnesses()) {
-      for (auto cielem : curr_indices_no_witnesses_) {
-        curr_indices_no_witnesses_.erase(witelem.second);
-      }
+      index_targets_[STATE_INDEX_SET_NO_WITNESSES].erase(witelem.second);
+    }
+
+    // populate prophecy index sets (prophecy variables will be added to these)
+    for (auto idx : index_targets_[STATE_INDEX_SET]) {
+      index_targets_[STATE_INDEX_SET_AND_PROPH].insert(idx);
+    }
+    for (auto idx : index_targets_[INDEX_SET]) {
+      index_targets_[INDEX_SET_AND_PROPH].insert(idx);
     }
 
     // Find all the array equalities
@@ -52,78 +82,62 @@ public:
     collect_int_terms(ts.init());
     collect_int_terms(ts.trans());
     collect_int_terms(ts.prop());
-
-    ic3ia::logger(2) << "Found the following terms for prophecy candidates"
-                     << ic3ia::endlog;
-    for (auto t : non_idx_int_terms_) {
-      ic3ia::logger(2) << "\t" << msat_to_smtlib2_term(msat_env_, t)
-                       << ic3ia::endlog;
-    }
   }
-
-  // TODO: adapt the private methods for the new representation (not using
-  // structs for each type of equality) then have methods to enumerate different
-  // kinds of axioms
-
-  const ic3ia::TermSet &all_indices() const { return all_indices_; };
-
-  const ic3ia::TermSet &curr_indices() const { return curr_indices_; };
-
-  const ic3ia::TermSet &non_idx_int_terms() const {
-    return non_idx_int_terms_;
-  };
 
   // TODO: think about caching this -- but we also want to update it
   // periodically as new terms are added
   /**
    *  Enumerates terms obtained by adding two terms drawn from indices (except
    * witnesses) and the general terms in the transition system from
-   * non_idx_int_terms
+   * NON_INDEX_INT_TERMS
    */
   ic3ia::TermSet octagonal_addition_domain_terms() const;
 
+  // Enumerates all untime-able axioms with the default indices (from index set)
   // Note: not differentiating between zero-step and one-step axioms
   //       just enumerating them all together
   // if only_cur set, filters out all axioms that are over non-current state
   // vars
+  ic3ia::TermSet array_eq_witness_axioms(bool only_cur);
   ic3ia::TermSet array_eq_axioms(bool only_cur);
+  ic3ia::TermSet const_array_axioms(bool only_cur);
+  ic3ia::TermSet store_write_axioms(bool only_cur);
+  ic3ia::TermSet store_maintain_axioms(bool only_cur);
 
-  ic3ia::TermSet const_array_axioms();
-  ic3ia::TermSet store_axioms();
+  // expose the choice of indices to the user
+  // allows checking axioms over indices not in index set
+  ic3ia::TermSet array_eq_axioms(const ic3ia::TermSet &indices);
+  ic3ia::TermSet const_array_axioms(const ic3ia::TermSet &indices);
+  ic3ia::TermSet store_maintain_axioms(const ic3ia::TermSet &indices);
 
   /** Enumerates untimeable axioms about
    *  lambda index being different from all others of the same type
    */
-  ic3ia::TermSet lambda_alldiff_axioms();
+  ic3ia::TermSet lambda_alldiff_axioms(bool only_cur);
 
   /** Enumerate equality axioms over indices at j
    *  indices - the index sets to enumerate axiom over
    *  j - the time step of the indices (they haven't been unrolled yet)
-   *  un - the unroller to use for timing
    *  k - the maximum time-step (inclusive)
    */
   ic3ia::TermSet equality_axioms_idx_time(const ic3ia::TermSet &indices,
-                                          size_t j, ic3ia::Unroller &un,
-                                          size_t k);
+                                          size_t j, size_t k);
 
   /** Enumerate store axioms over indices at j
    *  indices - the index sets to enumerate axiom over
    *  j - the time step of the indices (they haven't been unrolled yet)
-   *  un - the unroller to use for timing
    *  k - the maximum time-step (inclusive)
    */
   ic3ia::TermSet store_axioms_idx_time(const ic3ia::TermSet &indices, size_t j,
-                                       ic3ia::Unroller &un, size_t k);
+                                       size_t k);
 
   /** Enumerate const array axioms over indices j
    *  indices - the index sets to enumerate axiom over
    *  j - the time step of the indices (they haven't been unrolled yet)
-   *  un - the unroller to use for timing
    *  k - the maximum time-step (inclusive)
    */
   ic3ia::TermSet const_array_axioms_idx_time(const ic3ia::TermSet &indices,
-                                             size_t j, ic3ia::Unroller &un,
-                                             size_t k);
+                                             size_t j, size_t k);
 
   /* Adds an index to the index set (mostly used for adding prophecy vars) */
   void add_index(msat_type _type, msat_term i);
@@ -134,20 +148,38 @@ public:
    */
   msat_term get_index(msat_term ax) const;
 
-  // debugging
-  ArrayAbstractor &get_abstractor() { return abstractor_; };
-  const ic3ia::TermSet &all_indices() { return all_indices_; };
+  /** Returns a set of indices
+   *  @param it the IndexTarget enum category
+   *  @param t optional time, if given it will unroll all the indices at that
+   * time otherwise, it will return the non-timed indices
+   */
+  ic3ia::TermSet get_index_targets(IndexTarget it, int t = -1) {
+    if (!index_targets_[it].size()) {
+      std::cout << "Warning, empty index set for IndexTarget = " << it
+                << std::endl;
+    }
+
+    if (t >= 0) {
+      ic3ia::TermSet timed_indices;
+      for (auto idx : index_targets_[it]) {
+        timed_indices.insert(un_.at_time(idx, t));
+      }
+      return timed_indices;
+    } else {
+      return index_targets_[it];
+    }
+  }
 
 private:
   const ic3ia::TransitionSystem &ts_;
+  ic3ia::Unroller &un_;
   ArrayAbstractor &abstractor_;
   msat_env msat_env_;
-  ic3ia::TermSet curr_indices_;
-  ic3ia::TermSet curr_indices_no_witnesses_;
-  ic3ia::TermSet all_indices_;
-  // terms that are not used as indices but will be enumerated
-  // as indices as a fallback to find prophecy variables
-  ic3ia::TermSet non_idx_int_terms_;
+
+  // maps IndexTarget enums to sets of index targets
+  // categorizing targets by type
+  std::unordered_map<IndexTarget, ic3ia::TermSet> index_targets_;
+
   // array equalities in transition system
   ic3ia::TermSet array_equalities_;
 
@@ -177,13 +209,15 @@ private:
    * Important Note: lambda argument can be an error term (if there is no finite
    * domain lambda)
    */
-  void enumerate_store_equalities(ic3ia::TermSet &axioms, msat_term store,
-                                  ic3ia::TermSet &indices);
+  void enumerate_store_write_axioms(ic3ia::TermSet &axioms, msat_term store);
+
+  void enumerate_store_maintain_axioms(ic3ia::TermSet &axioms, msat_term store,
+                                       const ic3ia::TermSet &indices);
 
   /* Enumerate store axioms on all indices: forall i . arr[i] = val */
   void enumerate_const_array_axioms(ic3ia::TermSet &axioms,
                                     msat_term conc_const_arr,
-                                    ic3ia::TermSet &indices);
+                                    const ic3ia::TermSet &indices);
 
   // TODO: Figure out if we can remove some of these lemmas
   //       probably don't need them all
@@ -200,13 +234,18 @@ private:
    *    a[witness] = b[witness] -> a =b
    */
   void enumerate_eq_uf_axioms(ic3ia::TermSet &axioms, msat_term abs_eq,
-                              ic3ia::TermSet &indices);
+                              const ic3ia::TermSet &indices);
 
   // helpers for enumerate_eq_uf_axioms
   void enumerate_equality_axioms(ic3ia::TermSet &axioms, msat_term abs_eq,
-                                 ic3ia::TermSet &indices);
+                                 const ic3ia::TermSet &indices);
 
   void eq_witness_axiom(ic3ia::TermSet &axioms, msat_term abs_eq);
+
+  /** Filter axioms to only keep ones over current state variables
+   *  Note: this should only be needed at bound 0 in BMC refinement
+   */
+  void remove_non_cur_state_axioms(ic3ia::TermSet &axioms);
 
   /* Collect all array equality UFs from the given term and add to set s */
   void collect_equalities(msat_term term, ic3ia::TermSet & s);

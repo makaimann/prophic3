@@ -202,44 +202,57 @@ Options get_options(int argc, const char **argv)
             } else {
                 ok = false;
             }
+        } else if (a == "-td") {
+          if (i + 1 < argc) {
+            ret.trace_dir = argv[i + 1];
+            ++i;
+          } else {
+            ok = false;
+          }
         } else if (a == "-r") {
-            ok = getint(++i, ret.seed);
+          ok = getint(++i, ret.seed);
         } else if (a == "-s") {
-            ret.stack = true;
+          ret.stack = true;
         } else if (a == "-m") {
-            ret.minpreds = false;
+          ret.minpreds = false;
         } else if (a == "-g") {
           ret.generalize_pre = true;
         } else if (a == "-inc-ref") {
           ok = getbool(++i, ret.inc_ref);
         } else if (a == "-live-ref-maxiter") {
-            ok = getint(++i, ret.live_ref_maxiter);
+          ok = getint(++i, ret.live_ref_maxiter);
         } else if (a == "-live-ref-eager") {
-            ok = getbool(++i, ret.live_ref_eager);
+          ok = getbool(++i, ret.live_ref_eager);
         } else if (a == "-live-ref-ranking") {
-            ok = getbool(++i, ret.live_ref_ranking);
+          ok = getbool(++i, ret.live_ref_ranking);
         } else if (a == "-live-ref-templates") {
-            ok = getbool(++i, ret.live_ref_templates);
+          ok = getbool(++i, ret.live_ref_templates);
         } else if (a == "-live-no-cex") {
-            ok = getbool(++i, ret.live_no_cex);
+          ok = getbool(++i, ret.live_no_cex);
         } else if (a == "-live-bmc-cex") {
-            ok = getbool(++i, ret.live_bmc_cex);
+          ok = getbool(++i, ret.live_bmc_cex);
         } else if (a == "-live-klive-progress") {
-            ok = getbool(++i, ret.live_klive_progress);
+          ok = getbool(++i, ret.live_klive_progress);
         } else if (a == "-live-klive-start") {
-            ok = getint(++i, ret.live_klive_start);
+          ok = getint(++i, ret.live_klive_start);
         } else if (a == "-n") {
-            ok = getint(++i, ret.prop_index);
+          ok = getint(++i, ret.prop_index);
         } else if (a == "-bmc") {
-            ret.bmc = true;
+          ret.bmc = true;
         } else if (a == "-bmc-k") {
-            ok = getint(++i, ret.bmc_max_k);
+          ok = getint(++i, ret.bmc_max_k);
         } else if (a == "-check-witness") {
           ok = getbool(++i, ret.check_witness);
+        } else if (a == "-witness-check-script") {
+          if (++i < argc) {
+            ret.witness_check_script = argv[i];
+          } else {
+            ok = false;
+          }
         } else if (a == "-solver-approx") {
           ok = getbool(++i, ret.solver_approx);
         } else if (a == "-no-eq-uf") {
-            ret.use_uf_for_arr_eq = false;
+          ret.use_uf_for_arr_eq = false;
         } else if (a == "-no-hist-eq-preds") {
           ret.use_hist_eq_initial_preds = false;
         } else if (a == "-max-array-axioms") {
@@ -264,6 +277,8 @@ Options get_options(int argc, const char **argv)
                     << "\n   -p : do not use initial predicates (if any)"
                     << "\n   -t NAME : dump SMT queries into NAME.main.smt2 "
                     << "and NAME.itp.smt2"
+                    << "\n   -td DIR_NAME : dump files in this directory "
+                    << "with the filename as a prefix. Incompatible with -t."
                     << "\n   -r VAL : set random seed to VAL "
                     << "(0 to disable [default])"
                     << "\n   -s : stack-based proof obligation management"
@@ -292,6 +307,8 @@ Options get_options(int argc, const char **argv)
                     << "\n   -bmc-k N : max k value for BMC"
                     << "\n   -check-witness B : check the correctness "
                     << "of witnesses"
+                    << "\n   -witness-check-script OUT : generate a  witness "
+                    << "check script in OUT"
                     << "\n   -solver-approx B : use approximate SMT queries "
                     << "in IC3."
                     << "\n   -no-eq-uf : use actual equalities between "
