@@ -57,6 +57,9 @@ public:
     const ic3ia::TermSet &stores() const { return stores_; };
     ic3ia::TermSet &lambdas() { return lambdas_; };
     const ic3ia::TermSet &finite_domain_lambdas() const { return finite_domain_lambdas_; };
+    const ic3ia::TermMap &abstracted_large_consts() const {
+      return abstracted_large_consts_;
+    }
 
     msat_type get_orig_type(msat_term t) const
     {

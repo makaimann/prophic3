@@ -571,6 +571,25 @@ bool ProphIC3::check_axioms_over_bmc(TermSet &untimed_axioms,
       }
     }
 
+    if (!violated_axioms.size()) {
+      // check abstracted large integer value axioms
+      // that they should be equal to the actual value
+      for (auto ax : aae_.large_integer_values_axioms()) {
+        for (size_t k = 0; k <= current_k_; k++) {
+          msat_term timed_axiom = un_.at_time(ax, k);
+          if (is_axiom_violated(timed_axiom)) {
+            violated_axioms.insert(timed_axiom);
+            untimed_axioms.insert(ax);
+            timed_to_untimed[timed_axiom] = ax;
+            lemma_cnt++;
+          }
+        }
+      }
+
+      // these are actually untimeable -- but we add them last
+      found_untimed_axioms = violated_axioms.size();
+    }
+
     // if we didn't find any violated axioms, this is a real bug
     if (!violated_axioms.size()) {
       /* model for the witness */

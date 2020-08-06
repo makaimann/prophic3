@@ -115,6 +115,12 @@ public:
    */
   ic3ia::TermSet lambda_alldiff_axioms(bool only_cur);
 
+  /** Enumerates untimeable axioms about
+   *  abstracted large integer values
+   *  e.g. that they're equal to an actual value
+   */
+  ic3ia::TermSet large_integer_values_axioms();
+
   /** Enumerate equality axioms over indices at j
    *  indices - the index sets to enumerate axiom over
    *  j - the time step of the indices (they haven't been unrolled yet)
