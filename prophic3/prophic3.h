@@ -81,9 +81,14 @@ protected:
    *  assumes the two set arguments start empty
    *  @param untimed_axioms a set to be populated with untimeable axioms
    *  @param timed_axioms a set to be populated with time-crossing axioms
+   *  @param search_for_timed whether or not to search for timed axioms
+   *         -- after adding prophecy vars, search at same bound without
+   *            searching for timed axioms because should be able to refine
+   *            with only untimed axioms
    */
   bool check_axioms_over_bmc(ic3ia::TermSet &untimed_axioms,
-                             ic3ia::TermSet &timed_axioms);
+                             ic3ia::TermSet &timed_axioms,
+                             bool search_for_timed = true);
 
   /** Check axiom in the current refiner_ model
    *  used as a helper for fix_bmc

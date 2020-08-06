@@ -399,7 +399,7 @@ bool ProphIC3::fix_bmc()
                 << endlog;
       untimed_axioms.clear();
       timed_axioms.clear();
-      fixable = check_axioms_over_bmc(untimed_axioms, timed_axioms);
+      fixable = check_axioms_over_bmc(untimed_axioms, timed_axioms, false);
       assert(fixable);
       assert(!timed_axioms.size());
     }
@@ -429,7 +429,8 @@ bool ProphIC3::fix_bmc()
 }
 
 bool ProphIC3::check_axioms_over_bmc(TermSet &untimed_axioms,
-                                     TermSet &timed_axioms) {
+                                     TermSet &timed_axioms,
+                                     bool search_for_timed) {
   assert(!untimed_axioms.size());
   assert(!timed_axioms.size());
 
@@ -527,7 +528,7 @@ bool ProphIC3::check_axioms_over_bmc(TermSet &untimed_axioms,
     }
 
     // check for timed axioms over the index set if there were no axioms found
-    if (!found_untimed_axioms) {
+    if (!found_untimed_axioms && search_for_timed) {
       logger(1) << "Checking for timed axioms" << endlog;
       vector<TermSet> timed_axiom_candidates;
       const TermSet &curr_indices =
