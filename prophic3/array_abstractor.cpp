@@ -269,6 +269,7 @@ msat_term ArrayAbstractor::make_eq(msat_env env, msat_term lhs, msat_term rhs) c
 void ArrayAbstractor::do_abstraction()
 {
   abstract_array_terms();
+  abstract_large_integer_values();
 
   // add all old state elements unless they've been removed
   // new_state_vars_ already contains state mapping for new state vars
@@ -303,6 +304,13 @@ void ArrayAbstractor::do_abstraction()
   }
 
   msat_term new_trans = construct_abstract_term(conc_ts_.trans());
+
+  // make abstracted large constants frozen vars
+  for (auto elem : abstracted_large_consts_) {
+    new_trans = msat_make_and(
+        msat_env_, new_trans,
+        msat_make_eq(msat_env_, new_state_vars_.at(elem.first), elem.first));
+  }
 
   // initialize for using curr / next
   // will reinitialize later if needed
@@ -452,6 +460,44 @@ void ArrayAbstractor::abstract_array_terms()
   }
 }
 
+void ArrayAbstractor::abstract_large_integer_values() {
+  TermSet integer_vals;
+  detect_integer_values(msat_env_, conc_ts_.init(), integer_vals);
+  detect_integer_values(msat_env_, conc_ts_.trans(), integer_vals);
+  detect_integer_values(msat_env_, conc_ts_.prop(), integer_vals);
+
+  msat_term zero = msat_make_number(msat_env_, "0");
+  msat_term hundred = msat_make_number(msat_env_, "100");
+
+  msat_term t_ = msat_make_true(msat_env_);
+  msat_term gt_100;
+  msat_term lt_0;
+  msat_type inttype = msat_get_integer_type(msat_env_);
+  for (auto iv : integer_vals) {
+    gt_100 = msat_make_not(msat_env_, msat_make_leq(msat_env_, iv, hundred));
+    // TODO use this for very negative numbers
+    // lt_0 = msat_make_not(msat_env_,
+    //                      msat_make_leq(msat_env_,
+    //                                    zero,
+    //                                    iv));
+
+    if (gt_100 == t_) {
+      std::string name =
+          std::string("_n_") + msat_to_smtlib2_term(msat_env_, iv);
+      msat_decl decl_con =
+          msat_declare_function(msat_env_, name.c_str(), inttype);
+      msat_term con = msat_make_constant(msat_env_, decl_con);
+      msat_decl decl_conN =
+          msat_declare_function(msat_env_, (name + ".next").c_str(), inttype);
+      msat_term conN = msat_make_constant(msat_env_, decl_conN);
+      new_state_vars_[con] = conN;
+      // will be made frozen later
+      abstracted_large_consts_[con] = iv;
+      populate_caches(iv, con);
+    }
+  }
+}
+
 msat_type ArrayAbstractor::abstract_array_type(msat_type t)
 {
   std::string t_typestr = msat_type_repr(t);
@@ -585,6 +631,26 @@ void detect_arrays(msat_env env, msat_term term, TermSet & out_arrays)
                };
 
   Data data(out_arrays);
+  msat_visit_term(env, term, visit, &data);
+}
+
+void detect_integer_values(msat_env env, msat_term term, TermSet &out_values) {
+  struct Data {
+    TermSet &values;
+    Data(TermSet &ca) : values(ca) {}
+  };
+
+  auto visit = [](msat_env e, msat_term t, int preorder,
+                  void *data) -> msat_visit_status {
+    Data *d = static_cast<Data *>(data);
+    msat_type t_type = msat_term_get_type(t);
+    if (preorder && msat_term_is_number(e, t)) {
+      d->values.insert(t);
+    }
+    return MSAT_VISIT_PROCESS;
+  };
+
+  Data data(out_values);
   msat_visit_term(env, term, visit, &data);
 }
 

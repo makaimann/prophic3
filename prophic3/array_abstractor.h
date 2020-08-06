@@ -30,6 +30,10 @@ inline bool is_variable(msat_env env, msat_term term) {
 /* detects all arrays except for writes */
 void detect_arrays(msat_env env, msat_term term, ic3ia::TermSet & out_const_arrs);
 
+/* detects all integer values */
+void detect_integer_values(msat_env env, msat_term term,
+                           ic3ia::TermSet &out_values);
+
 class ArrayAbstractor {
 public:
   ArrayAbstractor(const ic3ia::TransitionSystem &ts, bool use_eq_uf);
@@ -104,6 +108,12 @@ public:
      */
     void abstract_array_terms();
 
+    /** abstracts all integer values larger than 100
+     *  as frozen state variables that are greater than 0
+     *  these can then be abstracted later
+     */
+    void abstract_large_integer_values();
+
     /* get an abstract array type if it's an array type */
     msat_type abstract_array_type(msat_type t);
 
@@ -164,6 +174,10 @@ public:
 
     // maps a string of an array type to an uninterpreted type
     std::unordered_map<std::string, msat_type> type_map_;
+
+    // maps abstract state variables to the concrete (large) number they
+    // abstracted
+    ic3ia::TermMap abstracted_large_consts_;
 
     ic3ia::TermSet lambdas_;
     ic3ia::TermSet finite_domain_lambdas_;
