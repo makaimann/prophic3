@@ -1,6 +1,0 @@
-(set-logic HORN)
-(declare-fun state ((Array Int Int) Int Int Int Bool Int) Bool)
-(assert (forall ((|a_1| (Array Int Int)) (|i_0| Int) (|m_0| Int) (|N_1| Int) (|.loc.6| Bool) (|i1_0| Int) (|.loc.11| Bool) (|.y.9| Int) (|.y.8| Int) (|.y.7| (Array Int Int)) (|.y.10| Int) (|.xtv.1| Int)) (=> (and (and (= m_0 0) (= i_0 0)) (not .loc.6)) (state |a_1| |i_0| |m_0| |N_1| |.loc.6| |i1_0|))))
-(assert (forall ((|a_1| (Array Int Int)) (|i_0| Int) (|m_0| Int) (|N_1| Int) (|.loc.6| Bool) (|i1_0| Int) (|.loc.11| Bool) (|.y.9| Int) (|.y.8| Int) (|.y.7| (Array Int Int)) (|.y.10| Int) (|.xtv.1| Int)) (=> (and (state |a_1| |i_0| |m_0| |N_1| |.loc.6| |i1_0|) (let ((.def_29 (<= N_1 i_0))) (let ((.def_35 (select a_1 i_0))) (and (not .loc.6) (or (and (and (not (<= m_0 (select a_1 i1_0))) (and (not (<= N_1 i1_0)) (and (not (<= i1_0 0)) .def_29))) .loc.11) (and (= (ite (<= m_0 .def_35) m_0 .def_35) .y.9) (and (= (+ i_0 (* (- 1) .y.8)) (- 1)) (and (= a_1 .y.7) (and (= N_1 .y.10) (and (not .def_29) (not .loc.11))))))))))) (state |.y.7| |.y.8| |.y.9| |.y.10| |.loc.11| |.xtv.1|))))
-(assert (forall ((|a_1| (Array Int Int)) (|i_0| Int) (|m_0| Int) (|N_1| Int) (|.loc.6| Bool) (|i1_0| Int) (|.loc.11| Bool) (|.y.9| Int) (|.y.8| Int) (|.y.7| (Array Int Int)) (|.y.10| Int) (|.xtv.1| Int)) (=> (state |a_1| |i_0| |m_0| |N_1| |.loc.6| |i1_0|) (not .loc.6))))
-(check-sat)

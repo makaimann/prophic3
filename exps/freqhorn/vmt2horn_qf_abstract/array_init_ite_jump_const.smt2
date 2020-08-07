@@ -1,6 +1,0 @@
-(set-logic HORN)
-(declare-fun state ((Array Int Int) Int Int Int Bool Int) Bool)
-(assert (forall ((|a_1| (Array Int Int)) (|i_0| Int) (|val_0| Int) (|N_1| Int) (|.loc.6| Bool) (|i1_0| Int) (|.loc.11| Bool) (|.y.7| (Array Int Int)) (|.y.8| Int) (|.y.9| Int) (|.y.10| Int) (|.xtv.1| Int)) (=> (and (and (= val_0 7) (= i_0 0)) (not .loc.6)) (state |a_1| |i_0| |val_0| |N_1| |.loc.6| |i1_0|))))
-(assert (forall ((|a_1| (Array Int Int)) (|i_0| Int) (|val_0| Int) (|N_1| Int) (|.loc.6| Bool) (|i1_0| Int) (|.loc.11| Bool) (|.y.7| (Array Int Int)) (|.y.8| Int) (|.y.9| Int) (|.y.10| Int) (|.xtv.1| Int)) (=> (and (state |a_1| |i_0| |val_0| |N_1| |.loc.6| |i1_0|) (let ((.def_26 (<= i_0 N_1))) (and (not .loc.6) (or (and (and (= val_0 (select a_1 i1_0)) (and (<= i1_0 N_1) (and (not .def_26) (<= 0 i1_0)))) .loc.11) (and (= (ite (= i_0 val_0) (store a_1 i_0 0) (store a_1 i_0 i_0)) .y.7) (and (= (+ i_0 (* (- 1) .y.8)) (- 1)) (and (= val_0 .y.9) (and (= N_1 .y.10) (and .def_26 (not .loc.11)))))))))) (state |.y.7| |.y.8| |.y.9| |.y.10| |.loc.11| |.xtv.1|))))
-(assert (forall ((|a_1| (Array Int Int)) (|i_0| Int) (|val_0| Int) (|N_1| Int) (|.loc.6| Bool) (|i1_0| Int) (|.loc.11| Bool) (|.y.7| (Array Int Int)) (|.y.8| Int) (|.y.9| Int) (|.y.10| Int) (|.xtv.1| Int)) (=> (state |a_1| |i_0| |val_0| |N_1| |.loc.6| |i1_0|) (not .loc.6))))
-(check-sat)
