@@ -136,9 +136,6 @@ public:
 
     const ic3ia::TransitionSystem &conc_ts_;
     const ic3ia::Options &opts_;
-    // sets whether array equality is abstracted with a UF
-    // or if it's an equality between the abstract arrays (of uninterpreted sort)
-    bool use_eq_uf_;
 
     ic3ia::TransitionSystem abs_ts_;
 
