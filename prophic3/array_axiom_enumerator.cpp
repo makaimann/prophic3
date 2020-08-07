@@ -487,9 +487,6 @@ void ArrayAxiomEnumerator::collect_equalities(msat_term term, TermSet &s) {
 }
 
 void ArrayAxiomEnumerator::collect_int_terms(msat_term term) {
-  // assume all_indices_ is already populated
-  // used to remove indices from these terms
-  assert(index_targets_[INDEX_SET].size());
 
   struct Data {
     TermSet &terms;
