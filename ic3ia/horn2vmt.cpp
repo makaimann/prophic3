@@ -27,6 +27,8 @@
 #include <algorithm>
 #include <math.h>
 
+#define HORN_DEBUG_PRINT 0
+
 
 inline bool operator==(msat_decl a, msat_decl b)
 {
@@ -148,6 +150,7 @@ private:
     void collect_all_vars(msat_term t);
     bool is_relation(msat_term t) const;
     msat_term split_forall(msat_term t);
+    msat_term rewrite_bool_arrays(msat_term t);
 
     msat_env env_;
 
@@ -163,6 +166,7 @@ private:
     TermList to_process_;
     std::vector<bool> neg_stack_;
     TermSet uniq_;
+    std::unordered_map<std::string, std::string> rename_map_;
 };
 
 
@@ -509,6 +513,7 @@ void Smt2HornParser::make_horn_clause(msat_term interm, HornClause &out)
     }
 
     auto term = split_forall(interm);
+    term = rewrite_bool_arrays(term);
 
     to_process_.clear();
     neg_stack_.clear();
@@ -634,6 +639,196 @@ bool Smt2HornParser::is_relation(msat_term t) const
         msat_is_bool_type(env_, msat_term_get_type(t));
 }
 
+
+
+namespace {
+
+msat_type rewrite_bool_array_type(msat_env env, msat_type tp, bool use_bv)
+{
+    msat_type index, elem;
+    if (msat_is_array_type(env, tp, &index, &elem)) {
+        index = rewrite_bool_array_type(env, index, use_bv);
+        elem = rewrite_bool_array_type(env, elem, use_bv);
+        return msat_get_array_type(env, index, elem);
+    } else if (msat_is_bool_type(env, tp)) {
+        return use_bv ? msat_get_bv_type(env, 1) : msat_get_integer_type(env);
+    } else {
+        return tp;
+    }
+}
+
+} // namespace
+
+
+msat_term Smt2HornParser::rewrite_bool_arrays(msat_term t)
+{
+    struct Data {
+        std::unordered_map<std::string, std::string> &renmap;
+        TermMap &cache;
+        bool use_bv;
+        TermList args;
+
+        Data(std::unordered_map<std::string, std::string> &r,
+             TermMap &c, bool b): renmap(r), cache(c), use_bv(b) {}
+
+        msat_term toint(msat_env e, msat_term t)
+        {
+            msat_term zero, one;
+            if (use_bv) {
+                zero = msat_make_bv_number(e, "0", 1, 10);
+                one = msat_make_bv_number(e, "1", 1, 10);
+            } else {
+                zero = msat_make_number(e, "0");
+                one = msat_make_number(e, "1");
+            }
+            return msat_make_term_ite(e, t, one, zero);
+        }
+
+        msat_term tobool(msat_env e, msat_term t)
+        {
+            msat_term zero;
+            if (use_bv) {
+                zero = msat_make_bv_number(e, "0", 1, 10);
+            } else {
+                zero = msat_make_number(e, "0");
+            }
+            return msat_make_not(e, msat_make_equal(e, t, zero));
+        }
+
+        std::string rename(msat_env e, const char *name)
+        {
+            std::string n(name);
+            auto it = renmap.find(n);
+            if (it != renmap.end()) {
+                return it->second;
+            }
+            int idx = 1;
+            while (true) {
+                std::string cand = n + "." + std::to_string(idx);
+                if (MSAT_ERROR_DECL(msat_find_decl(e, cand.c_str()))) {
+                    renmap[n] = cand;
+                    return cand;
+                }
+                ++idx;
+            }
+        }
+    };
+    
+    const auto visit =
+        [](msat_env e, msat_term t, int pre, void *data) -> msat_visit_status
+        {
+            Data *d = static_cast<Data *>(data);
+            if (d->cache.find(t) != d->cache.end()) {
+                return MSAT_VISIT_SKIP;
+            }
+            if (!pre) {
+                auto tag = msat_decl_get_tag(e, msat_term_get_decl(t));
+                d->args.clear();
+                for (size_t i = 0; i < msat_term_arity(t); ++i) {
+                    msat_term c = msat_term_get_arg(t, i);
+                    d->args.push_back(d->cache[c]);
+                }
+
+                msat_term tt;
+                MSAT_MAKE_ERROR_TERM(tt);
+                
+                switch (tag) {
+                case MSAT_TAG_ARRAY_READ:
+                    if (msat_is_bool_type(e, msat_term_get_type(d->args[1]))) {
+                        d->args[1] = d->toint(e, d->args[1]);
+                    }
+                    tt = msat_make_array_read(e, d->args[0], d->args[1]);
+                    if (msat_is_bool_type(e, msat_term_get_type(t))) {
+                        tt = d->tobool(e, tt);
+                    }
+                    break;
+                case MSAT_TAG_ARRAY_WRITE:
+                    for (int i = 1; i <= 2; ++i) {
+                        if (msat_is_bool_type(e,
+                                              msat_term_get_type(d->args[i]))) {
+                            d->args[i] = d->toint(e, d->args[i]);
+                        }
+                    }
+                    tt = msat_make_array_write(e, d->args[0],
+                                               d->args[1], d->args[2]);
+                    break;
+                case MSAT_TAG_ARRAY_CONST:
+                    if (msat_is_bool_type(e, msat_term_get_type(d->args[0]))) {
+                        d->args[0] = d->toint(e, d->args[0]);
+                    }
+                    tt = msat_make_array_const(
+                        e, rewrite_bool_array_type(e, msat_term_get_type(t),
+                                                   d->use_bv), d->args[0]);
+                    break;
+                case MSAT_TAG_UNKNOWN:
+                    if (msat_term_is_uf(e, t)) {
+                        msat_decl dd = msat_term_get_decl(t);
+                        std::vector<msat_type> tps;
+                        bool found = false;
+                        for (size_t i = 0; i < msat_decl_get_arity(dd); ++i) {
+                            msat_type tp = msat_decl_get_arg_type(dd, i);
+                            if (msat_is_array_type(e, tp, nullptr, nullptr)) {
+                                found = true;
+                                tps.push_back(
+                                    rewrite_bool_array_type(e, tp, d->use_bv));
+                            } else {
+                                tps.push_back(tp);
+                            }
+                        }
+                        if (found) {
+                            char *n = msat_decl_get_name(dd);
+                            std::string name = d->rename(e, n);
+                            msat_free(n);
+                            dd = msat_declare_function(
+                                e, name.c_str(),
+                                msat_get_function_type(e, &tps[0], tps.size(),
+                                                       msat_get_bool_type(e)));
+                        }
+                        tt = msat_make_uf(e, dd, &(d->args[0]));
+                    } else if (msat_is_array_type(e, msat_term_get_type(t),
+                                                  nullptr, nullptr)) {
+                        msat_type tp = msat_term_get_type(t);
+                        msat_type tp2 =
+                            rewrite_bool_array_type(e, tp, d->use_bv);
+                        if (!msat_type_equals(tp, tp2)) {
+                            msat_decl dd = msat_term_get_decl(t);
+                            char *n = msat_decl_get_name(dd);
+                            std::string name = d->rename(e, n);
+                            dd = msat_declare_function(e, name.c_str(), tp2);
+                            tt = msat_make_constant(e, dd);
+                        } else {
+                            tt = t;
+                        }
+                    } else {
+                        tt = t;
+                    }
+                    break;
+                default:
+                    tt = msat_make_term(e, msat_term_get_decl(t),
+                                        &(d->args[0]));
+                    break;
+                }
+
+                assert(!MSAT_ERROR_TERM(tt));
+
+                d->cache[t] = tt;
+            }
+            return MSAT_VISIT_PROCESS;
+        };
+
+    TermMap cache;
+    bool use_bv = false;
+    for (auto v : allvars_) {
+        if (msat_is_bv_type(env_, msat_term_get_type(v), nullptr)) {
+            use_bv = true;
+            break;
+        }
+    }
+    Data data(rename_map_, cache, use_bv);
+    msat_visit_term(env_, t, visit, &data);
+
+    return cache[t];
+}
 
 //-----------------------------------------------------------------------------
 // HornRewriter
@@ -1157,7 +1352,7 @@ bool HornRewriter::make_single(const std::vector<HornClause> &src,
     // single relation, we use two bits and an additional Boolean argument:
     // R(x, y, z, b) = ite(b, P(x), Q(y, z))
 
-    size_t howmanyvars = size_t(ceil(log(double(nrels))/log(2.0)));
+    size_t howmanyvars = nrels ? size_t(ceil(log(double(nrels))/log(2.0))) : 0;
     tps.resize(tps.size() + howmanyvars, msat_get_bool_type(env_));
 
     std::unordered_map<msat_decl, size_t> rel2id;
@@ -1168,8 +1363,13 @@ bool HornRewriter::make_single(const std::vector<HornClause> &src,
     // declare the single relation
     msat_decl single;
     {
-        msat_type tp = msat_get_function_type(env_, &tps[0], tps.size(),
-                                              msat_get_bool_type(env_));
+        msat_type tp;
+        if (!tps.empty()) {
+            tp = msat_get_function_type(env_, &tps[0], tps.size(),
+                                        msat_get_bool_type(env_));
+        } else {
+            tp = msat_get_bool_type(env_);
+        }
         std::string name = ".{rel}";
         single = msat_declare_function(env_, name.c_str(), tp);
     }
@@ -1963,11 +2163,18 @@ int main(int argc, const char **argv)
     msat_config cfg = msat_create_config();
     msat_env env = msat_create_env(cfg);
     msat_destroy_config(cfg);
-    ic3ia::TransitionSystem ts(env);
-    ic3ia::HornManager hmgr(&ts, opt);
-    hmgr.parse(stdin);
-    ts.to_vmt(std::cout);
+    int res = 0;
+    try {
+        ic3ia::TransitionSystem ts(env);
+        ic3ia::HornManager hmgr(&ts, opt);
+        hmgr.parse(stdin);
+        ts.to_vmt(std::cout);
+    } catch (std::exception &exc) {
+        std::cerr << "ERROR: " << exc.what() << std::endl;
+        res = 1;
+    }
+        
     msat_destroy_env(env);
     
-    return 0;
+    return res;
 }
