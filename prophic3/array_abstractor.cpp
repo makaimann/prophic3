@@ -472,16 +472,9 @@ void ArrayAbstractor::abstract_large_integer_values() {
 
   msat_term t_ = msat_make_true(msat_env_);
   msat_term gt_100;
-  msat_term lt_0;
   msat_type inttype = msat_get_integer_type(msat_env_);
   for (auto iv : integer_vals) {
     gt_100 = msat_make_not(msat_env_, msat_make_leq(msat_env_, iv, hundred));
-    // TODO use this for very negative numbers
-    // lt_0 = msat_make_not(msat_env_,
-    //                      msat_make_leq(msat_env_,
-    //                                    zero,
-    //                                    iv));
-
     if (gt_100 == t_) {
       std::string name =
           std::string("_n_") + msat_to_smtlib2_term(msat_env_, iv);
