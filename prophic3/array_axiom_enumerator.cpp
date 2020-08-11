@@ -217,6 +217,14 @@ ic3ia::TermSet ArrayAxiomEnumerator::lambda_alldiff_axioms(bool only_cur) {
   return axioms;
 }
 
+ic3ia::TermSet ArrayAxiomEnumerator::large_integer_values_axioms() {
+  TermSet axioms;
+  for (auto elem : abstractor_.abstracted_large_consts()) {
+    axioms.insert(msat_make_eq(msat_env_, elem.first, elem.second));
+  }
+  return axioms;
+}
+
 TermSet ArrayAxiomEnumerator::equality_axioms_idx_time(const TermSet &indices,
                                                        size_t j, size_t k) {
 
@@ -479,9 +487,6 @@ void ArrayAxiomEnumerator::collect_equalities(msat_term term, TermSet &s) {
 }
 
 void ArrayAxiomEnumerator::collect_int_terms(msat_term term) {
-  // assume all_indices_ is already populated
-  // used to remove indices from these terms
-  assert(index_targets_[INDEX_SET].size());
 
   struct Data {
     TermSet &terms;

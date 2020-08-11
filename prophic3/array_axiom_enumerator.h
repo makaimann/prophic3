@@ -39,6 +39,16 @@ public:
       : ts_(ts), un_(u), abstractor_(aa) {
     msat_env_ = ts.get_env();
 
+    // make sure every element exists even if it's an empty list
+    index_targets_[STATE_INDEX_SET];
+    index_targets_[STATE_INDEX_SET_NO_WITNESSES];
+    index_targets_[INDEX_SET];
+    index_targets_[STATE_INDEX_SET_AND_PROPH];
+    index_targets_[NO_NEXT_INDEX_SET_AND_PROPH];
+    index_targets_[INDEX_SET_AND_PROPH];
+    index_targets_[PROPH];
+    index_targets_[NO_NEXT_NON_INDEX_INT_TERMS];
+
     // sort the indices
     // convenient to store them grouped by current and all for 1-step and 2-step
     // lemmas
@@ -115,6 +125,12 @@ public:
    */
   ic3ia::TermSet lambda_alldiff_axioms(bool only_cur);
 
+  /** Enumerates untimeable axioms about
+   *  abstracted large integer values
+   *  e.g. that they're equal to an actual value
+   */
+  ic3ia::TermSet large_integer_values_axioms();
+
   /** Enumerate equality axioms over indices at j
    *  indices - the index sets to enumerate axiom over
    *  j - the time step of the indices (they haven't been unrolled yet)
@@ -155,7 +171,7 @@ public:
    */
   ic3ia::TermSet get_index_targets(IndexTarget it, int t = -1) {
     if (!index_targets_[it].size()) {
-      std::cout << "Warning, empty index set for IndexTarget = " << it
+      std::cout << "Warning: empty index set for IndexTarget = " << it
                 << std::endl;
     }
 
