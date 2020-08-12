@@ -30,9 +30,14 @@ inline bool is_variable(msat_env env, msat_term term) {
 /* detects all arrays except for writes */
 void detect_arrays(msat_env env, msat_term term, ic3ia::TermSet & out_const_arrs);
 
+/* detects all integer values */
+void detect_integer_values(msat_env env, msat_term term,
+                           ic3ia::TermSet &out_values);
+
 class ArrayAbstractor {
 public:
-  ArrayAbstractor(const ic3ia::TransitionSystem &ts, bool use_eq_uf);
+  ArrayAbstractor(const ic3ia::TransitionSystem &ts,
+                  const ic3ia::Options &opts);
   ~ArrayAbstractor();
 
   const ic3ia::TransitionSystem &abstract_transition_system() const {
@@ -53,6 +58,9 @@ public:
     const ic3ia::TermSet &stores() const { return stores_; };
     ic3ia::TermSet &lambdas() { return lambdas_; };
     const ic3ia::TermSet &finite_domain_lambdas() const { return finite_domain_lambdas_; };
+    const ic3ia::TermMap &abstracted_large_consts() const {
+      return abstracted_large_consts_;
+    }
 
     msat_type get_orig_type(msat_term t) const
     {
@@ -104,6 +112,12 @@ public:
      */
     void abstract_array_terms();
 
+    /** abstracts all integer values larger than 100
+     *  as frozen state variables that are greater than 0
+     *  these can then be abstracted later
+     */
+    void abstract_large_integer_values();
+
     /* get an abstract array type if it's an array type */
     msat_type abstract_array_type(msat_type t);
 
@@ -121,9 +135,7 @@ public:
     msat_env msat_env_;
 
     const ic3ia::TransitionSystem &conc_ts_;
-    // sets whether array equality is abstracted with a UF
-    // or if it's an equality between the abstract arrays (of uninterpreted sort)
-    bool use_eq_uf_;
+    const ic3ia::Options &opts_;
 
     ic3ia::TransitionSystem abs_ts_;
 
@@ -164,6 +176,10 @@ public:
 
     // maps a string of an array type to an uninterpreted type
     std::unordered_map<std::string, msat_type> type_map_;
+
+    // maps abstract state variables to the concrete (large) number they
+    // abstracted
+    ic3ia::TermMap abstracted_large_consts_;
 
     ic3ia::TermSet lambdas_;
     ic3ia::TermSet finite_domain_lambdas_;

@@ -138,8 +138,7 @@ TargetSet set_intersection_reduce(const vector<TargetSet> &sets) {
 ProphIC3::ProphIC3(const ic3ia::TransitionSystem &ts,
                    const ic3ia::Options &opts, ic3ia::LiveEncoder &l2s,
                    unsigned int verbosity)
-    : msat_env_(ts.get_env()), conc_ts_(ts),
-      aa_(conc_ts_, opts.use_uf_for_arr_eq),
+    : msat_env_(ts.get_env()), conc_ts_(ts), aa_(conc_ts_, opts),
       abs_ts_(aa_.abstract_transition_system()), un_(abs_ts_),
       aae_(abs_ts_, un_, aa_), hr_(abs_ts_), opts_(opts), l2s_(l2s) {
   ic3ia::Logger & l = ic3ia::Logger::get();
@@ -399,7 +398,7 @@ bool ProphIC3::fix_bmc()
                 << endlog;
       untimed_axioms.clear();
       timed_axioms.clear();
-      fixable = check_axioms_over_bmc(untimed_axioms, timed_axioms);
+      fixable = check_axioms_over_bmc(untimed_axioms, timed_axioms, false);
       assert(fixable);
       assert(!timed_axioms.size());
     }
@@ -429,7 +428,8 @@ bool ProphIC3::fix_bmc()
 }
 
 bool ProphIC3::check_axioms_over_bmc(TermSet &untimed_axioms,
-                                     TermSet &timed_axioms) {
+                                     TermSet &timed_axioms,
+                                     bool search_for_timed) {
   assert(!untimed_axioms.size());
   assert(!timed_axioms.size());
 
@@ -527,7 +527,7 @@ bool ProphIC3::check_axioms_over_bmc(TermSet &untimed_axioms,
     }
 
     // check for timed axioms over the index set if there were no axioms found
-    if (!found_untimed_axioms) {
+    if (!found_untimed_axioms && search_for_timed) {
       logger(1) << "Checking for timed axioms" << endlog;
       vector<TermSet> timed_axiom_candidates;
       const TermSet &curr_indices =
@@ -569,6 +569,25 @@ bool ProphIC3::check_axioms_over_bmc(TermSet &untimed_axioms,
           }
         }
       }
+    }
+
+    if (!violated_axioms.size()) {
+      // check abstracted large integer value axioms
+      // that they should be equal to the actual value
+      for (auto ax : aae_.large_integer_values_axioms()) {
+        for (size_t k = 0; k <= current_k_; k++) {
+          msat_term timed_axiom = un_.at_time(ax, k);
+          if (is_axiom_violated(timed_axiom)) {
+            violated_axioms.insert(timed_axiom);
+            untimed_axioms.insert(ax);
+            timed_to_untimed[timed_axiom] = ax;
+            lemma_cnt++;
+          }
+        }
+      }
+
+      // these are actually untimeable -- but we add them last
+      found_untimed_axioms = violated_axioms.size();
     }
 
     // if we didn't find any violated axioms, this is a real bug

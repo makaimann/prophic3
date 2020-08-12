@@ -269,6 +269,8 @@ Options get_options(int argc, const char **argv)
           ret.abs_bmc_only = true;
         } else if (a == "-enum-grammar-search") {
           ret.enum_grammar_search = true;
+        } else if (a == "-no-abstract-large-vals") {
+          ret.abstract_large_vals = false;
         } else if (a == "-h" || a == "-help" || a == "--help") {
           std::cout << "USAGE: " << argv[0] << " [OPTIONS] FILENAME.vmt"
                     << "\n\n   -v N : set verbosity level"
@@ -330,7 +332,8 @@ Options get_options(int argc, const char **argv)
                     << "\n   -enum-grammar-search: look for prophecy targets "
                        "over a grammar "
                        "instead of just indices."
-                    << std::endl;
+                    << "\n   -no-abstract-large-vals: turn off abstraction for "
+                    << "large values (integer values > 100)" << std::endl;
           exit(0);
           break;
         } else if (a[0] != '-' && ret.filename.empty()) {
