@@ -13,7 +13,7 @@ Configures the CMAKE build environment.
 -h, --help              display this message and exit
 --prefix=STR            install directory       (default: /usr/local/)
 --build-dir=STR         custom build directory  (default: build)
---debug                 build debug with debug symbols (default: off)
+--release               build without debug symbols (default: off)
 EOF
   exit 0
 }
@@ -26,9 +26,8 @@ die () {
 build_dir=build
 install_prefix=default
 build_type=default
-debug=default
 
-buildtype=Release
+buildtype=Debug
 
 while [ $# -gt 0 ]
 do
@@ -54,9 +53,8 @@ do
                 *) build_dir=$(pwd)/$build_dir ;; # make absolute path
             esac
             ;;
-        --debug)
-            debug=yes;
-            buildtype=Debug
+        --release)
+            buildtype=Release
             ;;
         *) die "unexpected argument: $1";;
     esac
