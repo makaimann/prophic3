@@ -101,7 +101,7 @@ def check(opts, env, formula):
         if e:
             err(e)
             return MSAT_UNKNOWN
-        s = out.strip()
+        s = out.decode().strip()
         if s == 'sat':
             res = MSAT_SAT
         elif s == 'unsat':
