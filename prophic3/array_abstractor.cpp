@@ -314,6 +314,23 @@ void ArrayAbstractor::do_abstraction()
         msat_make_eq(msat_env_, new_state_vars_.at(elem.first), elem.first));
   }
 
+  // make constant arrays constant state variables
+  for (auto constarr : const_arrs_) {
+    msat_term abs_constarr = abstraction_cache_.at(constarr);
+    if (new_state_vars_.find(abs_constarr) == new_state_vars_.end()) {
+      msat_type abs_constarr_type = msat_term_get_type(abs_constarr);
+      std::string name = msat_term_repr(abs_constarr);
+      msat_decl decl_abs_constarrN = msat_declare_function(
+          msat_env_, (name + ".next").c_str(), abs_constarr_type);
+      msat_term abs_constarrN =
+          msat_make_constant(msat_env_, decl_abs_constarrN);
+      new_state_vars_[abs_constarr] = abs_constarrN;
+    }
+    msat_term next_var = new_state_vars_.at(abs_constarr);
+    new_trans = msat_make_and(msat_env_, new_trans,
+                              msat_make_eq(msat_env_, next_var, abs_constarr));
+  }
+
   // initialize for using curr / next
   // will reinitialize later if needed
   abs_ts_.initialize(new_state_vars_, new_init, new_trans, new_prop,
@@ -324,15 +341,6 @@ void ArrayAbstractor::do_abstraction()
   if (opts_.use_uf_for_arr_eq) {
     // modifies abs_ts_
     construct_abstract_array_equalities();
-  }
-
-  // make const arrays frozenvars
-  // if they're not statevars, this will simplify to true
-  msat_term abs_ca;
-  for (auto ca : const_arrs_)
-  {
-    abs_ca = abstraction_cache_.at(ca);
-    abs_ts_.add_trans(msat_make_eq(msat_env_, abs_ts_.next(abs_ca), abs_ca));
   }
 
   // collect free variables appearing in the property
