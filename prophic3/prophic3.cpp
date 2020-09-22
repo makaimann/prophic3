@@ -476,8 +476,10 @@ bool ProphIC3::check_axioms_over_bmc(TermSet &untimed_axioms,
       aae_.array_eq_witness_axioms(only_cur)};
 
   while (broken) {
-    // get and save the current model
-    previous_models_.push_back(msat_get_model(refiner_));
+    if (opts_.enum_grammar_search) {
+      // get and save the current model
+      previous_models_.push_back(msat_get_model(refiner_));
+    }
 
     int lemma_cnt = 0;
     violated_axioms.clear();
