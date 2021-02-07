@@ -12,7 +12,7 @@ Rewriter::Rewriter(const TransitionSystem &ts) :
     rewritten_ts_(ts.get_env())
 {
     do_flattening();
-    //    do_flatten_array_indices();
+    do_flatten_array_indices();
     do_rewriting();
 }
 
