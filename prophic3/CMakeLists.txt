@@ -28,6 +28,7 @@ add_executable(prophic3
   "${PROJECT_SOURCE_DIR}/array_axiom_enumerator.cpp"
   "${PROJECT_SOURCE_DIR}/prophic3.cpp"
   "${PROJECT_SOURCE_DIR}/history_refiner.cpp"
+  "${PROJECT_SOURCE_DIR}/prophic3-api.cpp"
   "${PROJECT_SOURCE_DIR}/main.cpp"
   )
 

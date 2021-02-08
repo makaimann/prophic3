@@ -13,6 +13,7 @@
 #include "rewriter.h"
 #include "array_axiom_enumerator.h"
 
+#include "prophic3-api.h"
 #include "prophic3.h"
 
 using namespace std;
@@ -50,6 +51,16 @@ bool check_witness(const Options &opts, TransitionSystem &ts,
     return ok;
 }
 
+void handle_interrupt(int signo)
+{
+  if (the_prover) {
+    the_prover->print_stats(std::cout);
+  }
+  std::cout << "interrupted by signal " << signo << "\nunknown" << std::endl;
+  //_Exit(signo);
+  exit(signo);
+}
+
 
 int main(int argc, const char **argv)
 {
@@ -57,39 +68,57 @@ int main(int argc, const char **argv)
   int ret_status = 3;
   try
   {
+    double total_time;
+    TimeKeeper tk(total_time);
+    std::vector<std::string> args(argv+1, argv+argc);
     Options opts = get_options(argc, argv);
 
-    msat_config cfg = msat_create_config();
-    msat_set_option(cfg, "allow_bool_function_args", "true");
-    msat_env env = msat_create_env(cfg);
-    EnvDeleter del_env(env);
-    msat_destroy_config(cfg);
+    PROPHIC3 solver(opts);
 
-    TransitionSystem ts(env);
-    TransitionSystem product(env);
-    LTLEncoder ltl(opts, env);
-    TransitionSystem tableau(env);
-    TermList preds;
+    {
+        msat_term *terms;
+        char **annots;
+        size_t n;
 
-    if (!read_ts(opts, ts, ltl, tableau, product, preds)) {
-      std::cout << "ERROR reading input" << std::endl;
-      return 1;
-    }
+        struct File {
+            File(): file(stdin) {}
+            ~File()
+            {
+                if (file && file != stdin) {
+                    fclose(file);
+                }
+            }
 
-    if (opts.trace.empty() && !opts.trace_dir.empty()) {
-      size_t last_slash = opts.filename.find_last_of('/');
-      if (last_slash == string::npos) {
-        opts.trace = opts.trace_dir + opts.filename;
-      } else {
-        opts.trace = opts.trace_dir + "/" +
-                     opts.filename.substr(last_slash + 1,
-                                          opts.filename.size() - last_slash);
-      }
-    }
+            FILE *file;
+        };
+        File f;
+    
+        if (!opts.filename.empty()) {
+            f.file = fopen(opts.filename.c_str(), "r");
+        }
 
-    if (!opts.trace.empty()) {
-      logger(1) << "dumping SMT traces to " << opts.trace << ".*.smt2"
-                << endlog;
+        if (!f.file) {
+            return false;
+        }
+
+        int err = msat_annotated_list_from_smtlib2_file(
+            solver.env, f.file, &n, &terms, &annots);
+        if (err) {
+            std::cout << "ERROR reading input" << std::endl;
+            return 1;
+        }
+        
+        if (!solver.read_ts(terms, annots, n)) {
+            std::cout << "ERROR reading input" << std::endl;
+            return 1;
+        }
+
+        msat_free(terms);
+        for (size_t i = 0; i < n; ++i) {
+            msat_free(annots[2*i]);
+            msat_free(annots[2*i+1]);
+        }
+        msat_free(annots);
     }
 
     if (opts.bmc && opts.kind) {
@@ -97,96 +126,74 @@ int main(int argc, const char **argv)
       return 3;
     }
 
-    LiveEncoder liveenc(product, opts);
+    if (!opts.trace.empty()) {
+      logger(1) << "dumping SMT traces to " << opts.trace << ".*.smt2"
+                << endlog;
+    }
 
-    msat_truth_value res = MSAT_UNDEF;
-    // final_ts is only different for prophic3 which returns the refined
-    // abstract system
-    TransitionSystem *final_ts = &product;
-    if (opts.bmc) {
-      Bmc *bmc = new Bmc(product, opts);
-      the_prover = bmc;
-      if (opts.bmc_max_k > 0) {
-        if (!bmc->check_until(opts.bmc_max_k)) {
-          res = MSAT_FALSE;
+    if (!solver.init_prover()) {
+      std::cout << "ERROR initializing ic3" << std::endl;
+      return 1;
+    }
+
+    the_prover = solver.prover;
+    signal(SIGINT, handle_interrupt);
+
+    solver.result = the_prover->prove();
+    msat_truth_value res = solver.result;
+
+    TransitionSystem *final_ts = &(static_cast<ProphIC3*>(the_prover)->get_abs_ts());
+
+    std::vector<TermList> wit;
+    the_prover->witness(wit);
+    if (res == MSAT_TRUE && !opts.trace.empty()) {
+      msat_term inv = msat_make_true(solver.env);
+      for (auto clause_list : wit) {
+        msat_term clause;
+        if (clause_list.size() == 0) {
+          cout << "got an empty clause" << endl;
+          clause = msat_make_true(solver.env);
+        } else {
+          clause = msat_make_false(solver.env);
         }
-      } else {
-        res = bmc->prove();
-      }
-    } else if (opts.kind) {
-      Kind *kind = new Kind(product, opts);
-      the_prover = kind;
-      if (opts.bmc_max_k > 0) {
-        res = kind->check_until(opts.bmc_max_k);
-      } else {
-        res = kind->prove();
-      }
-    }
-    else
-    {
-      ProphIC3 *prophic3 = new ProphIC3(product, opts, liveenc, opts.verbosity);
-      res = prophic3->prove();
-      the_prover = prophic3;
-      final_ts = &(prophic3->get_abs_ts());
 
-      std::vector<TermList> wit;
-      prophic3->witness(wit);
-      if (res == MSAT_TRUE && !opts.trace.empty())
-      {
-        msat_term inv = msat_make_true(env);
-        for (auto clause_list : wit)
-        {
-          msat_term clause;
-          if (clause_list.size() == 0)
-          {
-            cout << "got an empty clause" << endl;
-            clause = msat_make_true(env);
-          }
-          else
-          {
-            clause = msat_make_false(env);
-          }
-
-          for (auto c : clause_list)
-          {
-            clause = msat_make_or(env, clause, c);
-          }
-
-          inv = msat_make_and(env, inv, clause);
+        for (auto c : clause_list) {
+          clause = msat_make_or(solver.env, clause, c);
         }
-        std::string inv_filename = opts.trace + ".inv";
-        cout << "inv_filename = " << inv_filename << endl;
-        FILE * f = fopen(inv_filename.c_str(), "w");
-        msat_to_smtlib2_file(env, inv, f);
-        fclose(f);
 
-        ArrayAbstractor & aa = prophic3->get_array_abstractor();
-        msat_term conc_inv = aa.concrete(inv);
-        std::string conc_inv_filename = opts.trace + ".conc_inv";
-        cout << "conc_inv_filename = " << conc_inv_filename << endl;
-        FILE * cf = fopen(conc_inv_filename.c_str(), "w");
-        msat_to_smtlib2_file(env, conc_inv, cf);
-        fclose(cf);
-
+        inv = msat_make_and(solver.env, inv, clause);
       }
+      std::string inv_filename = opts.trace + ".inv";
+      cout << "inv_filename = " << inv_filename << endl;
+      FILE * f = fopen(inv_filename.c_str(), "w");
+      msat_to_smtlib2_file(solver.env, inv, f);
+      fclose(f);
+
+      ArrayAbstractor & aa = static_cast<ProphIC3*>(the_prover)->get_array_abstractor();
+      msat_term conc_inv = aa.concrete(inv);
+      std::string conc_inv_filename = opts.trace + ".conc_inv";
+      cout << "conc_inv_filename = " << conc_inv_filename << endl;
+      FILE * cf = fopen(conc_inv_filename.c_str(), "w");
+      msat_to_smtlib2_file(solver.env, conc_inv, cf);
+      fclose(cf);
 
     }
 
-    if (res == MSAT_FALSE) {
-      // cout << "The property is false" << endl;
-      cout << "unsat" << endl; // similar to spacer
-      ret_status = 1;
-    } else if (res == MSAT_TRUE) {
-      // cout << "The property is true" << endl;
-      cout << "sat" << endl; // similar to spacer
-      ret_status = 0;
-    } else {
-      // cout << "Failed to prove or disprove the property..." << endl;
-      cout << "unknown" << endl; // similar to spacer
-      ret_status = 2;
-    }
+  if (res == MSAT_FALSE) {
+    // cout << "The property is false" << endl;
+    cout << "unsat" << endl; // similar to spacer
+    ret_status = 1;
+  } else if (res == MSAT_TRUE) {
+    // cout << "The property is true" << endl;
+    cout << "sat" << endl; // similar to spacer
+    ret_status = 0;
+  } else {
+    // cout << "Failed to prove or disprove the property..." << endl;
+    cout << "unknown" << endl; // similar to spacer
+    ret_status = 2;
+  }
 
-    if (opts.witness && res != MSAT_UNDEF) {
+  if (opts.witness && res != MSAT_UNDEF) {
       bool safe = (res == MSAT_TRUE);
       std::vector<TermList> wit;
       int loopback = the_prover->witness(wit);
@@ -202,7 +209,7 @@ int main(int argc, const char **argv)
                     << (safe ? "clause " : "step ") << i << "\n"
                     << (safe ? "(or" : "(and") << "\n";
           for (msat_term t : w) {
-            std::cout << "  " << logterm(env, t) << "\n";
+            std::cout << "  " << logterm(solver.env, t) << "\n";
           }
           std::cout << ")\n";
         }
@@ -212,7 +219,7 @@ int main(int argc, const char **argv)
 
       if (safe && opts.check_witness) {
         TimeKeeper tk(witness_check_time);
-        if (!check_witness(opts, *final_ts, wit, ltl, tableau, liveenc)) {
+        if (!check_witness(opts, *final_ts, wit, *(solver.ltl), *(solver.tableau), *(solver.liveenc))) {
           std::cout << "ERROR: the witness is incorrect\n" << std::endl;
         } else {
           std::cout << "the witness is correct\n" << std::endl;
