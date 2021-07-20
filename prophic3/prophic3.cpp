@@ -180,10 +180,14 @@ msat_truth_value ProphIC3::prove()
 {
   msat_truth_value res = MSAT_UNDEF;
 
-  // add property in the trans, in order to retain the property
-  // strength
-  // history refinement and prophecy weakens the property
-  abs_ts_.add_trans(abs_ts_.prop());
+  if (opts_.assume_prop)
+  {
+    // add property in the trans, in order to retain the property
+    // strength
+    // history refinement and prophecy weakens the property
+    abs_ts_.add_trans(abs_ts_.prop());
+    logger(1) << "Assuming property in pre-state of trans" << endlog;
+  }
 
   // make free vars in the property as frozen -- prophecies
   const TermSet &prop_free_vars = aa_.prop_free_vars();

@@ -271,6 +271,8 @@ Options get_options(int argc, const char **argv)
           ret.enum_grammar_search = true;
         } else if (a == "-no-abstract-large-vals") {
           ret.abstract_large_vals = false;
+        } else if (a == "-assume-prop") {
+          ret.assume_prop = true;
         } else if (a == "-h" || a == "-help" || a == "--help") {
           std::cout << "USAGE: " << argv[0] << " [OPTIONS] FILENAME.vmt"
                     << "\n\n   -v N : set verbosity level"
@@ -333,7 +335,8 @@ Options get_options(int argc, const char **argv)
                        "over a grammar "
                        "instead of just indices."
                     << "\n   -no-abstract-large-vals: turn off abstraction for "
-                    << "large values (integer values > 100)" << std::endl;
+                    << "large values (integer values > 100)"
+                    << "\n   -assume-prop: assume property in trans (default: off)" << std::endl;
           exit(0);
           break;
         } else if (a[0] != '-' && ret.filename.empty()) {

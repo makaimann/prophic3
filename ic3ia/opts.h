@@ -69,6 +69,7 @@ struct Options {
     bool abs_bmc_only;
     bool enum_grammar_search;
     bool abstract_large_vals;
+    bool assume_prop;
 
     Options()
     {
@@ -112,6 +113,7 @@ struct Options {
         abs_bmc_only = false;
         enum_grammar_search = false;
         abstract_large_vals = true;
+        assume_prop = false;
     }
 };
 
