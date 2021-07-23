@@ -64,6 +64,7 @@ struct Options {
     bool unsatcore_array_refiner;
     bool track_proph_vars_pred;
     bool axiom_reduction;
+    bool proph_var_reduction;
     bool kind;
     bool state_promotion;
     bool abs_bmc_only;
@@ -108,6 +109,7 @@ struct Options {
         unsatcore_array_refiner = true;
         track_proph_vars_pred = true;
         axiom_reduction = true;
+        proph_var_reduction = true;
         kind = false;
         state_promotion=false;
         abs_bmc_only = false;
