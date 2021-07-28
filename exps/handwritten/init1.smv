@@ -22,5 +22,5 @@ TRANS (i >= size & j >= size) -> FALSE
 
 INVARSPEC !err
 
--- we can prove this property if we don't put the original property in
+-- we can't prove this property unless we put the original property in
 -- the trans
