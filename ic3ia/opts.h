@@ -64,11 +64,13 @@ struct Options {
     bool unsatcore_array_refiner;
     bool track_proph_vars_pred;
     bool axiom_reduction;
+    bool proph_var_reduction;
     bool kind;
     bool state_promotion;
     bool abs_bmc_only;
     bool enum_grammar_search;
     bool abstract_large_vals;
+    bool assume_prop;
 
     Options()
     {
@@ -107,11 +109,13 @@ struct Options {
         unsatcore_array_refiner = true;
         track_proph_vars_pred = true;
         axiom_reduction = true;
+        proph_var_reduction = true;
         kind = false;
         state_promotion=false;
         abs_bmc_only = false;
         enum_grammar_search = false;
         abstract_large_vals = true;
+        assume_prop = false;
     }
 };
 

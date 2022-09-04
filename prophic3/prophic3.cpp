@@ -180,10 +180,14 @@ msat_truth_value ProphIC3::prove()
 {
   msat_truth_value res = MSAT_UNDEF;
 
-  // add property in the trans, in order to retain the property
-  // strength
-  // history refinement and prophecy weakens the property
-  abs_ts_.add_trans(abs_ts_.prop());
+  if (opts_.assume_prop)
+  {
+    // add property in the trans, in order to retain the property
+    // strength
+    // history refinement and prophecy weakens the property
+    abs_ts_.add_trans(abs_ts_.prop());
+    logger(1) << "Assuming property in pre-state of trans" << endlog;
+  }
 
   // make free vars in the property as frozen -- prophecies
   const TermSet &prop_free_vars = aa_.prop_free_vars();
@@ -320,7 +324,7 @@ bool ProphIC3::fix_bmc()
             search_for_prophecy_targets(prophecy_targets);
 
         // only reduce if found new targets
-        if (found_prophecy_targets.size() && opts_.axiom_reduction) {
+        if (found_prophecy_targets.size() && opts_.proph_var_reduction) {
           // map the delay amount to a map from prophecy targets to axioms
           map<size_t, map<msat_term, TermSet>> sorted_map;
           for (auto elem : found_prophecy_targets) {
@@ -379,6 +383,12 @@ bool ProphIC3::fix_bmc()
             tmp_idx = aae_.get_index(ax);
             prophecy_targets.insert(pair<msat_term, size_t>(
                 un_.untime(tmp_idx), current_k_ - un_.get_time(tmp_idx)));
+          }
+        } else {
+          // either didn't find any new prophecy targets
+          // or reduction is disabled
+          for (const auto &elem : found_prophecy_targets) {
+            prophecy_targets.insert(elem);
           }
         }
       }
@@ -790,7 +800,7 @@ void ProphIC3::prophesize_abs_ts(TargetSet prophecy_targets) {
 TargetSet ProphIC3::identify_prophecy_targets(const TermSet &untimed_axioms,
                                               const TermSet &timed_axioms) {
   TermSet timed_axioms_to_add;
-  if (opts_.axiom_reduction) {
+  if (opts_.proph_var_reduction) {
     logger(1) << "reducing TIMED axioms" << endlog;
 
     // use map to sort by distance from safety violation
